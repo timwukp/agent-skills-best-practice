@@ -6,28 +6,17 @@ inclusion: auto
 
 ## Dependencies
 
-- Node.js with npm package manager
-- Python with venv for Python-based tooling
-- Primary dependency: `pptxgenjs` (v4.0.1) for PowerPoint generation
+- Python (for office scripts and validation tooling in document skills)
+- Node.js `pptxgenjs` (for PPTX skill only — installed per-skill, not at repo level)
 
 ## Project Structure
 
 This is primarily a documentation and example repository with minimal build requirements. The main technical components are:
 
-- Markdown documentation files
-- JavaScript utilities (e.g., `create-kiro-skills-presentation.js`)
+- Markdown documentation and training materials
 - Skill folders containing SKILL.md files with YAML frontmatter
-
-## Common Commands
-
-```bash
-# Install dependencies
-npm install
-
-# Python virtual environment (if needed)
-python -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-```
+- Python scripts for document validation and office file manipulation
+- Font assets for canvas-design skill
 
 ## File Restrictions
 
@@ -43,3 +32,4 @@ The repository enforces strict guidelines:
 - System files (.DS_Store, Thumbs.db) are gitignored
 - Build outputs (dist/, build/, *.min.js) are gitignored
 - Environment variables (.env files) are gitignored
+- Dependencies (node_modules/, .venv/) are gitignored
