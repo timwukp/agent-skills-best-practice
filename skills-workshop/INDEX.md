@@ -4,7 +4,7 @@
 
 **New to the workshop?** Read [README.md](./README.md) first for complete overview.
 
-**Ready to teach?** See [WORKSHOP-COMPLETE-FINAL.md](./WORKSHOP-COMPLETE-FINAL.md) for full details.
+**Ready to teach?** See [README.md](./README.md) for full details.
 
 ---
 

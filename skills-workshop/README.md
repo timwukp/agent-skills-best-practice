@@ -107,48 +107,48 @@ skills-workshop/
 ├── INDEX.md                           # Quick navigation
 ├── 01-fundamentals/
 │   ├── slides.md                      # Chapter slides
-│   ├── exercises/exercises.md         # Hands-on exercises
-│   ├── examples/examples.md           # Skill structure examples
-│   ├── templates/templates.md         # SKILL.md starter templates
-│   └── test-cases/test-cases.md       # Validation test cases
+│   ├── exercises.md                   # Hands-on exercises
+│   ├── examples.md                    # Skill structure examples
+│   ├── templates.md                   # SKILL.md starter templates
+│   └── test-cases.md                  # Validation test cases
 ├── 02-planning-design/
 │   ├── slides.md
-│   ├── exercises/exercises.md         # Planning worksheet
-│   ├── examples/examples.md
-│   ├── templates/templates.md
-│   └── test-cases/test-cases.md
+│   ├── exercises.md                   # Planning worksheet
+│   ├── examples.md
+│   ├── templates.md
+│   └── test-cases.md
 ├── 03-testing-iteration/
 │   ├── slides.md
-│   ├── exercises/exercises.md         # Testing exercises
-│   ├── examples/examples.md           # evals.json examples
-│   ├── templates/templates.md         # Test matrix templates
-│   └── test-cases/test-cases.md
+│   ├── exercises.md                   # Testing exercises
+│   ├── examples.md                    # evals.json examples
+│   ├── templates.md                   # Test matrix templates
+│   └── test-cases.md
 ├── 04-distribution-sharing/
 │   ├── slides.md
-│   ├── exercises/exercises.md
-│   ├── examples/examples.md
-│   ├── templates/templates.md
-│   └── test-cases/test-cases.md
+│   ├── exercises.md
+│   ├── examples.md
+│   ├── templates.md
+│   └── test-cases.md
 ├── 05-patterns-troubleshooting/
 │   ├── slides.md
-│   ├── exercises/exercises.md         # Debug exercises
-│   ├── examples/examples.md           # Pattern examples
-│   ├── templates/templates.md         # Troubleshooting checklists
-│   └── test-cases/test-cases.md
+│   ├── exercises.md                   # Debug exercises
+│   ├── examples.md                    # Pattern examples
+│   ├── templates.md                   # Troubleshooting checklists
+│   └── test-cases.md
 ├── 06-resources-references/
 │   ├── slides.md
-│   ├── exercises/exercises.md         # Capstone exercise
-│   ├── examples/examples.md           # Quick reference card
-│   ├── templates/templates.md
-│   └── test-cases/test-cases.md
+│   ├── exercises.md                   # Capstone exercise
+│   ├── examples.md                    # Quick reference card
+│   ├── templates.md
+│   └── test-cases.md
 ├── hands-on-labs/
 │   ├── LAB1-SIMPLE-SKILL.md          # Beginner (30 min)
 │   ├── LAB2-MCP-INTEGRATION.md       # Intermediate (45 min)
 │   ├── LAB3-ENTERPRISE-WORKFLOW.md   # Advanced (60 min)
-│   ├── exercises/exercises.md         # Bonus exercises
-│   ├── examples/examples.md           # Lab solutions
-│   ├── templates/templates.md
-│   └── test-cases/test-cases.md
+│   ├── exercises.md                   # Bonus exercises
+│   ├── examples.md                    # Lab solutions
+│   ├── templates.md
+│   └── test-cases.md
 └── scripts/
     └── quick_validate.py              # Skill validation script
 ```
