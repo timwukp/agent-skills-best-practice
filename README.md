@@ -38,7 +38,6 @@ This repo is designed for **AWS SAs and developers** learning to build skills fo
 │   ├── 05-patterns-troubleshooting/
 │   ├── 06-resources-references/
 │   └── hands-on-labs/        # 3 hands-on labs (beginner to advanced)
-└── .kiro/steering/            # Kiro IDE steering documents
 ```
 
 ## Learning Path
