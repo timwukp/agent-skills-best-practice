@@ -278,6 +278,6 @@ You've successfully completed this lab if:
 
 ## Solution
 
-A complete solution is available in `../hands-on-labs/examples/examples.md`
+A complete solution is available in `./examples.md`
 
 Compare your implementation and note differences.
