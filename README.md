@@ -58,14 +58,8 @@ This repository follows strict guidelines:
 
 ## Technology
 
-- Node.js with npm (minimal dependencies)
-- Python with venv (for Python-based tooling)
-- Primary dependency: `pptxgenjs` for PowerPoint generation
-
-Install dependencies:
-```bash
-npm install
-```
+- Python (for office scripts and validation tooling)
+- Node.js `pptxgenjs` (for PPTX skill only — see `skills/skills/pptx/SKILL.md` for install instructions)
 
 ## License
 
