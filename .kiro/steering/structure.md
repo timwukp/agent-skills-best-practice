@@ -6,10 +6,10 @@ inclusion: auto
 
 ## Root Directory
 
-- Documentation files: Various markdown files covering best practices, specifications, and guides
+- `README.md`: Project overview, learning path, and platform compatibility
+- `QUICKSTART.md`: 5-minute quickstart guide for Kiro IDE
 - `LICENSE`: MIT License for the project
-- `package.json`: Node.js dependencies (minimal - only pptxgenjs)
-- `.gitignore`: Comprehensive ignore rules for documents, system files, dependencies, and build outputs
+- `.gitignore`: Ignore rules for documents, system files, dependencies, and build outputs
 
 ## Skills Directory (`skills/`)
 
@@ -21,7 +21,12 @@ skills/
 │   └── marketplace.json          # Claude Code plugin marketplace configuration
 ├── README.md                      # Skills overview and usage instructions
 ├── THIRD_PARTY_NOTICES.md        # License attributions
+├── spec/
+│   └── agent-skills-spec.md      # Quick reference for the Agent Skills spec
+├── template/
+│   └── SKILL.md                  # Blank skill template
 └── skills/                        # Individual skill folders
+    ├── hello-world/               # Minimal example skill (start here)
     ├── algorithmic-art/
     ├── brand-guidelines/
     ├── canvas-design/
@@ -41,21 +46,31 @@ skills/
     └── xlsx/                      # Document creation skills (source-available)
 ```
 
+## Workshop Directory (`skills-workshop/`)
+
+Training materials for building skills:
+
+```
+skills-workshop/
+├── README.md                      # Workshop overview (6 hours)
+├── INDEX.md                       # Quick navigation
+├── 01-fundamentals/               # Chapter slides + exercises/examples/templates/test-cases
+├── 02-planning-design/
+├── 03-testing-iteration/
+├── 04-distribution-sharing/
+├── 05-patterns-troubleshooting/
+├── 06-resources-references/
+├── hands-on-labs/                 # 3 labs (beginner to advanced)
+└── scripts/
+    └── quick_validate.py          # Skill validation script
+```
+
 ## Skill Folder Structure
 
 Each skill folder contains:
 - `SKILL.md`: Main skill file with YAML frontmatter and instructions
 - `LICENSE.txt`: License information (Apache 2.0 for open source skills)
-- Additional resources: templates, fonts, examples, or supporting files as needed
-
-Example skill structure:
-```
-skills/skills/example-skill/
-├── SKILL.md                       # Required: skill definition
-├── LICENSE.txt                    # Required: license information
-├── templates/                     # Optional: template files
-└── resources/                     # Optional: supporting assets
-```
+- Additional resources: templates, scripts, references as needed
 
 ## SKILL.md Format
 
