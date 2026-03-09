@@ -39,7 +39,7 @@ mkdir -p ~/.kiro/skills/my-first-skill
 
 Create `~/.kiro/skills/my-first-skill/SKILL.md`:
 
-```yaml
+```markdown
 ---
 name: my-first-skill
 description: Describe what this skill does and when to use it.
