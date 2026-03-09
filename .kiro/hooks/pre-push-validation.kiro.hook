@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Pre-Push Validation & Cleanup",
+  "description": "Validates repository before push: commits changes, checks for excluded file types (PDF/PPTX/DOCX/hidden files), scans for PII/customer data, verifies MIT license compliance, and performs security/quality checks",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Before pushing to https://github.com/timwukp, perform these validations:\n\n1. COMMIT LOCAL CHANGES: Check git status and commit any uncommitted changes with an appropriate message\n2. FILE TYPE CHECK: Scan for and report any PDF, PPTX, DOCX, DOC, or hidden files (.*) that shouldn't be pushed. Only allow code files and markdown files\n3. PII & CUSTOMER DATA SCAN: Search all files for:\n   - Customer names, email addresses, phone numbers\n   - Personal identifiable information (SSN, addresses, etc.)\n   - Company-specific or confidential data\n   - Remove or flag any findings\n4. LICENSE COMPLIANCE: Verify MIT license exists and all code files have proper license headers. Check for any incompatible licenses in dependencies\n5. SECURITY SCAN: Check for:\n   - Hardcoded credentials, API keys, tokens, passwords\n   - Security vulnerabilities in dependencies\n   - Unsafe code patterns\n6. CODE QUALITY: Review code for basic quality issues\n7. GITIGNORE CHECK: Ensure .gitignore properly excludes PDF, PPTX, DOCX, DOC, and system files\n\nAfter validation, provide a summary report. If issues found, fix them before allowing push. Only proceed with push recommendation if all checks pass."
+  }
+}
