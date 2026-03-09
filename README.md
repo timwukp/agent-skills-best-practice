@@ -1,14 +1,13 @@
 # Agentic Skills Best Practices
 
-This repository contains best practices, documentation, and examples for building agent skills for Claude. Agent skills are folders of instructions, scripts, and resources that Claude loads dynamically to improve performance on specialized tasks.
+Best practices, documentation, and examples for building agent skills for Claude. Agent skills are folders of instructions, scripts, and resources that Claude loads dynamically to improve performance on specialized tasks.
 
 ## What's Inside
 
 - **Example Skills**: Demonstrations of creative, technical, and enterprise capabilities in `skills/skills/`
 - **Document Skills**: Source-available document creation skills (DOCX, PDF, PPTX, XLSX) that power Claude's document capabilities
-- **Specifications**: Agent Skills specification and templates
-- **Best Practices**: Documentation and guides for skill development
-- **Steering Documents**: AI assistant guidance in `.kiro/steering/` for working with this codebase
+- **Skills Workshop**: Hands-on training materials for building agent skills in `skills-workshop/`
+- **Specifications**: Agent Skills specification and templates in `skills/spec/`
 
 ## Repository Structure
 
@@ -16,28 +15,38 @@ This repository contains best practices, documentation, and examples for buildin
 .
 ├── skills/                    # Main skills directory
 │   ├── skills/               # Individual skill folders
-│   │   ├── frontend-design/
-│   │   ├── claude-api/
-│   │   ├── docx/            # Document creation skills
-│   │   └── ...
-│   └── README.md            # Detailed skills documentation
-├── .kiro/
-│   └── steering/            # AI assistant guidance documents
-├── agentskills-*.md         # Specification and best practices
-└── README.md                # This file
+│   ├── spec/                 # Agent Skills specification
+│   ├── template/             # Skill template
+│   └── README.md             # Detailed skills documentation
+├── skills-workshop/           # Workshop training materials
+│   ├── 01-fundamentals/
+│   ├── 02-planning-design/
+│   ├── ...
+│   └── hands-on-labs/
+└── README.md                  # This file
 ```
 
 ## Getting Started
 
 1. **Explore Skills**: Browse the `skills/skills/` directory to see example implementations
-2. **Read Documentation**: Check the markdown files in the root for specifications and guides
-3. **Review Steering**: See `.kiro/steering/` for project conventions and structure
-4. **Create Skills**: Use the skill template pattern - a folder with `SKILL.md` containing YAML frontmatter and instructions
+2. **Read Documentation**: See reference links below for specifications and guides
+3. **Try the Workshop**: Work through `skills-workshop/` for hands-on training
+4. **Create Skills**: Use `skills/template/` as a starting point
 
 For detailed information, see:
 - [skills/README.md](skills/README.md) - Comprehensive skills documentation
-- [agentskills-specification.md](agentskills-specification.md) - Agent Skills specification
-- [.kiro/steering/](.kiro/steering/) - Project conventions and guidance
+- [skills-workshop/README.md](skills-workshop/README.md) - Workshop training guide
+- [skills/spec/agent-skills-spec.md](skills/spec/agent-skills-spec.md) - Agent Skills specification
+
+## Reference Documentation
+
+- [Agent Skills Specification](https://agentskills.io/specification) - The AgentSkills.io spec
+- [Agent Skills Home](https://agentskills.io/home) - AgentSkills.io home page
+- [Claude Skills Overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) - Overview documentation
+- [Claude Skills Quickstart](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/quickstart) - Quickstart guide
+- [Claude Skills Best Practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) - Best practices guide
+- [Claude Skills Enterprise](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/enterprise) - Enterprise guide
+- [Kiro Skills Documentation](https://kiro.dev/docs/skills/) - Kiro skills docs
 
 ## Repository Guidelines
 
