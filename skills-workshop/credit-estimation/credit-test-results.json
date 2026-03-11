@@ -1,0 +1,57 @@
+{
+  "test_date": "2026-03-10T08:14:35.700689",
+  "model": "claude-opus-4.6",
+  "kiro_version": "unknown",
+  "tests": [
+    {
+      "name": "Java-SimplePOJO-3tests",
+      "start_credits": 2000.0,
+      "end_credits": 1999.81,
+      "credits_used": 0.19,
+      "category": "java-unit",
+      "complexity_score": 1,
+      "test_count": 3,
+      "source_lines": 20,
+      "timestamp": "2026-03-10T08:19:13.197727",
+      "notes": "3 JUnit5 tests for User POJO. Kiro reported 0.19 credits. Took 12s. Model: auto (claude-opus-4.6)"
+    },
+    {
+      "name": "Java-ServiceMocking-3tests",
+      "start_credits": 1999.81,
+      "end_credits": 1999.46,
+      "credits_used": 0.35,
+      "category": "java-unit",
+      "complexity_score": 5,
+      "test_count": 3,
+      "source_lines": 45,
+      "timestamp": "2026-03-10T08:20:19.676386",
+      "notes": "3 JUnit5+Mockito tests for UserService. Kiro reported 0.35 credits. Took 17s."
+    },
+    {
+      "name": "API-POST-3tests",
+      "start_credits": 1999.46,
+      "end_credits": 1999.23,
+      "credits_used": 0.23,
+      "category": "api",
+      "complexity_score": 3,
+      "test_count": 3,
+      "source_lines": 0,
+      "timestamp": "2026-03-10T08:21:13.060934",
+      "notes": "3 RestAssured tests for POST /api/users. Kiro reported 0.23 credits. Took 17s."
+    },
+    {
+      "name": "UI-SeleniumLogin-1test",
+      "start_credits": 1999.23,
+      "end_credits": 1999.02,
+      "credits_used": 0.21,
+      "category": "ui",
+      "complexity_score": 1,
+      "test_count": 1,
+      "source_lines": 0,
+      "timestamp": "2026-03-10T08:22:22.730703",
+      "notes": "1 Selenium login test. Kiro reported 0.21 credits. Took 14s."
+    }
+  ],
+  "baselines": {},
+  "starting_balance": 2000
+}
