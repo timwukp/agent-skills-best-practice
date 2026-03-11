@@ -1,0 +1,40 @@
+{
+  "loginPage": {
+    "url": "http://localhost:3000/login",
+    "selectors": {
+      "form": "[data-testid='login-form']",
+      "usernameInput": "[data-testid='username-input']",
+      "passwordInput": "[data-testid='password-input']",
+      "loginButton": "[data-testid='login-button']",
+      "errorMessage": "[data-testid='error-message']"
+    },
+    "testData": {
+      "validUser": {
+        "username": "testuser@example.com",
+        "password": "password123"
+      },
+      "invalidUser": {
+        "username": "invalid@example.com",
+        "password": "wrongpassword"
+      }
+    }
+  },
+  "dashboardPage": {
+    "url": "http://localhost:3000/dashboard",
+    "selectors": {
+      "welcomeMessage": "[data-testid='welcome-message']",
+      "userMenu": "[data-testid='user-menu']",
+      "logoutButton": "[data-testid='logout-button']"
+    }
+  },
+  "commonSelectors": {
+    "loadingSpinner": "[data-testid='loading-spinner']",
+    "successBanner": "[data-testid='success-banner']",
+    "errorBanner": "[data-testid='error-banner']"
+  },
+  "waitTimes": {
+    "short": 5,
+    "medium": 10,
+    "long": 30
+  }
+}
