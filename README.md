@@ -62,6 +62,42 @@ Skills built with this repo work across:
 | **Claude.ai** | Upload or built-in | [Claude Skills Guide](https://support.claude.com/en/articles/12512180-using-skills-in-claude) |
 | **Claude API** | Via Skills API | [Skills API Quickstart](https://docs.claude.com/en/api/skills-guide) |
 
+## Kiro Features
+
+### Steering Files
+
+Kiro supports **steering files** in the `.kiro/steering/` directory at your project root. These are markdown files that define project-wide conventions, coding standards, and behavioral rules that Kiro follows whenever it works in your repository.
+
+This repo uses `.kiro/steering/conventions.md` to enforce consistent formatting, naming, and structure across all contributions.
+
+### Project-Level Skills
+
+Skills can be installed at two levels:
+
+| Scope | Location | Use Case |
+|-------|----------|----------|
+| **Project-level** | `.kiro/skills/` (checked into repo) | Shared with all contributors; project-specific workflows |
+| **Global** | `~/.kiro/skills/` (user home) | Personal productivity skills; cross-project utilities |
+
+Project-level skills are version-controlled with your codebase and automatically available to everyone who clones the repo.
+
+### Kiro Web
+
+[Kiro Web](https://kiro.dev) provides browser-based access with two interaction modes:
+
+- **Vibe mode** - Conversational iteration where you and Kiro go back and forth refining outputs
+- **Autonomous mode** - Kiro works independently on tasks, reporting back when complete
+
+Both modes support skills for enhanced, domain-specific assistance.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding new skills, code standards, and the pull request process.
+
+## Continuous Integration
+
+GitHub Actions validates all skills on every push and pull request. The workflow checks SKILL.md frontmatter, required fields, and naming conventions. See `.github/workflows/validate-skills.yml` for details.
+
 ## Reference Documentation
 
 - [Agent Skills Specification](https://agentskills.io/specification)
