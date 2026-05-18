@@ -63,12 +63,15 @@ before and after.
 
 - AWS Kiro CLI installed and authenticated
 - Python 3.8+
-- Your Kiro credit balance (check the Kiro dashboard or `/credits` in CLI)
+- Your Kiro credit balance (check the Kiro Web dashboard at [kiro.dev](https://kiro.dev) or run `kiro` and use `/model`)
+
+> **Tip:** You can also track your credit usage in real time from the Kiro Web dashboard
+> under Settings. This works whether you use the CLI or the web interface.
 
 ### Run It
 
 ```bash
-cd Skills-examples-javatest-UItest
+cd skills-workshop/credit-estimation
 python track_credits.py init
 ```
 

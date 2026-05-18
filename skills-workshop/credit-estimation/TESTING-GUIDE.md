@@ -1,13 +1,13 @@
-# Quick Start: Credit Testing with Kiro CLI
+# Quick Start: Credit Testing with Kiro
 
 ## Setup (One-time)
 
 ```bash
-cd Skills-examples-javatest-UItest
+cd skills-workshop/credit-estimation
 python track_credits.py init
 ```
 
-Then edit `credit-test-results.json` and update the `"model"` field with your current Kiro model (e.g., "claude-3-5-sonnet-20241022").
+Then edit `credit-test-results.json` and update the `"model"` field with your current Kiro model (e.g., "claude-sonnet-4-20250514").
 
 ---
 
@@ -24,9 +24,8 @@ Then edit `credit-test-results.json` and update the `"model"` field with your cu
 
 2. **Start a fresh conversation:**
    ```bash
-   # Exit current chat and start new one
-   /quit
-   kiro-cli chat
+   # Close the current session and start a new one in Kiro
+   kiro
    ```
 
 3. **Run the test prompt** (copy from test-credit-measurement.md)
@@ -78,9 +77,8 @@ python track_credits.py add "Java-SimplePOJO-3tests" 1000 985
 ### Test 2: Java Unit Test (With Mocking)
 
 ```bash
-# Start fresh chat
-/quit
-kiro-cli chat
+# Start a fresh Kiro session
+kiro
 
 # Check credits
 /model  # Note: 985 credits
@@ -109,8 +107,8 @@ python track_credits.py add "Java-ServiceMocking-3tests" 985 965
 ### Test 3: REST API Test
 
 ```bash
-/quit
-kiro-cli chat
+# Start a fresh Kiro session
+kiro
 /model  # Note: 965 credits
 
 # Prompt:
@@ -126,8 +124,8 @@ python track_credits.py add "API-SimpleGET-3tests" 965 940
 ### Test 4: Selenium UI Test
 
 ```bash
-/quit
-kiro-cli chat
+# Start a fresh Kiro session
+kiro
 /model  # Note: 940 credits
 
 # Prompt:
@@ -153,6 +151,23 @@ python track_credits.py summary
 python track_credits.py export
 # Creates: credit-test-results.md
 ```
+
+---
+
+## Testing with Kiro Web
+
+If you're using Kiro Web instead of the CLI:
+
+1. Open [kiro.dev](https://kiro.dev) and start a new session
+2. Check your credit balance in Settings or Dashboard
+3. Paste the benchmark prompt
+4. After completion, check your balance again
+5. Record the result using the CLI tool:
+   ```bash
+   python track_credits.py add "test-name" <start> <end> "notes"
+   ```
+
+Both Vibe mode and Autonomous mode consume credits. For benchmarking, use **Vibe mode** with a simple single-turn prompt for consistent measurement.
 
 ---
 

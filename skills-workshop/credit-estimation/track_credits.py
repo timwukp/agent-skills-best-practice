@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Credit measurement and estimation tool for AWS Kiro Skills.
 
@@ -13,14 +14,31 @@ Commands:
   baselines                     Show current baselines from benchmark data
 """
 
+from __future__ import annotations
+
+import argparse
 import json
 import math
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-RESULTS_FILE = "credit-test-results.json"
-BENCHMARK_DIR = Path(__file__).parent / "benchmark" / "scenarios"
+__all__ = [
+    "init_results",
+    "add_test",
+    "run_benchmark",
+    "estimate_credits",
+    "plan_sprint",
+    "show_baselines",
+    "show_summary",
+    "export_markdown",
+    "compute_complexity_score",
+    "get_baselines",
+]
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+RESULTS_FILE = SCRIPT_DIR / "credit-test-results.json"
+BENCHMARK_DIR = SCRIPT_DIR / "benchmark" / "scenarios"
 
 # Complexity scoring weights
 COMPLEXITY_WEIGHTS = {
@@ -33,64 +51,86 @@ COMPLEXITY_WEIGHTS = {
 }
 
 # Default baselines (used when no benchmark data exists)
-DEFAULT_BASELINES = {
+DEFAULT_BASELINES: dict[str, dict[str, str | float]] = {
     "java-unit": {"per_test": 0.065, "note": "default estimate, run benchmarks for accuracy"},
     "api": {"per_test": 0.077, "note": "default estimate, run benchmarks for accuracy"},
     "ui": {"per_test": 0.210, "note": "default estimate, run benchmarks for accuracy"},
+    "python-unit": {"per_test": 0.055, "note": "default estimate, run benchmarks for accuracy"},
+    "typescript-unit": {"per_test": 0.060, "note": "default estimate, run benchmarks for accuracy"},
 }
 
-CATEGORIES = {
+CATEGORIES: dict[str, str] = {
     "java-simple": "java-unit",
     "java-complex": "java-unit",
     "api-simple": "api",
     "api-complex": "api",
     "ui-simple": "ui",
     "ui-complex": "ui",
+    "python-simple": "python-unit",
+    "python-complex": "python-unit",
+    "typescript-simple": "typescript-unit",
+    "typescript-complex": "typescript-unit",
 }
 
-TEST_COUNTS = {
+TEST_COUNTS: dict[str, int] = {
     "java-simple": 3,
     "java-complex": 3,
     "api-simple": 3,
     "api-complex": 3,
     "ui-simple": 1,
     "ui-complex": 1,
+    "python-simple": 3,
+    "python-complex": 3,
+    "typescript-simple": 3,
+    "typescript-complex": 3,
 }
 
 
-def init_results():
+def init_results(output_dir: Path | None = None) -> None:
     """Initialize results file."""
-    if not Path(RESULTS_FILE).exists():
+    results_file = _get_results_file(output_dir)
+    if not results_file.exists():
         data = {
+            "_note": "Run 'python track_credits.py init' to regenerate this file with current timestamp",
             "test_date": datetime.now().isoformat(),
-            "model": "unknown",
-            "kiro_version": "unknown",
+            "model": "your-model-here",
+            "kiro_version": "latest",
             "tests": [],
             "baselines": {},
         }
-        save_results(data)
-        print(f"Created {RESULTS_FILE}")
+        save_results(data, output_dir)
+        print(f"Created {results_file}")
         print("Update 'model' and 'kiro_version' fields with your environment info.")
     else:
-        print(f"{RESULTS_FILE} already exists. Use 'add' or 'benchmark' to record data.")
+        print(f"{results_file} already exists. Use 'add' or 'benchmark' to record data.")
 
 
-def save_results(data):
+def _get_results_file(output_dir: Path | None = None) -> Path:
+    """Get the path to the results file, optionally in a custom output directory."""
+    if output_dir is not None:
+        return Path(output_dir) / "credit-test-results.json"
+    return RESULTS_FILE
+
+
+def save_results(data: dict, output_dir: Path | None = None) -> None:
     """Save results to JSON file."""
-    with open(RESULTS_FILE, "w") as f:
+    results_file = _get_results_file(output_dir)
+    results_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(results_file, "w") as f:
         json.dump(data, f, indent=2)
 
 
-def load_results():
+def load_results(output_dir: Path | None = None) -> dict:
     """Load results from JSON file."""
-    if not Path(RESULTS_FILE).exists():
-        print(f"No {RESULTS_FILE} found. Run 'python track_credits.py init' first.")
+    results_file = _get_results_file(output_dir)
+    if not results_file.exists():
+        print(f"No {results_file} found. Run 'python track_credits.py init' first.")
         sys.exit(1)
-    with open(RESULTS_FILE, "r") as f:
+    with open(results_file, "r") as f:
         return json.load(f)
 
 
-def compute_complexity_score(**kwargs):
+def compute_complexity_score(**kwargs: int | None) -> int:
     """Compute complexity score from factors."""
     score = 1  # minimum
     for key, value in kwargs.items():
@@ -100,12 +140,12 @@ def compute_complexity_score(**kwargs):
     return score
 
 
-def get_baselines():
+def get_baselines(output_dir: Path | None = None) -> dict[str, dict]:
     """Get baselines from recorded benchmark data, falling back to defaults."""
-    data = load_results()
+    data = load_results(output_dir)
     baselines = {}
 
-    for category in ["java-unit", "api", "ui"]:
+    for category in DEFAULT_BASELINES:
         # Find benchmark entries for this category (complexity_score == 1 preferred)
         cat_tests = [
             t for t in data["tests"]
@@ -131,14 +171,16 @@ def get_baselines():
     return baselines
 
 
-def add_test(test_name, start_credits, end_credits, notes="",
-             category=None, complexity_score=None, test_count=None, source_lines=None):
+def add_test(test_name: str, start_credits: float, end_credits: float, notes: str = "",
+             category: str | None = None, complexity_score: int | None = None,
+             test_count: int | None = None, source_lines: int | None = None,
+             output_dir: Path | None = None) -> None:
     """Record a test result."""
-    data = load_results()
+    data = load_results(output_dir)
 
     used = start_credits - end_credits
 
-    test_entry = {
+    test_entry: dict[str, str | float | int] = {
         "name": test_name,
         "start_credits": start_credits,
         "end_credits": end_credits,
@@ -156,6 +198,10 @@ def add_test(test_name, start_credits, end_credits, notes="",
             test_entry["category"] = "ui"
         elif "api" in name_lower:
             test_entry["category"] = "api"
+        elif "typescript" in name_lower or "ts" in name_lower:
+            test_entry["category"] = "typescript-unit"
+        elif "python" in name_lower:
+            test_entry["category"] = "python-unit"
         elif "java" in name_lower:
             test_entry["category"] = "java-unit"
 
@@ -167,7 +213,7 @@ def add_test(test_name, start_credits, end_credits, notes="",
         test_entry["source_lines"] = source_lines
 
     data["tests"].append(test_entry)
-    save_results(data)
+    save_results(data, output_dir)
 
     print(f"\nRecorded: {test_name}")
     print(f"  Credits used: {round(used, 4)}")
@@ -176,7 +222,7 @@ def add_test(test_name, start_credits, end_credits, notes="",
     print(f"  Total entries recorded: {len(data['tests'])}")
 
 
-def run_benchmark(scenario_name):
+def run_benchmark(scenario_name: str, output_dir: Path | None = None) -> None:
     """Interactive benchmark for a specific scenario."""
     scenario_file = BENCHMARK_DIR / f"{scenario_name}.md"
     if not scenario_file.exists():
@@ -255,6 +301,7 @@ def run_benchmark(scenario_name):
         category=category,
         complexity_score=complexity_score,
         test_count=test_count,
+        output_dir=output_dir,
     )
 
     used = start - end
@@ -263,7 +310,7 @@ def run_benchmark(scenario_name):
     print(f"  This becomes your baseline for '{category}' category.")
 
 
-def estimate_credits(**kwargs):
+def estimate_credits(output_dir: Path | None = None, **kwargs) -> dict[str, float | int]:
     """Estimate credits based on complexity factors and baselines."""
     test_type = kwargs.get("type", "java-unit")
     tests = kwargs.get("tests", 3)
@@ -274,7 +321,7 @@ def estimate_credits(**kwargs):
     nesting = kwargs.get("nesting_levels", 0)
     dynamic_sel = kwargs.get("dynamic_selectors", 0)
 
-    baselines = get_baselines()
+    baselines = get_baselines(output_dir)
     baseline = baselines.get(test_type, DEFAULT_BASELINES.get(test_type, {"per_test": 0.1}))
 
     score = compute_complexity_score(
@@ -314,7 +361,7 @@ def estimate_credits(**kwargs):
     return {"per_test": per_test, "total": total, "with_buffer": total + fix_overhead, "score": score}
 
 
-def plan_sprint(**kwargs):
+def plan_sprint(output_dir: Path | None = None, **kwargs) -> None:
     """Estimate credits for a full sprint."""
     java_classes = kwargs.get("java_classes", 0)
     api_endpoints = kwargs.get("api_endpoints", 0)
@@ -325,7 +372,7 @@ def plan_sprint(**kwargs):
     complexity_multipliers = {"low": 2, "medium": 5, "high": 10}
     mult = complexity_multipliers.get(avg_complexity, 5)
 
-    baselines = get_baselines()
+    baselines = get_baselines(output_dir)
 
     java_baseline = baselines.get("java-unit", DEFAULT_BASELINES["java-unit"])["per_test"]
     api_baseline = baselines.get("api", DEFAULT_BASELINES["api"])["per_test"]
@@ -369,9 +416,9 @@ def plan_sprint(**kwargs):
     print("  Run benchmarks to improve accuracy.")
 
 
-def show_baselines():
+def show_baselines(output_dir: Path | None = None) -> None:
     """Display current baselines."""
-    baselines = get_baselines()
+    baselines = get_baselines(output_dir)
     print(f"\n{'='*60}")
     print(f"CURRENT BASELINES (per test)")
     print(f"{'='*60}")
@@ -388,9 +435,9 @@ def show_baselines():
     print("  python track_credits.py benchmark ui-simple")
 
 
-def show_summary(period=None):
+def show_summary(period: str | None = None, output_dir: Path | None = None) -> None:
     """Display summary of all tests."""
-    data = load_results()
+    data = load_results(output_dir)
 
     if not data["tests"]:
         print("No tests recorded yet. Run benchmarks or add test results.")
@@ -424,6 +471,8 @@ def show_summary(period=None):
         "java-unit": ("Java Unit Tests", "10-15"),
         "api": ("REST API Tests", "15-20"),
         "ui": ("Selenium UI Tests", "30-50"),
+        "python-unit": ("Python Unit Tests", "N/A"),
+        "typescript-unit": ("TypeScript Unit Tests", "N/A"),
         "unknown": ("Uncategorized", "N/A"),
     }
 
@@ -457,15 +506,15 @@ def show_summary(period=None):
     print(f"{'='*60}\n")
 
 
-def export_markdown():
+def export_markdown(output_dir: Path | None = None) -> None:
     """Export results as markdown with enhanced analysis."""
-    data = load_results()
+    data = load_results(output_dir)
 
     if not data["tests"]:
         print("No tests to export.")
         return
 
-    baselines = get_baselines()
+    baselines = get_baselines(output_dir)
 
     md = f"""# Credit Test Results
 
@@ -521,14 +570,14 @@ def export_markdown():
     md += "--ui-flows 2 --avg-complexity medium\n"
     md += "```\n"
 
-    output_file = "credit-test-results.md"
+    output_file = _get_results_file(output_dir).parent / "credit-test-results.md"
     with open(output_file, "w") as f:
         f.write(md)
 
     print(f"Exported to {output_file}")
 
 
-def print_usage():
+def print_usage() -> None:
     """Print usage information."""
     print("""
 Usage: python track_credits.py <command> [options]
@@ -543,13 +592,14 @@ Commands:
 
   benchmark <scenario>
       Run an interactive benchmark scenario.
-      Scenarios: java-simple, java-complex, api-simple, api-complex, ui-simple, ui-complex
+      Scenarios: java-simple, java-complex, api-simple, api-complex, ui-simple, ui-complex,
+                 python-simple, python-complex, typescript-simple, typescript-complex
       Example: python track_credits.py benchmark java-simple
 
   estimate --type <type> [--source-lines N] [--mocks N] [--branches N]
            [--annotations N] [--nesting-levels N] [--dynamic-selectors N] [--tests N]
       Estimate credits for a workload based on complexity.
-      Types: java-unit, api, ui
+      Types: java-unit, api, ui, python-unit, typescript-unit
       Example: python track_credits.py estimate --type java-unit --source-lines 200 --mocks 3 --tests 3
 
   plan --java-classes N --api-endpoints N --ui-flows N
@@ -565,12 +615,78 @@ Commands:
 
   export
       Export results to credit-test-results.md.
+
+Global options:
+  --output-dir DIR
+      Directory for reading/writing results files. Defaults to script directory.
 """)
 
 
-def parse_estimate_args(args):
-    """Parse --key value pairs for estimate command."""
-    kwargs = {"type": "java-unit", "tests": 3}
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the argparse parser."""
+    parser = argparse.ArgumentParser(
+        prog="track_credits.py",
+        description="Credit measurement and estimation tool for AWS Kiro Skills.",
+        add_help=True,
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Directory for reading/writing results files (defaults to script directory)",
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # init
+    subparsers.add_parser("init", help="Initialize the results file")
+
+    # add
+    add_parser = subparsers.add_parser("add", help="Record a test result")
+    add_parser.add_argument("test_name", help="Name of the test")
+    add_parser.add_argument("start_credits", type=float, help="Starting credit balance")
+    add_parser.add_argument("end_credits", type=float, help="Ending credit balance")
+    add_parser.add_argument("notes", nargs="?", default="", help="Optional notes")
+
+    # benchmark
+    bench_parser = subparsers.add_parser("benchmark", help="Run an interactive benchmark")
+    bench_parser.add_argument("scenario", help="Benchmark scenario name")
+
+    # estimate
+    est_parser = subparsers.add_parser("estimate", help="Estimate credits for a workload")
+    est_parser.add_argument("--type", default="java-unit", help="Test type (java-unit, api, ui, python-unit, typescript-unit)")
+    est_parser.add_argument("--source-lines", type=int, default=0, help="Number of source lines")
+    est_parser.add_argument("--mocks", type=int, default=0, help="Number of mocks/stubs")
+    est_parser.add_argument("--branches", type=int, default=0, help="Number of branches")
+    est_parser.add_argument("--annotations", type=int, default=0, help="Number of annotations")
+    est_parser.add_argument("--nesting-levels", type=int, default=0, help="JSON nesting depth")
+    est_parser.add_argument("--dynamic-selectors", type=int, default=0, help="Dynamic UI selectors")
+    est_parser.add_argument("--tests", type=int, default=3, help="Number of tests to generate")
+
+    # plan
+    plan_parser = subparsers.add_parser("plan", help="Estimate credits for a sprint")
+    plan_parser.add_argument("--java-classes", type=int, default=0, help="Number of Java classes")
+    plan_parser.add_argument("--api-endpoints", type=int, default=0, help="Number of API endpoints")
+    plan_parser.add_argument("--ui-flows", type=int, default=0, help="Number of UI flows")
+    plan_parser.add_argument("--avg-complexity", choices=["low", "medium", "high"], default="medium", help="Average complexity level")
+    plan_parser.add_argument("--developers", type=int, default=1, help="Number of developers")
+
+    # baselines
+    subparsers.add_parser("baselines", help="Show current baselines from benchmark data")
+
+    # summary
+    sum_parser = subparsers.add_parser("summary", help="Show summary of all recorded results")
+    sum_parser.add_argument("--period", choices=["weekly"], default=None, help="Filter period")
+
+    # export
+    subparsers.add_parser("export", help="Export results to credit-test-results.md")
+
+    return parser
+
+
+def parse_estimate_args(args: list[str]) -> dict:
+    """Parse --key value pairs for estimate command (legacy support)."""
+    kwargs: dict[str, str | int] = {"type": "java-unit", "tests": 3}
     i = 0
     while i < len(args):
         arg = args[i]
@@ -588,9 +704,9 @@ def parse_estimate_args(args):
     return kwargs
 
 
-def parse_plan_args(args):
-    """Parse --key value pairs for plan command."""
-    kwargs = {
+def parse_plan_args(args: list[str]) -> dict:
+    """Parse --key value pairs for plan command (legacy support)."""
+    kwargs: dict[str, str | int] = {
         "java_classes": 0, "api_endpoints": 0, "ui_flows": 0,
         "avg_complexity": "medium", "developers": 1,
     }
@@ -611,58 +727,69 @@ def parse_plan_args(args):
     return kwargs
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Main entry point with argparse-based CLI."""
+    parser = _build_parser()
+
+    # Handle legacy invocation with no args
     if len(sys.argv) < 2:
         print_usage()
         sys.exit(1)
 
-    cmd = sys.argv[1]
-
-    if cmd == "init":
-        init_results()
-
-    elif cmd == "add":
-        if len(sys.argv) < 5:
-            print("Usage: python track_credits.py add <test_name> <start_credits> <end_credits> [notes]")
-            sys.exit(1)
-        test_name = sys.argv[2]
-        start = float(sys.argv[3])
-        end = float(sys.argv[4])
-        notes = sys.argv[5] if len(sys.argv) > 5 else ""
-        add_test(test_name, start, end, notes)
-
-    elif cmd == "benchmark":
-        if len(sys.argv) < 3:
-            available = [f.stem for f in BENCHMARK_DIR.glob("*.md")]
-            print(f"Usage: python track_credits.py benchmark <scenario>")
-            print(f"Available: {', '.join(sorted(available))}")
-            sys.exit(1)
-        run_benchmark(sys.argv[2])
-
-    elif cmd == "estimate":
-        kwargs = parse_estimate_args(sys.argv[2:])
-        estimate_credits(**kwargs)
-
-    elif cmd == "plan":
-        kwargs = parse_plan_args(sys.argv[2:])
-        plan_sprint(**kwargs)
-
-    elif cmd == "baselines":
-        show_baselines()
-
-    elif cmd == "summary":
-        period = None
-        if "--period" in sys.argv and sys.argv.index("--period") + 1 < len(sys.argv):
-            period = sys.argv[sys.argv.index("--period") + 1]
-        show_summary(period)
-
-    elif cmd == "export":
-        export_markdown()
-
-    elif cmd in ("help", "--help", "-h"):
+    # Handle legacy 'help' command
+    if sys.argv[1] in ("help",):
         print_usage()
+        sys.exit(0)
+
+    args = parser.parse_args()
+    output_dir = args.output_dir
+
+    if args.command == "init":
+        init_results(output_dir)
+
+    elif args.command == "add":
+        add_test(args.test_name, args.start_credits, args.end_credits, args.notes,
+                 output_dir=output_dir)
+
+    elif args.command == "benchmark":
+        run_benchmark(args.scenario, output_dir=output_dir)
+
+    elif args.command == "estimate":
+        kwargs = {
+            "type": args.type,
+            "tests": args.tests,
+            "source_lines": args.source_lines,
+            "mocks": args.mocks,
+            "branches": args.branches,
+            "annotations": args.annotations,
+            "nesting_levels": args.nesting_levels,
+            "dynamic_selectors": args.dynamic_selectors,
+        }
+        estimate_credits(output_dir=output_dir, **kwargs)
+
+    elif args.command == "plan":
+        kwargs = {
+            "java_classes": args.java_classes,
+            "api_endpoints": args.api_endpoints,
+            "ui_flows": args.ui_flows,
+            "avg_complexity": args.avg_complexity,
+            "developers": args.developers,
+        }
+        plan_sprint(output_dir=output_dir, **kwargs)
+
+    elif args.command == "baselines":
+        show_baselines(output_dir)
+
+    elif args.command == "summary":
+        show_summary(args.period, output_dir)
+
+    elif args.command == "export":
+        export_markdown(output_dir)
 
     else:
-        print(f"Unknown command: {cmd}")
         print_usage()
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
