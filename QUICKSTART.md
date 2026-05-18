@@ -75,6 +75,8 @@ Test with 10-20 different phrasings. If the skill doesn't trigger:
 
 ## Project-Level Skills
 
+> For a quick overview of project-level vs global skills, see the [README](README.md).
+
 Skills installed to `~/.kiro/skills/` are global (available in all projects). You can also install skills at the **project level** by placing them in `.kiro/skills/` inside your repository:
 
 ```bash
@@ -106,6 +108,8 @@ Skills also work in [Kiro Web](https://kiro.dev), the browser-based interface. K
 Upload or reference your skills in either mode to get the same domain-specific assistance as in the desktop IDE.
 
 ## Steering Files
+
+> For a quick overview of steering files, see the [README](README.md).
 
 Steering files (`.kiro/steering/*.md`) complement skills by defining **project-wide conventions** rather than task-specific instructions. While a skill tells Kiro *how to do a specific task*, steering files tell Kiro *how to behave across all tasks* in this project.
 

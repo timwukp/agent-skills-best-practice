@@ -27,6 +27,10 @@ skills/skills/my-new-skill/
   examples/         (optional)
 ```
 
+### Update the Catalog
+
+Add your skill to `skills/CATALOG.md` under the appropriate category so that contributors can discover it.
+
 ### Testing Your Skill
 
 Before submitting, validate your skill locally:
@@ -93,8 +97,9 @@ done
 1. **Fork** this repository.
 2. **Create a branch** for your changes (e.g., `add-skill/my-new-skill`).
 3. **Add your skill** following the structure described above.
-4. **Test** your skill with `quick_validate.py`.
-5. **Submit a pull request** to the `main` branch.
+4. **Add your skill to `skills/CATALOG.md`** under the appropriate category.
+5. **Test** your skill with `quick_validate.py`.
+6. **Submit a pull request** to the `main` branch.
 
 Pull requests are validated automatically by CI. Your skill must pass validation before it can be merged.
 

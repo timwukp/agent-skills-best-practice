@@ -26,9 +26,8 @@ When triggered, perform the following steps:
    - Add a placeholder `SKILL.md` explaining that project-specific skills live here
    - These skills are scoped to the repository and not shared globally
 
-3. **Add `.gitignore` entries** for `.kiro/` temp files:
-   - Add `.kiro/cache/` to ignore cached data
-   - Add `.kiro/tmp/` to ignore temporary files
+3. **Add `.gitignore` entries** for `.kiro/` temp files if needed:
+   - If your AI tools create cache or temp files, consider adding entries like `.kiro/cache/` or `.kiro/tmp/` to `.gitignore`
    - Keep `.kiro/steering/` and `.kiro/skills/` tracked in version control
 
 4. **Create a README section** (or suggest additions) covering:
@@ -88,10 +87,10 @@ Where `conventions.md` contains:
 - Use dependency injection for testability
 ```
 
-And add to `.gitignore`:
+And optionally add to `.gitignore` if your tools generate cache or temp files:
 
 ```
-# Kiro temp files
+# Kiro temp files (add if your tools create these directories)
 .kiro/cache/
 .kiro/tmp/
 ```
