@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Create 8 new practical software engineering skills: code-review-assistant, git-workflow, api-design, docker-compose-generator, database-schema-design, cicd-pipeline, terraform-module, python-project-setup.",
+  "status": "in_progress",
+  "steps": [
+    "Create skills/skills/code-review-assistant/SKILL.md",
+    "Create skills/skills/git-workflow/SKILL.md",
+    "Create skills/skills/api-design/SKILL.md",
+    "Create skills/skills/docker-compose-generator/SKILL.md",
+    "Create skills/skills/database-schema-design/SKILL.md",
+    "Create skills/skills/cicd-pipeline/SKILL.md",
+    "Create skills/skills/terraform-module/SKILL.md",
+    "Create skills/skills/python-project-setup/SKILL.md",
+    "Run quick_validate.py on all 8 skills to ensure they pass"
+  ],
+  "acceptance_criteria": [
+    "All 8 SKILL.md files exist in their respective directories",
+    "All 8 pass validation with 'Skill is valid!' output",
+    "Each has proper YAML frontmatter with name, description, license, metadata",
+    "Each has Instructions section with numbered steps",
+    "Each includes Example and Guidelines sections",
+    "All are under 500 lines"
+  ],
+  "verification": [
+    "python3 skills-workshop/scripts/quick_validate.py skills/skills/code-review-assistant",
+    "python3 skills-workshop/scripts/quick_validate.py skills/skills/git-workflow",
+    "python3 skills-workshop/scripts/quick_validate.py skills/skills/api-design",
+    "python3 skills-workshop/scripts/quick_validate.py skills/skills/docker-compose-generator",
+    "python3 skills-workshop/scripts/quick_validate.py skills/skills/database-schema-design",
+    "python3 skills-workshop/scripts/quick_validate.py skills/skills/cicd-pipeline",
+    "python3 skills-workshop/scripts/quick_validate.py skills/skills/terraform-module",
+    "python3 skills-workshop/scripts/quick_validate.py skills/skills/python-project-setup"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}
