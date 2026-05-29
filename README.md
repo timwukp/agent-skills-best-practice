@@ -1,3 +1,5 @@
+**English** | [中文](README.zh-CN.md)
+
 # Agentic Skills Best Practices
 
 Best practices, examples, and training materials for building agent skills. Agent skills are folders of instructions, scripts, and resources that AI agents (Kiro IDE, Claude Code, Claude.ai) load dynamically to improve performance on specialized tasks.
@@ -14,6 +16,7 @@ This repo is designed for **AWS SAs and developers** learning to build skills fo
 - **Hello World**: Minimal working skill to verify your setup in `skills/skills/hello-world/`
 - **Skills Workshop**: 6-hour hands-on training in `skills-workshop/`
 - **Skill Template**: Starting point for new skills in `skills/template/`
+- **Software Engineering Skills**: 8 practical workflow skills covering code review, Git workflow, API design, Docker Compose generation, database schema design, CI/CD pipelines, Terraform modules, and Python project setup
 
 ## Repository Structure
 

@@ -1,0 +1,122 @@
+[English](README.md) | **中文**
+
+# Agentic Skills 最佳实践
+
+构建 Agent Skills 的最佳实践、示例和培训材料。Agent Skills 是由指令、脚本和资源组成的文件夹，AI 代理（Kiro IDE、Claude Code、Claude.ai）可以动态加载这些内容以提升在专业任务上的表现。
+
+本仓库面向 **AWS SA 和开发者**，帮助学习为 [Kiro IDE](https://kiro.dev) 构建 Skills，但 Skills 本身可跨所有支持 [Agent Skills 规范](https://agentskills.io/specification) 的平台使用。
+
+## 快速入门
+
+**新手？** 请按照 [Kiro Skills 快速入门指南](QUICKSTART.md) 在 5 分钟内从零开始创建一个可用的 Skill。
+
+## 仓库内容
+
+- **示例 Skills**: `skills/skills/` 中的生产级示例（创意、技术、企业、文档创建）
+- **Hello World**: `skills/skills/hello-world/` 中的最小可用 Skill，用于验证你的环境配置
+- **Skills 工坊**: `skills-workshop/` 中的 6 小时实操培训
+- **Skill 模板**: `skills/template/` 中的新 Skill 起始模板
+- **软件工程 Skills**: 8 个实用的软件工程工作流 Skills，包括代码审查、Git 工作流、API 设计、Docker Compose 生成、数据库 Schema 设计、CI/CD 流水线、Terraform 模块和 Python 项目初始化
+- **Skills 目录**: 完整的分类目录请参见 [skills/CATALOG.md](skills/CATALOG.md)
+
+## 仓库结构
+
+```
+.
+├── QUICKSTART.md              # 5-minute quickstart guide
+├── skills/                    # Skills collection (from Anthropic)
+│   ├── skills/               # Individual skill folders
+│   │   ├── hello-world/      # Minimal example (start here)
+│   │   ├── skill-creator/    # Build skills with AI assistance
+│   │   ├── frontend-design/  # Example: creative skill
+│   │   ├── mcp-builder/      # Example: MCP integration
+│   │   ├── docx/             # Document skills (source-available)
+│   │   └── ...
+│   ├── template/             # Blank skill template
+│   └── README.md             # Skills collection docs
+├── skills-workshop/           # Workshop training materials
+│   ├── 01-fundamentals/      # Progressive disclosure, YAML, structure
+│   ├── 02-planning-design/   # Use cases, descriptions, triggers
+│   ├── 03-testing-iteration/ # Testing strategies
+│   ├── 04-distribution-sharing/
+│   ├── 05-patterns-troubleshooting/
+│   ├── 06-resources-references/
+│   └── hands-on-labs/        # 3 hands-on labs (beginner to advanced)
+```
+
+## 学习路径
+
+| 步骤 | 内容 | 时间 |
+|------|------|------|
+| 1 | [快速入门](QUICKSTART.md) -- 复制 hello-world，看它触发 | 5 分钟 |
+| 2 | [工坊第 1 章](skills-workshop/01-fundamentals/slides.md) -- 理解渐进式加载 | 60 分钟 |
+| 3 | [实验 1](skills-workshop/hands-on-labs/LAB1-SIMPLE-SKILL.md) -- 构建一个真正的 Skill | 30 分钟 |
+| 4 | 浏览 `skills/skills/` -- 学习生产级模式 | 自定进度 |
+| 5 | [完整工坊](skills-workshop/README.md) -- 完成全部培训 | 6 小时 |
+
+## 平台兼容性
+
+使用本仓库构建的 Skills 可在以下平台使用：
+
+| 平台 | 安装位置 | 文档 |
+|------|----------|------|
+| **Kiro IDE** | `~/.kiro/skills/` | [kiro.dev/docs/skills](https://kiro.dev/docs/skills/) |
+| **Kiro CLI** | `~/.kiro/skills/` | [kiro.dev/docs/skills](https://kiro.dev/docs/skills/) |
+| **Claude Code** | 通过插件市场 | [skills/README.md](skills/README.md) |
+| **Claude.ai** | 上传或内置 | [Claude Skills 指南](https://support.claude.com/en/articles/12512180-using-skills-in-claude) |
+| **Claude API** | 通过 Skills API | [Skills API 快速入门](https://docs.claude.com/en/api/skills-guide) |
+
+## Kiro 特性
+
+### Steering 文件
+
+Kiro 支持在项目根目录的 `.kiro/steering/` 目录中放置 **steering 文件**。这些 Markdown 文件定义了项目范围内的约定、编码标准和行为规则，Kiro 在你的仓库中工作时会遵循这些规则。
+
+本仓库使用 `.kiro/steering/conventions.md` 来确保所有贡献的格式、命名和结构保持一致。
+
+### 项目级 Skills
+
+Skills 可以安装在两个层级：
+
+| 范围 | 位置 | 用例 |
+|------|------|------|
+| **项目级** | `.kiro/skills/`（提交到仓库） | 与所有贡献者共享；项目特定的工作流 |
+| **全局** | `~/.kiro/skills/`（用户主目录） | 个人效率 Skills；跨项目工具 |
+
+项目级 Skills 与代码库一起进行版本控制，克隆仓库的所有人都可以自动使用。
+
+### Kiro Web
+
+[Kiro Web](https://kiro.dev) 提供基于浏览器的访问，包含两种交互模式：
+
+- **Vibe 模式** - 对话式迭代，你和 Kiro 来回交流以优化输出
+- **Autonomous 模式** - Kiro 独立完成任务，完成后向你汇报
+
+两种模式都支持 Skills 以提供增强的领域特定辅助。
+
+## 贡献指南
+
+请参阅 [CONTRIBUTING.md](CONTRIBUTING.md) 了解添加新 Skills、代码标准和 Pull Request 流程的指南。
+
+## 持续集成
+
+GitHub Actions 在每次 push 和 pull request 时验证所有 Skills。工作流会检查 SKILL.md 的 frontmatter、必填字段和命名规范。详见 `.github/workflows/validate-skills.yml`。
+
+## 参考文档
+
+- [Agent Skills 规范](https://agentskills.io/specification)
+- [Kiro Skills 文档](https://kiro.dev/docs/skills/)
+- [Claude Skills 概述](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)
+- [Claude Skills 最佳实践](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)
+- [Anthropic Skills 仓库](https://github.com/anthropics/skills)
+
+## 仓库规范
+
+- 不允许 PDF、PPTX、DOCX 或其他文档文件（已在 gitignore 中排除）
+- 不允许包含 PII 或客户数据
+- 不允许硬编码凭据或密钥
+- 所有代码必须符合开源许可（MIT License）
+
+## 许可证
+
+本项目使用 MIT License 许可 - 详见 [LICENSE](LICENSE) 文件。
