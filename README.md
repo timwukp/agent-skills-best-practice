@@ -16,6 +16,7 @@ This repo is designed for **AWS SAs and developers** learning to build skills fo
 - **Hello World**: Minimal working skill to verify your setup in `skills/skills/hello-world/`
 - **Skills Workshop**: 6-hour hands-on training in `skills-workshop/`
 - **Skill Template**: Starting point for new skills in `skills/template/`
+- **Software Engineering Skills**: 8 practical workflow skills covering code review, Git workflow, API design, Docker Compose generation, database schema design, CI/CD pipelines, Terraform modules, and Python project setup
 
 ## Repository Structure
 

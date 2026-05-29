@@ -1,9 +1,9 @@
 ---
 name: api-design
 description: >
-  Generates RESTful API designs with OpenAPI specs, proper resource naming, HTTP method usage,
-  status codes, pagination, filtering, error responses, and versioning strategies.
-  Triggers on: "design API", "create API spec", "OpenAPI", "REST endpoint design".
+  Generates RESTful and GraphQL API designs with OpenAPI specs, proper resource naming, HTTP method usage,
+  status codes, pagination, filtering, error responses, versioning strategies, and GraphQL schema patterns.
+  Triggers on: "design API", "create API spec", "OpenAPI", "REST endpoint design", "GraphQL schema".
 license: MIT
 metadata:
   author: Community
@@ -195,6 +195,89 @@ Recommend URL-path versioning for most cases:
 - Adding new optional fields
 - Adding new endpoints
 - Adding new query parameters
+
+### Step 8: GraphQL Schema Design
+
+When the consumer needs flexible queries or the API serves multiple clients with different data needs, offer a GraphQL alternative:
+
+**Schema definition:**
+```graphql
+type Query {
+  book(id: ID!): Book
+  books(filter: BookFilter, first: Int = 25, after: String): BookConnection!
+}
+
+type Mutation {
+  createBook(input: CreateBookInput!): BookPayload!
+  updateBook(id: ID!, input: UpdateBookInput!): BookPayload!
+  deleteBook(id: ID!): DeletePayload!
+}
+
+type Book {
+  id: ID!
+  title: String!
+  author: Author!
+  publishedAt: DateTime
+  isbn: String
+}
+
+input BookFilter {
+  title: String
+  authorId: ID
+  publishedAfter: DateTime
+}
+
+input CreateBookInput {
+  title: String!
+  authorId: ID!
+  isbn: String
+}
+
+type BookConnection {
+  edges: [BookEdge!]!
+  pageInfo: PageInfo!
+}
+
+type BookEdge {
+  node: Book!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+type BookPayload {
+  book: Book
+  errors: [UserError!]!
+}
+
+type UserError {
+  field: [String!]
+  message: String!
+}
+```
+
+**GraphQL design rules:**
+- Use Relay-style connections (edges/nodes/pageInfo) for paginated lists
+- Return payload types from mutations with both the result and possible errors
+- Mark non-nullable fields with `!` only when truly always present
+- Use input types for mutation arguments
+- Prefer specific scalar types (DateTime, URL, Email) over raw String where applicable
+- Nest related data naturally; let the client choose depth via the query
+
+**When to choose GraphQL over REST:**
+- Multiple clients need different subsets of the same data
+- Deeply nested relationships are common
+- Reducing over-fetching is critical for performance (mobile clients)
+- Rapid iteration on client needs without backend changes
+
+**When to prefer REST:**
+- Simple CRUD with uniform consumers
+- File uploads or streaming responses
+- Strong caching requirements (HTTP caching is simpler with REST)
+- Team is more familiar with REST conventions
 
 ## Example
 
