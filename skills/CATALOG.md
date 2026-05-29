@@ -33,6 +33,19 @@ All available skills organized by category. Each skill lives in `skills/skills/<
 | [web-artifacts-builder](skills/web-artifacts-builder/) | Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using React, Tailwind CSS, and shadcn/ui. |
 | [shared-test-runner](skills/shared-test-runner/) | Shared testing utility (provides `run_tests.py` used by other test-generation skills). |
 
+## Software Engineering Workflow
+
+| Skill | Description |
+|-------|-------------|
+| [code-review-assistant](skills/code-review-assistant/) | Performs code reviews analyzing security, performance, and maintainability. Applies SOLID principles and checks for anti-patterns with structured feedback. |
+| [git-workflow](skills/git-workflow/) | Git workflow automation including conventional commit messages, branching strategies, merge conflict resolution, and changelog generation. |
+| [api-design](skills/api-design/) | Designs RESTful and GraphQL APIs with OpenAPI spec generation, proper resource naming, pagination, filtering, error responses, and versioning. |
+| [docker-compose-generator](skills/docker-compose-generator/) | Generates multi-stage Dockerfiles and docker-compose.yml files optimized for size, security, and common technology stacks. |
+| [database-schema-design](skills/database-schema-design/) | Designs normalized database schemas with migration scripts, indexing strategies, and relationship best practices. |
+| [cicd-pipeline](skills/cicd-pipeline/) | Generates CI/CD pipeline configurations for GitHub Actions, GitLab CI, and AWS CodePipeline with build, test, and deploy stages. |
+| [terraform-module](skills/terraform-module/) | Creates Terraform modules following AWS Well-Architected Framework with proper variables, outputs, and module composition patterns. |
+| [python-project-setup](skills/python-project-setup/) | Sets up Python projects with modern tooling including pyproject.toml, ruff, mypy, pytest, and pre-commit hooks. |
+
 ## Enterprise & Communication
 
 | Skill | Description |

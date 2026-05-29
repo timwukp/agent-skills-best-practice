@@ -1,3 +1,5 @@
+**English** | [中文](README.zh-CN.md)
+
 # Agentic Skills Best Practices
 
 Best practices, examples, and training materials for building agent skills. Agent skills are folders of instructions, scripts, and resources that AI agents (Kiro IDE, Claude Code, Claude.ai) load dynamically to improve performance on specialized tasks.
