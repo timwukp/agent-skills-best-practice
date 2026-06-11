@@ -30,7 +30,7 @@
       "should_trigger": true
     },
     {
-      "query": "Draft the security requirements for the payee management feature",
+      "query": "Write the security requirements for payee management as backlog stories",
       "should_trigger": true
     },
     {

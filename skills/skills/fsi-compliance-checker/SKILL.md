@@ -1,11 +1,14 @@
 ---
 name: fsi-compliance-checker
 description: >
-  Reviews code, architecture, and infrastructure changes against financial services compliance
-  frameworks - PCI-DSS v4.0 for payment card data and MAS TRM for Singapore-regulated institutions -
-  producing a control-mapped findings report with remediation guidance. Use for FSI/banking/fintech
-  work. Triggers on: "PCI-DSS check", "MAS TRM", "compliance review", "is this compliant", "audit
-  this change for banking regulations", "payment data handling review".
+  Maps code, architecture, and infrastructure changes to specific control IDs in financial services
+  compliance frameworks - PCI-DSS v4.0 for payment card data and MAS TRM for Singapore-regulated
+  institutions - producing an audit-traceable findings report with per-control remediation. Use this
+  instead of a general security review whenever a compliance framework (PCI-DSS, MAS TRM), regulator,
+  audit, or cardholder-data scope is mentioned, even if the request is phrased as a code review or a
+  yes/no compliance question. Triggers on: "PCI-DSS check", "MAS TRM", "is this compliant",
+  "compliance review", "audit this change for banking regulations", "does logging this violate PCI",
+  "cardholder data handling review".
 license: MIT
 metadata:
   author: Community

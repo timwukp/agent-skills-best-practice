@@ -111,6 +111,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding new skills, code
 
 GitHub Actions validates all skills on every push and pull request. The workflow checks SKILL.md frontmatter, required fields, and naming conventions. See `.github/workflows/validate-skills.yml` for details.
 
+## Testing
+
+Skills are tested in four layers — static spec validation, blind trigger routing, independently graded task execution, and real-environment verification on Claude Code. See [TESTING.md](TESTING.md) for the methodology and recorded results.
+
 ## Reference Documentation
 
 - [Agent Skills Specification](https://agentskills.io/specification)
