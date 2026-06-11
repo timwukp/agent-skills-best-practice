@@ -5,7 +5,8 @@ Usage: python validate_tests.py <TestClassName>
 """
 
 import sys
-sys.path.insert(0, '../../shared-test-runner')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'shared', 'test-runner'))
 from run_tests import run_tests, report
 
 if len(sys.argv) < 2:

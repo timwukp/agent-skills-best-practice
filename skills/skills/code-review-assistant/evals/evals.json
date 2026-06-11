@@ -1,0 +1,35 @@
+{
+  "skill_name": "code-review-assistant",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this Python function for issues:\n\ndef get_user(id):\n    q = \"SELECT * FROM users WHERE id = \" + id\n    return db.execute(q)",
+      "expected_output": "A structured review flagging the SQL injection vulnerability, recommending parameterized queries, and noting naming/typing improvements.",
+      "expectations": [
+        "Identifies the SQL injection vulnerability",
+        "Recommends parameterized queries with example code",
+        "Feedback is structured by severity or category"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Check my PR diff for performance and maintainability problems before I merge.",
+      "expected_output": "A review organized by category (security, performance, maintainability) with concrete findings referencing the changed lines, or a clean bill if none.",
+      "expectations": [
+        "Review covers security, performance, and maintainability dimensions",
+        "Each finding references the specific code location",
+        "Distinguishes blocking issues from suggestions"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Does this class violate SOLID principles? It opens the DB connection, formats reports, and sends emails.",
+      "expected_output": "Identifies the single-responsibility violation, proposes a decomposition, and shows the refactored structure.",
+      "expectations": [
+        "Names the violated SOLID principle(s)",
+        "Proposes a concrete decomposition into focused classes",
+        "Explains why the change improves maintainability"
+      ]
+    }
+  ]
+}

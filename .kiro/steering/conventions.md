@@ -1,3 +1,7 @@
+---
+inclusion: always
+---
+
 # Coding Standards and Conventions
 
 ## Language
@@ -6,10 +10,11 @@
 
 ## Agent Skills Specification Compliance
 
-- Skill names must be **kebab-case** (lowercase letters, digits, and hyphens only).
-- Skill descriptions must not exceed **1024 characters**.
+- Skill names must be **kebab-case** (lowercase letters, digits, and hyphens only) and must **match the skill's directory name**.
+- Skill descriptions must not exceed **1024 characters**, must be written in the **third person**, and should state both what the skill does and when to use it (with concrete trigger phrases).
 - Skill descriptions must not contain angle brackets (`<` or `>`).
 - Every skill directory must contain a `SKILL.md` file with valid YAML frontmatter including `name` and `description` fields.
+- Keep the `SKILL.md` body under **500 lines**; move detailed reference material into separate files within the skill folder (progressive disclosure).
 - Skills must conform to the [Agent Skills Specification](https://agentskills.io/specification).
 
 ## Python
@@ -45,4 +50,4 @@ Workshop chapters follow a consistent structure with these files:
 - **No binary document files** (PDF, PPTX, DOCX, or similar) in the repository.
 - **No PII or customer data** in any file.
 - **No hardcoded credentials or secrets** in code or configuration.
-- All content must comply with the **MIT License**.
+- New content is licensed under the **MIT License**; skills imported from [anthropics/skills](https://github.com/anthropics/skills) remain **Apache 2.0** (see each skill's `LICENSE.txt`). Do not add content under non-open-source licenses.

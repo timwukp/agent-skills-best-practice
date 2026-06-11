@@ -69,6 +69,10 @@ def validate_skill(skill_path):
         # Check name length (max 64 characters per spec)
         if len(name) > 64:
             return False, f"Name is too long ({len(name)} characters). Maximum is 64 characters."
+        # Spec requires the name to match the skill directory name
+        folder_name = skill_path.resolve().name
+        if name != folder_name:
+            return False, f"Name '{name}' must match the skill directory name '{folder_name}'"
 
     # Extract and validate description
     description = frontmatter.get('description', '')
@@ -90,6 +94,16 @@ def validate_skill(skill_path):
             return False, f"Compatibility must be a string, got {type(compatibility).__name__}"
         if len(compatibility) > 500:
             return False, f"Compatibility is too long ({len(compatibility)} characters). Maximum is 500 characters."
+
+    # Anthropic best practices: keep SKILL.md body under 500 lines;
+    # move detailed reference material into separate files
+    body = content[match.end():]
+    body_lines = len(body.splitlines())
+    if body_lines > 500:
+        return False, (
+            f"SKILL.md body is {body_lines} lines. Keep it under 500 lines and move "
+            f"detailed reference material to separate files (progressive disclosure)."
+        )
 
     return True, "Skill is valid!"
 

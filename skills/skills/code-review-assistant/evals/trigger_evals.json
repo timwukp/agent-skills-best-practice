@@ -1,0 +1,77 @@
+{
+  "skill_name": "code-review-assistant",
+  "queries": [
+    {
+      "query": "Review this code before I merge it",
+      "should_trigger": true
+    },
+    {
+      "query": "Can you check my PR for security vulnerabilities?",
+      "should_trigger": true
+    },
+    {
+      "query": "Code review please - here's the diff",
+      "should_trigger": true
+    },
+    {
+      "query": "Does this function have any performance issues?",
+      "should_trigger": true
+    },
+    {
+      "query": "Check my changes against SOLID principles",
+      "should_trigger": true
+    },
+    {
+      "query": "Look over this module for anti-patterns",
+      "should_trigger": true
+    },
+    {
+      "query": "Is this error handling acceptable for production?",
+      "should_trigger": true
+    },
+    {
+      "query": "Audit this snippet for SQL injection risks",
+      "should_trigger": true
+    },
+    {
+      "query": "Give me structured feedback on this implementation",
+      "should_trigger": true
+    },
+    {
+      "query": "Write a new function that parses CSV files",
+      "should_trigger": false
+    },
+    {
+      "query": "Fix the failing test in this repo",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up a CI job that runs linters on every PR",
+      "should_trigger": false
+    },
+    {
+      "query": "Generate unit tests for this class",
+      "should_trigger": false
+    },
+    {
+      "query": "Refactor this file to use async/await",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain what this regex does",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the database schema for our reviews feature",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a git commit message for these changes",
+      "should_trigger": false
+    },
+    {
+      "query": "Create a code style guide document for the team",
+      "should_trigger": false
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "skill_name": "database-schema-design",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design a normalized schema for an e-commerce store: customers, orders, products, and inventory.",
+      "expected_output": "DDL in third normal form with primary/foreign keys, junction table for order items, appropriate column types, and indexes on lookup columns.",
+      "expectations": [
+        "Tables are normalized (no repeating groups, order items in a junction table)",
+        "Foreign keys are declared with referential actions",
+        "Indexes are proposed for frequent lookup columns with justification"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Write a Flyway migration that adds a soft-delete column to users and backfills existing rows.",
+      "expected_output": "A versioned Flyway SQL migration adding the column with a default, backfilling, and noting index/query implications.",
+      "expectations": [
+        "Migration file follows Flyway versioned naming",
+        "Backfill is handled safely for existing rows",
+        "Mentions impact on existing queries or indexes"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our orders table has 50M rows and queries by customer_id and created_at are slow. Fix the indexing.",
+      "expected_output": "A composite index recommendation with column order justified by selectivity and query shape, plus migration script and trade-offs.",
+      "expectations": [
+        "Proposes a composite index with justified column order",
+        "Provides the migration statement",
+        "Notes write-amplification or storage trade-offs"
+      ]
+    }
+  ]
+}

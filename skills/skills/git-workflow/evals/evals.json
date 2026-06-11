@@ -1,0 +1,35 @@
+{
+  "skill_name": "git-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a commit message for this change: I fixed the null pointer crash in the checkout flow when the cart is empty.",
+      "expected_output": "A conventional commit message (fix: ...) with a concise subject and a body explaining the cause and fix.",
+      "expectations": [
+        "Uses conventional commit format with the correct type",
+        "Subject is imperative and under 72 characters",
+        "Body explains why, not just what"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our team of 6 ships weekly. Recommend a branching strategy and the rules for it.",
+      "expected_output": "A concrete recommendation (e.g. trunk-based or GitHub Flow) with branch naming, PR rules, and release tagging, including why it fits the team size and cadence.",
+      "expectations": [
+        "Recommends one primary strategy rather than listing all options",
+        "Includes branch naming and PR merge rules",
+        "Justifies the choice against team size and release cadence"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have a merge conflict in package.json and src/router.ts after rebasing onto main. Walk me through resolving it.",
+      "expected_output": "Step-by-step conflict resolution: inspecting markers, choosing/merging changes, verifying build, continuing the rebase.",
+      "expectations": [
+        "Explains how to read conflict markers for both files",
+        "Verifies the project builds/tests before continuing",
+        "Uses git rebase --continue rather than aborting blindly"
+      ]
+    }
+  ]
+}

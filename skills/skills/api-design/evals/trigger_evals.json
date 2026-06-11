@@ -1,0 +1,77 @@
+{
+  "skill_name": "api-design",
+  "queries": [
+    {
+      "query": "Design a REST API for our inventory system",
+      "should_trigger": true
+    },
+    {
+      "query": "Create an OpenAPI spec for the payments service",
+      "should_trigger": true
+    },
+    {
+      "query": "What's the right way to paginate this list endpoint?",
+      "should_trigger": true
+    },
+    {
+      "query": "Help me define a GraphQL schema for our catalog",
+      "should_trigger": true
+    },
+    {
+      "query": "Review these endpoint names: /getUsers, /createUser, /deleteUser",
+      "should_trigger": true
+    },
+    {
+      "query": "How should I version this public API without breaking clients?",
+      "should_trigger": true
+    },
+    {
+      "query": "Draft the error response format for our microservices",
+      "should_trigger": true
+    },
+    {
+      "query": "We're exposing webhooks to customers - design the event payload API",
+      "should_trigger": true
+    },
+    {
+      "query": "Which HTTP status code should a failed validation return?",
+      "should_trigger": true
+    },
+    {
+      "query": "Write a client SDK that calls the GitHub API",
+      "should_trigger": false
+    },
+    {
+      "query": "Why is this API call returning a 500? Here's the stack trace",
+      "should_trigger": false
+    },
+    {
+      "query": "Load test our API gateway with k6",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up the CI pipeline for the API repo",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the database tables behind the orders service",
+      "should_trigger": false
+    },
+    {
+      "query": "Generate REST API tests for the existing endpoints with RestAssured",
+      "should_trigger": false
+    },
+    {
+      "query": "Containerize the API service with Docker",
+      "should_trigger": false
+    },
+    {
+      "query": "Write the API documentation portal landing page copy",
+      "should_trigger": false
+    },
+    {
+      "query": "Call the Claude API from Python with streaming",
+      "should_trigger": false
+    }
+  ]
+}

@@ -6,7 +6,8 @@ Usage: python validate_ui_tests.py <TestClassName> [--headed]
 
 import argparse
 import sys
-sys.path.insert(0, '../../shared-test-runner')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'shared', 'test-runner'))
 from run_tests import detect_build_tool, run_tests, report
 
 parser = argparse.ArgumentParser(description='Validate Selenium UI tests')

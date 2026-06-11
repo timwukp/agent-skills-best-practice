@@ -1,0 +1,36 @@
+{
+  "skill_name": "terraform-module",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a Terraform module for a VPC with public and private subnets across three AZs.",
+      "expected_output": "A module with variables.tf (typed, described, validated), main.tf, outputs.tf, and README, following Well-Architected networking patterns.",
+      "expectations": [
+        "Variables have types, descriptions, and sensible defaults or validation",
+        "Subnets span the requested AZs with correct route tables",
+        "Outputs expose the IDs consumers need",
+        "README documents usage with an example"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Write a reusable Terraform module for an S3 bucket with encryption, versioning, and access logging enforced.",
+      "expected_output": "A module enforcing SSE, versioning, public access block, and logging, with secure defaults that callers cannot silently disable.",
+      "expectations": [
+        "Encryption, versioning, and public access block are enabled by default",
+        "Access logging is configured",
+        "Insecure overrides require explicit opt-out variables"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Compose our existing vpc and ecs-service modules into a staging environment configuration with remote state.",
+      "expected_output": "A root configuration wiring module outputs to inputs, S3 backend with state locking, and per-environment variable files.",
+      "expectations": [
+        "Module outputs feed downstream module inputs (no hardcoded IDs)",
+        "Backend uses S3 with locking",
+        "Environment-specific values live in tfvars, not module code"
+      ]
+    }
+  ]
+}

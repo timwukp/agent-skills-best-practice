@@ -10,13 +10,21 @@ This repo is designed for **AWS SAs and developers** learning to build skills fo
 
 **New here?** Follow the [Kiro Skills Quickstart](QUICKSTART.md) to go from zero to a working skill in 5 minutes.
 
+To install skills from this repo into Kiro in one step:
+
+```bash
+./install.sh hello-world api-design git-workflow   # or ./install.sh --all
+```
+
 ## What's Inside
 
-- **Example Skills**: Production-quality examples in `skills/skills/` (creative, technical, enterprise, document creation)
+- **Example Skills**: Production-quality examples in `skills/skills/` (creative, technical, enterprise)
 - **Hello World**: Minimal working skill to verify your setup in `skills/skills/hello-world/`
 - **Skills Workshop**: 6-hour hands-on training in `skills-workshop/`
 - **Skill Template**: Starting point for new skills in `skills/template/`
 - **Software Engineering Skills**: 8 practical workflow skills covering code review, Git workflow, API design, Docker Compose generation, database schema design, CI/CD pipelines, Terraform modules, and Python project setup
+
+> **Looking for the document skills (docx, pdf, pptx, xlsx)?** Those are Anthropic's source-available (not open source) production skills. They were removed from this repo to keep all content under open-source licenses — find them in the official [anthropics/skills](https://github.com/anthropics/skills) repository.
 
 ## Repository Structure
 
@@ -29,7 +37,7 @@ This repo is designed for **AWS SAs and developers** learning to build skills fo
 │   │   ├── skill-creator/    # Build skills with AI assistance
 │   │   ├── frontend-design/  # Example: creative skill
 │   │   ├── mcp-builder/      # Example: MCP integration
-│   │   ├── docx/             # Document skills (source-available)
+│   │   ├── api-design/       # Example: engineering workflow skill
 │   │   └── ...
 │   ├── template/             # Blank skill template
 │   └── README.md             # Skills collection docs
@@ -111,11 +119,18 @@ GitHub Actions validates all skills on every push and pull request. The workflow
 
 ## Repository Guidelines
 
-- No PDF, PPTX, DOCX, or other document files (gitignored)
+- No PDF, PPTX, DOCX, or other binary document files (gitignored)
 - No PII or customer data
 - No hardcoded credentials or secrets
-- All code must be open source compliant (MIT License)
+- All content must be under an open-source license (MIT or Apache 2.0; see Licensing below)
 
-## License
+## Licensing
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This repository contains content under two open-source licenses:
+
+| Content | License |
+|---------|---------|
+| Repository docs, workshop materials, engineering skills, tooling | [MIT](LICENSE) |
+| Example skills imported from [anthropics/skills](https://github.com/anthropics/skills) (e.g. skill-creator, mcp-builder, canvas-design) | Apache 2.0 — see each skill's `LICENSE.txt` |
+
+Anthropic's source-available document skills (docx, pdf, pptx, xlsx) are **not** included here; use the official [anthropics/skills](https://github.com/anthropics/skills) repository for those.

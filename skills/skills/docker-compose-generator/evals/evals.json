@@ -1,0 +1,36 @@
+{
+  "skill_name": "docker-compose-generator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Containerize my Node.js app with a multi-stage Dockerfile and a docker-compose file including Postgres and Redis.",
+      "expected_output": "A multi-stage Dockerfile (build + slim runtime, non-root user) and docker-compose.yml with healthchecks, volumes, and env configuration.",
+      "expectations": [
+        "Dockerfile uses multi-stage build with a slim runtime image",
+        "Container runs as a non-root user",
+        "Compose file defines healthchecks and named volumes for Postgres",
+        "Secrets are passed via environment, not hardcoded"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "My Python image is 1.8GB. Shrink it.",
+      "expected_output": "A rewritten multi-stage Dockerfile using slim base, layer-conscious dependency install, and .dockerignore guidance.",
+      "expectations": [
+        "Uses a slim or distroless base image",
+        "Dependency install is layered for cache efficiency",
+        "Recommends a .dockerignore with rationale"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Set up docker-compose for local development of a Go API with hot reload and a MySQL database.",
+      "expected_output": "Compose file with bind mounts for source, a hot-reload tool, MySQL with persistent volume and healthcheck, and a dependency ordering.",
+      "expectations": [
+        "Source is bind-mounted for hot reload",
+        "MySQL has a named volume and healthcheck",
+        "API service waits for the database via depends_on with condition"
+      ]
+    }
+  ]
+}

@@ -1,29 +1,17 @@
 {
-  "name": "anthropic-agent-skills",
+  "name": "agent-skills-best-practice",
   "owner": {
-    "name": "Keith Lazuka",
-    "email": "klazuka@anthropic.com"
+    "name": "Tim Wu",
+    "email": "8848995+timwukp@users.noreply.github.com"
   },
   "metadata": {
-    "description": "Anthropic example skills",
-    "version": "1.0.0"
+    "description": "Agent skills best practices: example skills and software engineering workflow skills",
+    "version": "2.0.0"
   },
   "plugins": [
     {
-      "name": "document-skills",
-      "description": "Collection of document processing suite including Excel, Word, PowerPoint, and PDF capabilities",
-      "source": "./",
-      "strict": false,
-      "skills": [
-        "./skills/xlsx",
-        "./skills/docx",
-        "./skills/pptx",
-        "./skills/pdf"
-      ]
-    },
-    {
       "name": "example-skills",
-      "description": "Collection of example skills demonstrating various capabilities including skill creation, MCP building, visual design, algorithmic art, internal communications, web testing, artifact building, Slack GIFs, and theme styling",
+      "description": "Example skills from Anthropic demonstrating various capabilities including skill creation, MCP building, visual design, algorithmic art, internal communications, web testing, artifact building, Slack GIFs, and theme styling",
       "source": "./",
       "strict": false,
       "skills": [
@@ -40,8 +28,28 @@
         "./skills/web-artifacts-builder",
         "./skills/webapp-testing"
       ]
-    }
-    ,
+    },
+    {
+      "name": "engineering-skills",
+      "description": "Software engineering workflow skills: code review, Git workflow, API design, Docker Compose generation, database schema design, CI/CD pipelines, Terraform modules, Python project setup, test generation, and Kiro project setup",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/api-design",
+        "./skills/cicd-pipeline",
+        "./skills/code-review-assistant",
+        "./skills/database-schema-design",
+        "./skills/docker-compose-generator",
+        "./skills/git-workflow",
+        "./skills/hello-world",
+        "./skills/java-unit-test-generator",
+        "./skills/kiro-project-setup",
+        "./skills/python-project-setup",
+        "./skills/rest-api-test-generator",
+        "./skills/selenium-ui-test-generator",
+        "./skills/terraform-module"
+      ]
+    },
     {
       "name": "claude-api",
       "description": "Claude API and SDK documentation skill for building LLM-powered applications",
