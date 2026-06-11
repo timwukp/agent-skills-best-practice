@@ -1,0 +1,35 @@
+{
+  "skill_name": "fsi-compliance-checker",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this change for PCI-DSS: we added a debug log line in the payment service that logs the full request body of card authorization calls.",
+      "expected_output": "Critical finding against PCI-DSS 3.2.1 / never-log rules (request body contains PAN/CVV), with remediation (remove or redact, structured logging with field allowlist) and a check of related logging controls.",
+      "expectations": [
+        "Identifies the violation as Critical with the correct control reference (Req 3 / logging rules)",
+        "Remediation is concrete: redaction/allowlist, not 'be careful'",
+        "Includes the QSA/not-formal-assessment disclaimer"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We're a Singapore bank moving our customer notification service to a new cloud region in another country. MAS TRM implications?",
+      "expected_output": "Review against MAS TRM section 11.5 (cloud, data residency) and Outsourcing Guidelines flag, identifying customer data residency assessment, due diligence, and exit strategy expectations.",
+      "expectations": [
+        "Cites MAS TRM cloud/data expectations (section 11.5 area)",
+        "Flags the Outsourcing Guidelines as a related instrument",
+        "Asks about or addresses what customer data the service touches"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Compliance check on this diff: new endpoint lets support staff look up customer card numbers for troubleshooting, shows full PAN, no extra auth.",
+      "expected_output": "Multiple findings: PAN display masking (3.3.1), access control/least privilege (7.2.1), MFA for CDE access (8.4.2), audit logging of access to cardholder data (10.2.1) - with severities and remediations.",
+      "expectations": [
+        "Catches masking, least-privilege, MFA, and audit logging issues - not just one",
+        "Each finding carries a specific control ID and severity",
+        "Recommends converting findings into backlog stories"
+      ]
+    }
+  ]
+}

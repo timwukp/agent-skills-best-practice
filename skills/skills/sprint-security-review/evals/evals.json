@@ -1,0 +1,35 @@
+{
+  "skill_name": "sprint-security-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Prepare the sprint review security section: SAST passed with 2 accepted mediums, DAST clean, Snyk found 1 critical CVE we patched, coverage 84%, completed stories SEC-12 (rate limiting) and SEC-15 (input validation).",
+      "expected_output": "A one-page green build report with the pipeline table, completed stories with demoable outcomes, debt position, and 30-second demo suggestions per story.",
+      "expectations": [
+        "Pipeline table covers SAST/DAST/dependency/test stages with the provided data",
+        "Each completed story gets a concrete demo suggestion",
+        "Accepted medium findings are shown transparently with acceptance reference"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our DAST stage failed this sprint with one High finding we haven't fixed. How do we present this at sprint review?",
+      "expected_output": "A report that shows the red stage honestly with cause and remediation plan, rather than hiding it; framing guidance for stakeholder trust.",
+      "expectations": [
+        "Does not advise hiding or downplaying the failure",
+        "Includes cause, owner, and remediation timeline",
+        "Frames transparency as trust-building"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Give me security-angle retro prompts for this sprint - we had two hotfixes for issues the pipeline missed.",
+      "expected_output": "Retro prompts focused on which gate could have caught the issues, capacity reserve reality, and follow-up actions feeding the backlog.",
+      "expectations": [
+        "Prompts ask which pipeline gate would have caught each hotfix issue",
+        "Generates actionable follow-ups, not blame",
+        "Connects findings to next sprint's backlog"
+      ]
+    }
+  ]
+}

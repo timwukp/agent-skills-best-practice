@@ -23,6 +23,8 @@
 - **Skills 工坊**: `skills-workshop/` 中的 6 小时实操培训
 - **Skill 模板**: `skills/template/` 中的新 Skill 起始模板
 - **软件工程 Skills**: 8 个实用的软件工程工作流 Skills，包括代码审查、Git 工作流、API 设计、Docker Compose 生成、数据库 Schema 设计、CI/CD 流水线、Terraform 模块和 Python 项目初始化
+- **安全 SDLC Skills**: 5 个 Scrum + DevSecOps 角色 Skills（威胁建模、安全/用户故事编写、含安全债务的 Sprint 规划、Sprint 安全评审）
+- **金融合规**: 将代码/架构变更映射到 PCI-DSS v4.0 和 MAS TRM 控制点的合规检查 Skill，采用按领域组织的参考文件
 - **Skills 目录**: 完整的分类目录请参见 [skills/CATALOG.md](skills/CATALOG.md)
 
 > **在找文档类 Skills（docx、pdf、pptx、xlsx）？** 它们是 Anthropic 的 source-available（非开源）生产级 Skills。为保持本仓库内容全部使用开源许可，已将其移除——请到官方 [anthropics/skills](https://github.com/anthropics/skills) 仓库获取。

@@ -1,0 +1,77 @@
+{
+  "skill_name": "sprint-security-review",
+  "queries": [
+    {
+      "query": "Prepare the sprint review for our security work",
+      "should_trigger": true
+    },
+    {
+      "query": "Generate a green build report",
+      "should_trigger": true
+    },
+    {
+      "query": "Summarize our security metrics this sprint",
+      "should_trigger": true
+    },
+    {
+      "query": "How do we demo the security stories we completed?",
+      "should_trigger": true
+    },
+    {
+      "query": "Security section for the sprint review deck",
+      "should_trigger": true
+    },
+    {
+      "query": "Retro prompts about our pipeline failures",
+      "should_trigger": true
+    },
+    {
+      "query": "Show stakeholders our security debt trend",
+      "should_trigger": true
+    },
+    {
+      "query": "Sprint security summary for the steering committee",
+      "should_trigger": true
+    },
+    {
+      "query": "Present this sprint's scan results to the team",
+      "should_trigger": true
+    },
+    {
+      "query": "Plan next sprint's capacity",
+      "should_trigger": false
+    },
+    {
+      "query": "Fix the DAST finding from this sprint",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a security story for the rate limiter",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up SonarQube in our pipeline",
+      "should_trigger": false
+    },
+    {
+      "query": "Threat model the new feature",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this PR for security issues",
+      "should_trigger": false
+    },
+    {
+      "query": "Write the incident postmortem",
+      "should_trigger": false
+    },
+    {
+      "query": "Create a compliance report for the auditors",
+      "should_trigger": false
+    },
+    {
+      "query": "Generate release notes for v2.3",
+      "should_trigger": false
+    }
+  ]
+}

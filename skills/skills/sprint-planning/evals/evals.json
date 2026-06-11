@@ -1,0 +1,36 @@
+{
+  "skill_name": "sprint-planning",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Plan our next sprint: velocity last 3 sprints was 34, 28, 31. Backlog has 2 critical vulns (found 20 days ago), a compliance deadline item due in 3 weeks, and 6 feature stories sized 5-8 points each.",
+      "expected_output": "A sprint plan committing ~31 points minus 20% reserve: critical vulns and compliance item first (hard rules), features filling the remainder by value, with capacity math shown.",
+      "expectations": [
+        "Uses rolling average velocity (~31) with ~20% reserve",
+        "Critical vulnerabilities enter the sprint regardless of feature value scores",
+        "The compliance deadline item is scheduled with buffer",
+        "Capacity math is shown explicitly"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our PO wants all features and says security debt can wait a quarter. We have 3 High findings open 45 days. What should the sprint look like?",
+      "expected_output": "A plan that applies the hard rule (High findings are not tradeable), shows the security debt score escalating with exposure time, and makes the trade-off visible for the PO decision.",
+      "expectations": [
+        "Pushes back on deferring High severity findings with the risk-weighted rationale",
+        "Quantifies the security debt score including the exposure multiplier",
+        "Records the trade-off decision transparently rather than silently complying"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "This story is 21 points - half our sprint. 'Customers can manage saved payment methods.' Split it so we can plan.",
+      "expected_output": "A split by workflow step or happy-path-first into sprint-sized stories (add card happy path, list/delete, edge cases, security criteria), not a frontend/backend split.",
+      "expectations": [
+        "Splits by workflow or happy-path-first, explicitly not by architecture layer",
+        "Resulting stories are each independently shippable",
+        "Security-relevant slices (card data handling) flagged for security criteria"
+      ]
+    }
+  ]
+}

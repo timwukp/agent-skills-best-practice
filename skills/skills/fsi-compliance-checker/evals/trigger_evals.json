@@ -1,0 +1,77 @@
+{
+  "skill_name": "fsi-compliance-checker",
+  "queries": [
+    {
+      "query": "Is this change PCI-DSS compliant?",
+      "should_trigger": true
+    },
+    {
+      "query": "MAS TRM review of our new architecture",
+      "should_trigger": true
+    },
+    {
+      "query": "Compliance check this PR - it touches the payment flow",
+      "should_trigger": true
+    },
+    {
+      "query": "We're storing card tokens in a new cache, any compliance issues?",
+      "should_trigger": true
+    },
+    {
+      "query": "Review our auth changes against banking regulations",
+      "should_trigger": true
+    },
+    {
+      "query": "Does logging this field violate PCI?",
+      "should_trigger": true
+    },
+    {
+      "query": "Check this Terraform change for our Singapore banking workload",
+      "should_trigger": true
+    },
+    {
+      "query": "Audit the new support tool for cardholder data access",
+      "should_trigger": true
+    },
+    {
+      "query": "What compliance controls apply to this customer data migration?",
+      "should_trigger": true
+    },
+    {
+      "query": "Review this PR for code quality",
+      "should_trigger": false
+    },
+    {
+      "query": "Threat model the payment API",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a GDPR privacy policy for our website",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up SOC2 audit logging for our SaaS",
+      "should_trigger": false
+    },
+    {
+      "query": "Fix this SQL injection finding",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the database schema for transactions",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain what PCI-DSS is",
+      "should_trigger": false
+    },
+    {
+      "query": "Create the CI pipeline with security scanning",
+      "should_trigger": false
+    },
+    {
+      "query": "Write user stories for the compliance dashboard",
+      "should_trigger": false
+    }
+  ]
+}

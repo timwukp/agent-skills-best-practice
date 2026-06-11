@@ -23,6 +23,8 @@ To install skills from this repo into Kiro in one step:
 - **Skills Workshop**: 6-hour hands-on training in `skills-workshop/`
 - **Skill Template**: Starting point for new skills in `skills/template/`
 - **Software Engineering Skills**: 8 practical workflow skills covering code review, Git workflow, API design, Docker Compose generation, database schema design, CI/CD pipelines, Terraform modules, and Python project setup
+- **Secure SDLC Skills**: 5 Scrum + DevSecOps role skills (threat modeling, security/user story writing, sprint planning with security debt, sprint security review)
+- **FSI Compliance**: compliance checker mapping changes to PCI-DSS v4.0 and MAS TRM controls, with domain-organized reference files
 
 > **Looking for the document skills (docx, pdf, pptx, xlsx)?** Those are Anthropic's source-available (not open source) production skills. They were removed from this repo to keep all content under open-source licenses — find them in the official [anthropics/skills](https://github.com/anthropics/skills) repository.
 
@@ -108,6 +110,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding new skills, code
 ## Continuous Integration
 
 GitHub Actions validates all skills on every push and pull request. The workflow checks SKILL.md frontmatter, required fields, and naming conventions. See `.github/workflows/validate-skills.yml` for details.
+
+## Testing
+
+Skills are tested in four layers — static spec validation, blind trigger routing, independently graded task execution, and real-environment verification on Claude Code. See [TESTING.md](TESTING.md) for the methodology and recorded results.
 
 ## Reference Documentation
 

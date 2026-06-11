@@ -1,0 +1,77 @@
+{
+  "skill_name": "sprint-planning",
+  "queries": [
+    {
+      "query": "Plan the sprint with this backlog",
+      "should_trigger": true
+    },
+    {
+      "query": "How much should we commit next sprint?",
+      "should_trigger": true
+    },
+    {
+      "query": "Help us prioritize security debt against these features",
+      "should_trigger": true
+    },
+    {
+      "query": "Decide which backlog items make the cut for this sprint",
+      "should_trigger": true
+    },
+    {
+      "query": "Our carry-over was 40% last sprint, what now?",
+      "should_trigger": true
+    },
+    {
+      "query": "How many points should we commit given our velocity history?",
+      "should_trigger": true
+    },
+    {
+      "query": "Set up a definition of done for our DevSecOps team",
+      "should_trigger": true
+    },
+    {
+      "query": "Which of these stories should make the sprint?",
+      "should_trigger": true
+    },
+    {
+      "query": "Sprint planning session for team of 5, two on leave",
+      "should_trigger": true
+    },
+    {
+      "query": "Write the user stories for this feature",
+      "should_trigger": false
+    },
+    {
+      "query": "Threat model the payment API",
+      "should_trigger": false
+    },
+    {
+      "query": "Prepare our sprint review presentation",
+      "should_trigger": false
+    },
+    {
+      "query": "Generate a changelog for this release",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this code before merge",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up Jira automation rules",
+      "should_trigger": false
+    },
+    {
+      "query": "What is Scrum?",
+      "should_trigger": false
+    },
+    {
+      "query": "Create the CI pipeline for this repo",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a postmortem for yesterday's incident",
+      "should_trigger": false
+    }
+  ]
+}

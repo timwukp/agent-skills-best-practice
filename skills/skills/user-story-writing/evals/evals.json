@@ -1,0 +1,36 @@
+{
+  "skill_name": "user-story-writing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Split this epic into stories: 'Customers can pay invoices online with card or bank transfer, get receipts, and see payment history.'",
+      "expected_output": "Epic grouped and split by workflow/happy-path-first into INVEST-compliant stories with Given/When/Then criteria, payment slices flagged for security criteria.",
+      "expectations": [
+        "Stories follow persona format with meaningful 'so that' clauses",
+        "Split is by workflow or data variation, not by architecture layer",
+        "Each story has happy path plus at least one failure-path criterion",
+        "Payment stories flag security considerations"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Write acceptance criteria for: 'As a fund accountant, I want to reconcile daily positions so that discrepancies are caught before NAV publication.'",
+      "expected_output": "Testable Given/When/Then criteria covering successful reconciliation, discrepancy detection, and edge cases (missing feeds, late data).",
+      "expectations": [
+        "Criteria are executable by QA verbatim",
+        "Includes failure/edge paths, not just the happy path",
+        "No vague criteria like 'works correctly'"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Turn these raw requirements into stories: system shall lock sessions after 15 min idle; users must be able to export reports as CSV; when a feed fails the system shall alert operations.",
+      "expected_output": "Requirements mapped to appropriate formats - EARS for the system-level rules, persona stories for the user-facing export - grouped sensibly.",
+      "expectations": [
+        "Uses EARS patterns for system-level requirements",
+        "Uses persona format where a real user role exists",
+        "Presents grouping before exploding into stories"
+      ]
+    }
+  ]
+}

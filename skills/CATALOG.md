@@ -34,6 +34,22 @@ All available skills organized by category. Each skill lives in `skills/skills/<
 
 > The test-generation skills above share a common runner in [`skills/shared/test-runner/`](shared/test-runner/) (a utility, not a skill — it has no SKILL.md).
 
+## Secure SDLC (Scrum + DevSecOps)
+
+| Skill | Description |
+|-------|-------------|
+| [threat-modeling](skills/threat-modeling/) | STRIDE threat modeling for features, APIs, and architecture changes, producing risk-rated threats, mitigations, and backlog-ready security stories. |
+| [security-story-writing](skills/security-story-writing/) | Converts threats, scan findings, and compliance controls into INVEST-compliant security stories with Given/When/Then criteria and regression tests. |
+| [user-story-writing](skills/user-story-writing/) | Writes and refines user stories: epic splitting, Given/When/Then and EARS acceptance criteria, INVEST and definition-of-ready checks. |
+| [sprint-planning](skills/sprint-planning/) | Sprint planning with security debt baked in: velocity-based capacity, risk-weighted prioritization, story splitting, DevSecOps definition of done. |
+| [sprint-security-review](skills/sprint-security-review/) | Sprint review materials that demonstrate security alongside features: green build reports, demo guidance, security metrics trends, retro prompts. |
+
+## FSI Compliance
+
+| Skill | Description |
+|-------|-------------|
+| [fsi-compliance-checker](skills/fsi-compliance-checker/) | Reviews code, architecture, and infrastructure changes against PCI-DSS v4.0 and MAS TRM, producing control-mapped findings with remediation guidance. |
+
 ## Software Engineering Workflow
 
 | Skill | Description |
