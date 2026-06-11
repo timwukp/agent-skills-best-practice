@@ -1,0 +1,77 @@
+{
+  "skill_name": "user-story-writing",
+  "queries": [
+    {
+      "query": "Write user stories for the onboarding flow",
+      "should_trigger": true
+    },
+    {
+      "query": "Split this epic into sprint-sized stories",
+      "should_trigger": true
+    },
+    {
+      "query": "Acceptance criteria for this story please",
+      "should_trigger": true
+    },
+    {
+      "query": "Refine these backlog items",
+      "should_trigger": true
+    },
+    {
+      "query": "Is this story ready for sprint planning?",
+      "should_trigger": true
+    },
+    {
+      "query": "Turn the PRD section into user stories",
+      "should_trigger": true
+    },
+    {
+      "query": "Convert these requirements to EARS format",
+      "should_trigger": true
+    },
+    {
+      "query": "Help me write the 'so that' for this story",
+      "should_trigger": true
+    },
+    {
+      "query": "Break down the reporting feature into stories",
+      "should_trigger": true
+    },
+    {
+      "query": "Write a security story for account lockout",
+      "should_trigger": false
+    },
+    {
+      "query": "Plan our sprint capacity",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the REST API for orders",
+      "should_trigger": false
+    },
+    {
+      "query": "Write the PRD for the new product",
+      "should_trigger": false
+    },
+    {
+      "query": "Estimate these stories in points",
+      "should_trigger": false
+    },
+    {
+      "query": "Create a Gantt chart for the project",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this code for maintainability",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up our Jira workflow",
+      "should_trigger": false
+    },
+    {
+      "query": "Write E2E tests for the checkout flow",
+      "should_trigger": false
+    }
+  ]
+}

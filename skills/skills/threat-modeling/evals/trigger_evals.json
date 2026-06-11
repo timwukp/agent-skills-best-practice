@@ -1,0 +1,77 @@
+{
+  "skill_name": "threat-modeling",
+  "queries": [
+    {
+      "query": "Threat model this new payment feature",
+      "should_trigger": true
+    },
+    {
+      "query": "Run a STRIDE analysis on our API design",
+      "should_trigger": true
+    },
+    {
+      "query": "What could go wrong with this architecture from a security standpoint?",
+      "should_trigger": true
+    },
+    {
+      "query": "Security risks of letting users upload profile pictures?",
+      "should_trigger": true
+    },
+    {
+      "query": "We're designing a partner integration - what threats should we plan for?",
+      "should_trigger": true
+    },
+    {
+      "query": "Do a security design review of this feature spec",
+      "should_trigger": true
+    },
+    {
+      "query": "Identify attack vectors for our new admin console",
+      "should_trigger": true
+    },
+    {
+      "query": "Help me prepare the threat model for sprint planning",
+      "should_trigger": true
+    },
+    {
+      "query": "Model the security risks before we build this webhook endpoint",
+      "should_trigger": true
+    },
+    {
+      "query": "Fix this SQL injection the scanner found",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this PR for security bugs",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a security user story for rate limiting",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up SAST scanning in our pipeline",
+      "should_trigger": false
+    },
+    {
+      "query": "Is this code PCI-DSS compliant?",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain what STRIDE stands for",
+      "should_trigger": false
+    },
+    {
+      "query": "Run a penetration test against staging",
+      "should_trigger": false
+    },
+    {
+      "query": "Configure our WAF rules",
+      "should_trigger": false
+    },
+    {
+      "query": "Plan the sprint backlog for next week",
+      "should_trigger": false
+    }
+  ]
+}

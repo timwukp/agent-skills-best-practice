@@ -1,0 +1,35 @@
+{
+  "skill_name": "security-story-writing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Turn this threat into a backlog story: unauthenticated callers can enumerate user IDs via GET /users/{id}.",
+      "expected_output": "A security control story with persona format, threat reference, Given/When/Then criteria covering the blocked attack and normal operation, and a regression test criterion.",
+      "expectations": [
+        "Story includes a Given/When/Then criterion for the attack being blocked",
+        "Includes a regression test requirement",
+        "Story is INVEST-compliant and estimable"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our Snyk scan found 14 SQL injection findings across the orders module. Convert them into backlog items.",
+      "expected_output": "Findings grouped by root cause into one or few remediation stories (parameterize queries in the module), each citing finding IDs with regression test criteria - not 14 separate stories.",
+      "expectations": [
+        "Groups findings by root cause instead of one story per finding",
+        "Stories cite the scanner finding references",
+        "Each story includes a CI regression test criterion"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add security acceptance criteria to this story: 'As a customer I want to change my payout bank account so that I receive funds to my new bank.'",
+      "expected_output": "The feature story augmented with security criteria: step-up authentication, out-of-band notification, audit logging - as testable Given/When/Then statements.",
+      "expectations": [
+        "Adds security criteria without rewriting the functional story",
+        "Criteria include re-authentication and customer notification for this high-risk change",
+        "All criteria are testable, no vague 'must be secure' language"
+      ]
+    }
+  ]
+}

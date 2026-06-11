@@ -1,0 +1,36 @@
+{
+  "skill_name": "threat-modeling",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We're adding a money transfer API: mobile app -> API gateway -> transfer service -> core banking. Threat model it.",
+      "expected_output": "A STRIDE threat model with the data flow and trust boundaries marked, risk-rated threats per boundary, concrete mitigations, and security stories for High/Medium threats.",
+      "expectations": [
+        "Data flow shows trust boundary crossings explicitly",
+        "Threats are anchored to specific flow elements, not generic",
+        "Each High/Medium threat yields a security story",
+        "Low threats appear as accepted residual risks with rationale"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Quick threat model for a new webhook receiver endpoint that partners will call with order updates.",
+      "expected_output": "STRIDE analysis focused on the inbound partner boundary: spoofed callers, tampered payloads, replay, DoS; mitigations like signature verification and rate limiting.",
+      "expectations": [
+        "Covers caller authentication (Spoofing) and payload integrity (Tampering)",
+        "Considers replay and denial of service",
+        "Mitigations are concrete (e.g. HMAC signature verification), not generic advice"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Here is our design doc for the new document upload feature. What are the security risks?",
+      "expected_output": "A structured STRIDE walk producing risks specific to file upload (malware, content-type confusion, storage exfiltration, oversized uploads) with rated risks and mitigations.",
+      "expectations": [
+        "Uses the STRIDE structure rather than an unordered risk list",
+        "Includes upload-specific threats like malicious file content and unrestricted file size",
+        "Produces backlog-ready security stories"
+      ]
+    }
+  ]
+}

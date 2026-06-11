@@ -51,6 +51,20 @@
       ]
     },
     {
+      "name": "secure-sdlc-skills",
+      "description": "Scrum + DevSecOps role skills and FSI compliance: threat modeling, security story writing, user story writing, sprint planning with security debt, sprint security review, and PCI-DSS/MAS TRM compliance checking",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/fsi-compliance-checker",
+        "./skills/security-story-writing",
+        "./skills/sprint-planning",
+        "./skills/sprint-security-review",
+        "./skills/threat-modeling",
+        "./skills/user-story-writing"
+      ]
+    },
+    {
       "name": "claude-api",
       "description": "Claude API and SDK documentation skill for building LLM-powered applications",
       "source": "./",

@@ -1,0 +1,77 @@
+{
+  "skill_name": "security-story-writing",
+  "queries": [
+    {
+      "query": "Write a security story for account lockout",
+      "should_trigger": true
+    },
+    {
+      "query": "Turn these pen-test findings into backlog items",
+      "should_trigger": true
+    },
+    {
+      "query": "Add security acceptance criteria to this user story",
+      "should_trigger": true
+    },
+    {
+      "query": "Convert this threat model output into stories",
+      "should_trigger": true
+    },
+    {
+      "query": "Write acceptance criteria for our new rate limiting",
+      "should_trigger": true
+    },
+    {
+      "query": "Create a compliance story for PCI requirement 8.3.6",
+      "should_trigger": true
+    },
+    {
+      "query": "Make this vulnerability report sprint-ready",
+      "should_trigger": true
+    },
+    {
+      "query": "Draft the security requirements for the payee management feature",
+      "should_trigger": true
+    },
+    {
+      "query": "Help me write Given/When/Then for this security control",
+      "should_trigger": true
+    },
+    {
+      "query": "Write user stories for the new search feature",
+      "should_trigger": false
+    },
+    {
+      "query": "Threat model our payment API",
+      "should_trigger": false
+    },
+    {
+      "query": "Fix the SQL injection in this code",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this PR for vulnerabilities",
+      "should_trigger": false
+    },
+    {
+      "query": "Plan our sprint capacity",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up dependency scanning in CI",
+      "should_trigger": false
+    },
+    {
+      "query": "Is this design MAS TRM compliant?",
+      "should_trigger": false
+    },
+    {
+      "query": "Write our incident response runbook",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain the INVEST criteria",
+      "should_trigger": false
+    }
+  ]
+}
