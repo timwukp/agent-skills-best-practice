@@ -1,6 +1,0 @@
-{
-  "id": "task-add-engineering-skills",
-  "description": "Add engineering skills and Chinese README to the agent-skills-best-practice repository",
-  "status": "in_progress",
-  "features": ["FEAT-001", "FEAT-002", "FEAT-003"]
-}

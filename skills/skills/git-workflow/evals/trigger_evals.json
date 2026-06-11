@@ -1,0 +1,77 @@
+{
+  "skill_name": "git-workflow",
+  "queries": [
+    {
+      "query": "Write a commit message for these staged changes",
+      "should_trigger": true
+    },
+    {
+      "query": "What branching strategy should our team use?",
+      "should_trigger": true
+    },
+    {
+      "query": "Help me resolve this merge conflict",
+      "should_trigger": true
+    },
+    {
+      "query": "Generate a changelog from the commits since v2.1",
+      "should_trigger": true
+    },
+    {
+      "query": "Should I squash or merge this feature branch?",
+      "should_trigger": true
+    },
+    {
+      "query": "Rewrite my last three commits into one clean commit",
+      "should_trigger": true
+    },
+    {
+      "query": "Set up conventional commits for the team",
+      "should_trigger": true
+    },
+    {
+      "query": "How do I undo the last commit without losing changes?",
+      "should_trigger": true
+    },
+    {
+      "query": "Create release notes from this commit history",
+      "should_trigger": true
+    },
+    {
+      "query": "Set up a GitHub Actions workflow for tests",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this PR diff for security problems",
+      "should_trigger": false
+    },
+    {
+      "query": "Why is GitHub returning 403 when I push?",
+      "should_trigger": false
+    },
+    {
+      "query": "Configure branch protection rules via the GitHub API",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a script that mirrors a repo to GitLab",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain how git stores objects internally",
+      "should_trigger": false
+    },
+    {
+      "query": "Containerize our git server",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the database schema for storing repository metadata",
+      "should_trigger": false
+    },
+    {
+      "query": "Add the repo to our CI/CD system",
+      "should_trigger": false
+    }
+  ]
+}

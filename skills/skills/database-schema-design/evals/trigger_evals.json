@@ -1,0 +1,77 @@
+{
+  "skill_name": "database-schema-design",
+  "queries": [
+    {
+      "query": "Design the database schema for our booking platform",
+      "should_trigger": true
+    },
+    {
+      "query": "Create the tables for a multi-tenant SaaS app",
+      "should_trigger": true
+    },
+    {
+      "query": "Write a migration to split the name column into first and last",
+      "should_trigger": true
+    },
+    {
+      "query": "Should this relationship be one-to-many or many-to-many?",
+      "should_trigger": true
+    },
+    {
+      "query": "Normalize this denormalized orders table",
+      "should_trigger": true
+    },
+    {
+      "query": "Add the right indexes for these slow queries",
+      "should_trigger": true
+    },
+    {
+      "query": "Set up Prisma models for our new service",
+      "should_trigger": true
+    },
+    {
+      "query": "Design tables to store audit logs efficiently",
+      "should_trigger": true
+    },
+    {
+      "query": "Write a Liquibase changeset for the new payments table",
+      "should_trigger": true
+    },
+    {
+      "query": "Why is my Postgres connection pool exhausted?",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a SQL query to find the top 10 customers by revenue",
+      "should_trigger": false
+    },
+    {
+      "query": "Back up the production database to S3",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the REST API for the orders service",
+      "should_trigger": false
+    },
+    {
+      "query": "Create a Terraform module that provisions RDS",
+      "should_trigger": false
+    },
+    {
+      "query": "Optimize this Python ORM code that loads users",
+      "should_trigger": false
+    },
+    {
+      "query": "Containerize Postgres with docker-compose for local dev",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain ACID transactions",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this PR that changes our repository layer",
+      "should_trigger": false
+    }
+  ]
+}

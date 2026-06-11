@@ -1,0 +1,77 @@
+{
+  "skill_name": "cicd-pipeline",
+  "queries": [
+    {
+      "query": "Create a CI/CD pipeline for this repo",
+      "should_trigger": true
+    },
+    {
+      "query": "Write a GitHub Actions workflow that runs our tests on every PR",
+      "should_trigger": true
+    },
+    {
+      "query": "Automate the build and deployment for our staging environment",
+      "should_trigger": true
+    },
+    {
+      "query": "Add a security scanning stage to our GitLab CI",
+      "should_trigger": true
+    },
+    {
+      "query": "Our pipeline is slow - add caching and parallelism",
+      "should_trigger": true
+    },
+    {
+      "query": "Set up AWS CodePipeline for this ECS service",
+      "should_trigger": true
+    },
+    {
+      "query": "I want deployments gated on passing tests, set that up",
+      "should_trigger": true
+    },
+    {
+      "query": "Generate a release workflow that publishes to npm on tag",
+      "should_trigger": true
+    },
+    {
+      "query": "How do I run integration tests in CI with a Postgres service container?",
+      "should_trigger": true
+    },
+    {
+      "query": "Why did my local pytest run fail?",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a Dockerfile for this Node app",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the REST API for the deployments service",
+      "should_trigger": false
+    },
+    {
+      "query": "Create a Terraform module for our VPC",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this pull request for security issues",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up pre-commit hooks for my Python project",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain the difference between blue/green and canary deployments",
+      "should_trigger": false
+    },
+    {
+      "query": "Generate JUnit tests for this Java class",
+      "should_trigger": false
+    },
+    {
+      "query": "Help me write a git commit message for this change",
+      "should_trigger": false
+    }
+  ]
+}

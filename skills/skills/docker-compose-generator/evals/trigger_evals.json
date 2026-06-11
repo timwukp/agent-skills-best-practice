@@ -1,0 +1,77 @@
+{
+  "skill_name": "docker-compose-generator",
+  "queries": [
+    {
+      "query": "Write a Dockerfile for this Flask app",
+      "should_trigger": true
+    },
+    {
+      "query": "Create a docker-compose setup with the app, Postgres, and Redis",
+      "should_trigger": true
+    },
+    {
+      "query": "Containerize this service for production",
+      "should_trigger": true
+    },
+    {
+      "query": "My Docker image is huge, optimize it",
+      "should_trigger": true
+    },
+    {
+      "query": "Set up local development containers with hot reload",
+      "should_trigger": true
+    },
+    {
+      "query": "Add a healthcheck to my compose services",
+      "should_trigger": true
+    },
+    {
+      "query": "Convert this docker run command into a compose file",
+      "should_trigger": true
+    },
+    {
+      "query": "Make this Dockerfile multi-stage and non-root",
+      "should_trigger": true
+    },
+    {
+      "query": "Docker setup for a Java Spring Boot app please",
+      "should_trigger": true
+    },
+    {
+      "query": "Deploy my containers to ECS with CodePipeline",
+      "should_trigger": false
+    },
+    {
+      "query": "Why is my container getting OOM-killed in Kubernetes?",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a Helm chart for this service",
+      "should_trigger": false
+    },
+    {
+      "query": "Create a Terraform module for our ECR repositories",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up GitHub Actions to build and push images",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the API for our container registry service",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain the difference between CMD and ENTRYPOINT",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this PR that touches our Dockerfile",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up a Python project with pyproject.toml",
+      "should_trigger": false
+    }
+  ]
+}

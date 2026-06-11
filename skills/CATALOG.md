@@ -31,7 +31,8 @@ All available skills organized by category. Each skill lives in `skills/skills/<
 | [selenium-ui-test-generator](skills/selenium-ui-test-generator/) | Generates Selenium WebDriver tests for React/Angular front-ends with strict loop prevention. |
 | [webapp-testing](skills/webapp-testing/) | Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality and capturing screenshots. |
 | [web-artifacts-builder](skills/web-artifacts-builder/) | Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using React, Tailwind CSS, and shadcn/ui. |
-| [shared-test-runner](skills/shared-test-runner/) | Shared testing utility (provides `run_tests.py` used by other test-generation skills). |
+
+> The test-generation skills above share a common runner in [`skills/shared/test-runner/`](shared/test-runner/) (a utility, not a skill — it has no SKILL.md).
 
 ## Software Engineering Workflow
 
@@ -55,12 +56,7 @@ All available skills organized by category. Each skill lives in `skills/skills/<
 
 ## Document Skills
 
-| Skill | Description |
-|-------|-------------|
-| [docx](skills/docx/) | Create, read, edit, and manipulate Word documents (.docx files). Handles formatting, tables of contents, page numbers, tracked changes, and more. |
-| [pdf](skills/pdf/) | Read, extract, merge, split, rotate, watermark, create, fill forms, encrypt/decrypt, and OCR PDF files. |
-| [pptx](skills/pptx/) | Create, read, edit, and manipulate PowerPoint presentations (.pptx files). Handles slide decks, templates, layouts, speaker notes, and comments. |
-| [xlsx](skills/xlsx/) | Create, read, edit, and manipulate spreadsheet files (.xlsx, .xlsm, .csv, .tsv). Handles formulas, formatting, charting, and data cleaning. |
+Anthropic's document skills (docx, pdf, pptx, xlsx) are source-available (not open source) and are not included in this repository. Find them in the official [anthropics/skills](https://github.com/anthropics/skills) repository.
 
 ## Meta Skills
 

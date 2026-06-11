@@ -1,0 +1,36 @@
+{
+  "skill_name": "api-design",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design a REST API for a bookstore with books, authors, and orders. I need an OpenAPI spec.",
+      "expected_output": "An OpenAPI 3.x spec with plural kebab-case resource paths, correct HTTP methods and status codes, pagination on list endpoints, and a consistent error response schema.",
+      "expectations": [
+        "The output is valid OpenAPI 3.x YAML or JSON",
+        "List endpoints include pagination parameters",
+        "Error responses use a consistent schema with status codes documented",
+        "Resource names are plural nouns, not verbs"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We need a GraphQL schema for a project management tool with projects, tasks, and users, including mutations.",
+      "expected_output": "A GraphQL schema with object types, input types for mutations, connection-style pagination, and clear nullability choices.",
+      "expectations": [
+        "Schema defines object types for projects, tasks, and users",
+        "Mutations use input types rather than long argument lists",
+        "Pagination follows a connection or cursor pattern"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our /getUserData endpoint returns 200 with an error string in the body when the user is missing. Suggest a versioning and error-handling cleanup.",
+      "expected_output": "A redesign using resource-oriented paths, proper 404 semantics, structured error bodies, and an explicit versioning strategy.",
+      "expectations": [
+        "Recommends renaming the verb-style endpoint to a resource path",
+        "Missing user returns 404 with a structured error body",
+        "Proposes a concrete versioning strategy (URI or header) with trade-offs"
+      ]
+    }
+  ]
+}

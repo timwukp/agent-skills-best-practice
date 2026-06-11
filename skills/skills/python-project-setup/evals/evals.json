@@ -1,0 +1,37 @@
+{
+  "skill_name": "python-project-setup",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Set up a new Python project called dataloader with modern tooling: linting, formatting, type checking, and tests.",
+      "expected_output": "A project skeleton with pyproject.toml (PEP 621 metadata), ruff for lint+format, mypy or pyright config, pytest layout, and pre-commit hooks.",
+      "expectations": [
+        "pyproject.toml contains PEP 621 metadata and tool configs",
+        "ruff is configured for linting and formatting",
+        "Type checker configuration is present",
+        "tests/ layout works with pytest out of the box",
+        "pre-commit config wires the tools together"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Migrate this setup.py project to pyproject.toml without breaking the existing CLI entry point.",
+      "expected_output": "A pyproject.toml carrying over metadata, dependencies, and console scripts, with the migration steps and verification commands.",
+      "expectations": [
+        "Console script entry point is preserved in [project.scripts]",
+        "Dependencies are carried over accurately",
+        "Provides verification steps (build + install + run)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add strict type checking and pre-commit hooks to our existing Python repo gradually, without blocking the team.",
+      "expected_output": "An incremental adoption plan: baseline mypy config with per-module strictness, pre-commit setup, and CI wiring that doesn't fail on legacy code.",
+      "expectations": [
+        "Type checking is introduced incrementally (per-module or baseline)",
+        "pre-commit hooks cover lint/format/type checks",
+        "Plan explicitly avoids blocking existing development"
+      ]
+    }
+  ]
+}

@@ -14,7 +14,7 @@ Thank you for your interest in contributing to this repository! This guide expla
 
 Every skill directory must contain at minimum:
 
-- `SKILL.md` - The skill definition file with YAML frontmatter.
+- `SKILL.md` - The skill definition file with YAML frontmatter. The frontmatter `name` must match the directory name, and the body should stay under 500 lines (move detailed reference material into separate files).
 
 ### Folder Structure
 
@@ -23,9 +23,21 @@ Create your skill directory under `skills/skills/`:
 ```
 skills/skills/my-new-skill/
   SKILL.md
+  evals/            (recommended: see Evals below)
+  scripts/          (optional: executable code)
+  references/       (optional: docs loaded on demand)
   templates/        (optional)
   examples/         (optional)
 ```
+
+### Evals
+
+Anthropic's official guidance is evaluation-first: write evals before writing extensive skill documentation. Each engineering skill in this repo ships an `evals/` folder with two files:
+
+- `evals/evals.json` — task evals: realistic prompts with `expected_output` and verifiable `expectations`, following the [skill-creator schema](skills/skills/skill-creator/references/schemas.md).
+- `evals/trigger_evals.json` — trigger evals: a mix of `should_trigger: true` queries (different phrasings, including ones that don't name the skill) and `should_trigger: false` near-misses (related tasks that belong to other skills).
+
+Use them to check two failure modes: the skill not activating when it should, and activating when it shouldn't. When you change a skill's `description`, re-check it against `trigger_evals.json`. New skills should include at least 3 task evals and ~16 trigger queries.
 
 ### Update the Catalog
 
@@ -109,7 +121,7 @@ Pull requests are validated automatically by CI. Your skill must pass validation
 - Do not commit binary document files (PDF, PPTX, DOCX, etc.).
 - Do not include PII or customer data.
 - Do not include hardcoded credentials or secrets.
-- All contributions must be compatible with the **MIT License**.
+- New contributions are licensed under the **MIT License**. (Skills imported from [anthropics/skills](https://github.com/anthropics/skills) remain Apache 2.0 — see each skill's `LICENSE.txt`.)
 
 ## Important Note
 

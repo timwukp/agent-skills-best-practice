@@ -1,0 +1,77 @@
+{
+  "skill_name": "python-project-setup",
+  "queries": [
+    {
+      "query": "Set up a new Python project with modern tooling",
+      "should_trigger": true
+    },
+    {
+      "query": "Create a pyproject.toml for this package",
+      "should_trigger": true
+    },
+    {
+      "query": "Add ruff and mypy to my repo",
+      "should_trigger": true
+    },
+    {
+      "query": "Migrate from setup.py to pyproject.toml",
+      "should_trigger": true
+    },
+    {
+      "query": "Set up pytest and a sensible test layout",
+      "should_trigger": true
+    },
+    {
+      "query": "Configure pre-commit hooks for a Python codebase",
+      "should_trigger": true
+    },
+    {
+      "query": "Scaffold a Python CLI package with entry points",
+      "should_trigger": true
+    },
+    {
+      "query": "What's the modern way to structure a Python library?",
+      "should_trigger": true
+    },
+    {
+      "query": "Initialize a Python monorepo package with shared tooling",
+      "should_trigger": true
+    },
+    {
+      "query": "Debug this Python TypeError in production",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a Python script that parses CSV files",
+      "should_trigger": false
+    },
+    {
+      "query": "Containerize my Python app",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up GitHub Actions for the Python repo",
+      "should_trigger": false
+    },
+    {
+      "query": "Optimize this slow pandas pipeline",
+      "should_trigger": false
+    },
+    {
+      "query": "Design a REST API in FastAPI",
+      "should_trigger": false
+    },
+    {
+      "query": "Generate unit tests for this Python module",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain Python's GIL",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up a Node.js project with ESLint",
+      "should_trigger": false
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "skill_name": "terraform-module",
+  "queries": [
+    {
+      "query": "Create a Terraform module for our RDS instances",
+      "should_trigger": true
+    },
+    {
+      "query": "Write infrastructure as code for a Lambda + API Gateway stack",
+      "should_trigger": true
+    },
+    {
+      "query": "Provision an ECS cluster with Terraform",
+      "should_trigger": true
+    },
+    {
+      "query": "Refactor this copy-pasted Terraform into a reusable module",
+      "should_trigger": true
+    },
+    {
+      "query": "Add variable validation and outputs to my module",
+      "should_trigger": true
+    },
+    {
+      "query": "Set up Terraform remote state for the team",
+      "should_trigger": true
+    },
+    {
+      "query": "IaC for a secure S3 bucket please",
+      "should_trigger": true
+    },
+    {
+      "query": "Structure our Terraform repo for dev/staging/prod",
+      "should_trigger": true
+    },
+    {
+      "query": "Build a VPC module following AWS best practices",
+      "should_trigger": true
+    },
+    {
+      "query": "Why is terraform apply failing with a state lock error?",
+      "should_trigger": false
+    },
+    {
+      "query": "Deploy this with CloudFormation instead",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up the CI pipeline that runs terraform plan",
+      "should_trigger": false
+    },
+    {
+      "query": "Write an AWS CDK construct for our queue",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain the difference between count and for_each",
+      "should_trigger": false
+    },
+    {
+      "query": "Containerize the Terraform runner",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the database schema for our infrastructure inventory",
+      "should_trigger": false
+    },
+    {
+      "query": "Estimate our AWS costs for next quarter",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this PR that changes IAM policies",
+      "should_trigger": false
+    }
+  ]
+}

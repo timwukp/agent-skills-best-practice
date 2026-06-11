@@ -14,12 +14,13 @@ git clone https://github.com/timwukp/agent-skills-best-practice.git
 cd agent-skills-best-practice
 ```
 
-## Step 2: Copy the hello-world skill to Kiro
+## Step 2: Install the hello-world skill into Kiro
 
 ```bash
-mkdir -p ~/.kiro/skills/
-cp -r skills/skills/hello-world ~/.kiro/skills/hello-world
+./install.sh hello-world
 ```
+
+(Or manually: `mkdir -p ~/.kiro/skills/ && cp -r skills/skills/hello-world ~/.kiro/skills/hello-world`. Run `./install.sh --list` to see all installable skills, or `./install.sh --all` to install everything.)
 
 ## Step 3: Test it
 

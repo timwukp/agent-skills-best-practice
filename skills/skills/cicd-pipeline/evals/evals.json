@@ -1,0 +1,36 @@
+{
+  "skill_name": "cicd-pipeline",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a GitHub Actions workflow for a Node.js app: lint, test, build, and deploy to staging on merge to main.",
+      "expected_output": "A workflow YAML with separate jobs or steps for lint/test/build/deploy, dependency caching, and a deploy job gated on the main branch.",
+      "expectations": [
+        "Workflow YAML is syntactically valid",
+        "Uses dependency caching (actions/cache or setup-node cache)",
+        "Deploy step only runs on the main branch",
+        "Jobs run in parallel where there is no dependency"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We use GitLab CI. Add security scanning and test stages to our Python service pipeline.",
+      "expected_output": "A .gitlab-ci.yml with stages including security scanning (SAST/dependency scan) and pytest, using caching for pip.",
+      "expectations": [
+        "Defines stages and jobs in valid GitLab CI syntax",
+        "Includes a security scanning job",
+        "Caches pip dependencies between runs"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Set up AWS CodePipeline for a containerized service: build the image, push to ECR, deploy to ECS.",
+      "expected_output": "Pipeline definition with CodeBuild buildspec for image build/push and an ECS deploy stage, with IAM noted as least-privilege.",
+      "expectations": [
+        "Buildspec builds and pushes the image to ECR",
+        "Deploy stage targets ECS",
+        "Mentions least-privilege IAM for the pipeline roles"
+      ]
+    }
+  ]
+}
