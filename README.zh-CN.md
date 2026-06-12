@@ -2,9 +2,11 @@
 
 # Agentic Skills 最佳实践
 
-构建 Agent Skills 的最佳实践、示例和培训材料。Agent Skills 是由指令、脚本和资源组成的文件夹，AI 代理（Kiro IDE、Claude Code、Claude.ai）可以动态加载这些内容以提升在专业任务上的表现。
+构建 Agent Skills 的最佳实践、示例和培训材料。Agent Skills 是由指令、脚本和资源组成的文件夹，AI 代理可以动态加载这些内容以提升在专业任务上的表现。
 
-本仓库面向 **AWS SA 和开发者**，帮助学习为 [Kiro IDE](https://kiro.dev) 构建 Skills，但 Skills 本身可跨所有支持 [Agent Skills 规范](https://agentskills.io/specification) 的平台使用。
+**一次编写，随处运行。** 本仓库所有 Skills 均遵循开放的 [Agent Skills 规范](https://agentskills.io/specification)，只使用标准字段、不依赖任何平台私有扩展。同一个 Skill 文件夹无需修改即可在任何实现该规范的平台上使用：Kiro（IDE 和 CLI）、Claude Code、Claude.ai、Claude API 以及其他兼容代理。本仓库的 Skills 已在 Kiro 和 Claude Code 上完成端到端验证（见 [TESTING.md](TESTING.md)）。
+
+本仓库面向 **AWS SA 和开发者**，以 [Kiro](https://kiro.dev) 为主要学习环境，但不会造成任何平台锁定——纯指令型 Skills 完全可移植；少数捆绑可执行 `scripts/` 的 Skills 额外要求目标平台允许执行代码并安装其声明的依赖。
 
 ## 快速入门
 
@@ -68,15 +70,22 @@
 
 ## 平台兼容性
 
-使用本仓库构建的 Skills 可在以下平台使用：
+本仓库的 Skills **天然可移植**：只使用 [Agent Skills 规范](https://agentskills.io/specification) 的标准字段（`name`、`description`、`license`、`metadata`），不含平台私有扩展。任何实现该规范的代理都可以加载它们。已验证或有官方文档支持的平台：
 
 | 平台 | 安装位置 | 文档 |
 |------|----------|------|
-| **Kiro IDE** | `~/.kiro/skills/` | [kiro.dev/docs/skills](https://kiro.dev/docs/skills/) |
+| **Kiro IDE** | `~/.kiro/skills/`（全局）或 `.kiro/skills/`（工作区） | [kiro.dev/docs/skills](https://kiro.dev/docs/skills/) |
 | **Kiro CLI** | `~/.kiro/skills/` | [kiro.dev/docs/skills](https://kiro.dev/docs/skills/) |
-| **Claude Code** | 通过插件市场 | [skills/README.md](skills/README.md) |
-| **Claude.ai** | 上传或内置 | [Claude Skills 指南](https://support.claude.com/en/articles/12512180-using-skills-in-claude) |
+| **Claude Code** | `~/.claude/skills/` 或通过插件市场 | [skills/README.md](skills/README.md) —— 已端到端验证，见 [TESTING.md](TESTING.md) |
+| **Claude.ai** | 作为自定义 Skill 上传 | [Claude Skills 指南](https://support.claude.com/en/articles/12512180-using-skills-in-claude) |
 | **Claude API** | 通过 Skills API | [Skills API 快速入门](https://docs.claude.com/en/api/skills-guide) |
+| **其他兼容规范的代理** | 视平台而定 | [agentskills.io](https://agentskills.io/specification) |
+
+可移植性说明：
+
+- **纯指令型 Skills**（安全 SDLC、金融合规、云架构及大部分工程类 Skills）完全可移植——它们是纯 Markdown，除规范支持外不依赖宿主平台任何能力。
+- **捆绑可执行 `scripts/` 的 Skills**（如测试生成器、webapp-testing）额外要求平台允许执行代码并安装各 Skill 声明的依赖。
+- 各平台的激活行为可能略有差异（何时匹配 description 由各代理自行决定）；本仓库 Skill 描述中的触发措辞已在 Claude Code 上实测，并遵循 Kiro 官方指南。
 
 ## Kiro 特性
 
