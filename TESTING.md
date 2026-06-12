@@ -57,6 +57,29 @@ Skills installed to `~/.claude/skills/`; one natural-language query per skill pl
 
 **Known limitation (recorded, not hidden):** queries phrased as "review this change for PCI-DSS" can route to Claude Code's *built-in* `security-review` skill, and short yes/no compliance questions may be answered directly from model knowledge without invoking any skill. Framework-specific phrasing ("MAS TRM implications", "compliance check against PCI-DSS controls") and explicit invocation route correctly. This is an environment-level interaction with built-in skills that description tuning cannot fully override; it is documented in the skill's `evals/README.md`.
 
+## Recorded Results — Batch 2 (code-standards-adopter, legacy-code-testing, aws-well-architected-review)
+
+### Layer 1: Static validation
+All 35 skills pass.
+
+### Layer 2: Blind trigger routing (54 queries, 2 independent judges, all 35 skills in the metadata listing)
+
+First pass: **27/27 should-trigger recall (100%), 27/27 no-false-fire (100%)** — no description fixes needed. Notable correct boundary decisions by the judges: "design a test strategy for our new greenfield service" → none (legacy-code-testing is explicitly for inherited code); "write a style guide based on Google's standards" → none (code-standards-adopter infers from existing code, not external standards); "reduce my AWS bill by buying savings plans" → none (an action, not a review).
+
+### Layer 3: Task execution + independent grading (9 evals)
+
+**9/9 PASS** under strict independent grading. Highlights: code-standards-adopter-3 correctly *declined* to fabricate conventions from a 6-file inconsistent codebase (honesty eval); aws-well-architected-review findings were spot-checked against the bundled pillar references with no fabricated claims, and severity was correctly calibrated down for an internal batch workload vs a production payments API.
+
+### Layer 4: Real environment (Claude Code 2.1.152, headless, Bedrock on EC2)
+
+| Query (abridged) | Expected | Triggered |
+|------------------|----------|-----------|
+| "well-architected review ... production payments API" | aws-well-architected-review | ✅ |
+| "infer our coding conventions ... generate steering rules" | code-standards-adopter | ✅ |
+| "OrderProcessor has zero tests ... make it safe to change" | legacy-code-testing | ✅ |
+| "create a Terraform module for a VPC" | terraform-module (not batch-2) | ✅ routed to terraform-module |
+| "why is my Lambda timing out?" | none | ✅ none |
+
 ## Running the Tests Yourself
 
 ```bash

@@ -1,0 +1,36 @@
+{
+  "skill_name": "legacy-code-testing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "This 800-line OrderProcessor class has zero tests and we need to change its discount logic next sprint. It news up a database connection in the constructor and calls a static TaxService. Make it safe to change.",
+      "expected_output": "A characterization testing plan: seams for the DB connection (parameterize constructor) and static TaxService (wrap/adapter), black-box tests pinning current discount behavior including boundaries, suspected bugs logged separately, refactoring only after the net is green.",
+      "expectations": [
+        "Identifies seams for both the constructor DB dependency and the static call",
+        "Tests assert current behavior, with unknown outputs captured by running the code",
+        "Suspected bugs are logged separately, explicitly not fixed during characterization",
+        "Refactoring is sequenced strictly after the test net exists"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We inherited a report generator that produces a 3000-line CSV. Nobody knows all its rules. We must port it to a new runtime without changing output. How do we test this?",
+      "expected_output": "A golden-master/snapshot approach: capture current full outputs over a representative input corpus, normalize nondeterminism (timestamps/ids), assert byte-for-byte match in the new runtime.",
+      "expectations": [
+        "Recommends golden-master/snapshot testing over piecewise assertions",
+        "Addresses nondeterministic fields with explicit normalization",
+        "Builds a representative input corpus rather than one sample"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Management wants 80% coverage on our whole legacy codebase this quarter. Plan it.",
+      "expected_output": "Pushback with a risk-ranked alternative: coverage bought module-by-module where change-likelihood and consequence are highest, just-in-time before changes, with confidence-to-change (not percentage) as the goal.",
+      "expectations": [
+        "Pushes back on blanket coverage as the goal with reasoning",
+        "Proposes risk-ranked, just-in-time coverage of volatile/critical modules",
+        "Frames the goal as confidence to change, not a percentage"
+      ]
+    }
+  ]
+}

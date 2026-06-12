@@ -25,6 +25,8 @@
 - **软件工程 Skills**: 8 个实用的软件工程工作流 Skills，包括代码审查、Git 工作流、API 设计、Docker Compose 生成、数据库 Schema 设计、CI/CD 流水线、Terraform 模块和 Python 项目初始化
 - **安全 SDLC Skills**: 5 个 Scrum + DevSecOps 角色 Skills（威胁建模、安全/用户故事编写、含安全债务的 Sprint 规划、Sprint 安全评审）
 - **金融合规**: 将代码/架构变更映射到 PCI-DSS v4.0 和 MAS TRM 控制点的合规检查 Skill，采用按领域组织的参考文件
+- **云架构**: AWS Well-Architected 评审 Skill，按支柱组织参考文件（安全、可靠性、成本、性能、运维、可持续性）
+- **AI 落地 Skills**: code-standards-adopter（让 AI 生成的代码匹配团队风格）和 legacy-code-testing（重构前的特征测试）
 - **Skills 目录**: 完整的分类目录请参见 [skills/CATALOG.md](skills/CATALOG.md)
 
 > **在找文档类 Skills（docx、pdf、pptx、xlsx）？** 它们是 Anthropic 的 source-available（非开源）生产级 Skills。为保持本仓库内容全部使用开源许可，已将其移除——请到官方 [anthropics/skills](https://github.com/anthropics/skills) 仓库获取。

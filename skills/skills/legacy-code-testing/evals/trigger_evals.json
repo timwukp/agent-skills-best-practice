@@ -1,0 +1,77 @@
+{
+  "skill_name": "legacy-code-testing",
+  "queries": [
+    {
+      "query": "Add tests to this legacy code before we refactor it",
+      "should_trigger": true
+    },
+    {
+      "query": "This module has no tests and we need to change it",
+      "should_trigger": true
+    },
+    {
+      "query": "Write characterization tests for the billing engine",
+      "should_trigger": true
+    },
+    {
+      "query": "How do I make this untestable class testable?",
+      "should_trigger": true
+    },
+    {
+      "query": "Is it safe to refactor this code?",
+      "should_trigger": true
+    },
+    {
+      "query": "Pin down the current behavior of this function before we touch it",
+      "should_trigger": true
+    },
+    {
+      "query": "We inherited a codebase with zero tests - testing strategy?",
+      "should_trigger": true
+    },
+    {
+      "query": "Break this hard-coded database dependency so we can test",
+      "should_trigger": true
+    },
+    {
+      "query": "Golden master testing for our report output",
+      "should_trigger": true
+    },
+    {
+      "query": "Generate JUnit tests for this new class I just wrote",
+      "should_trigger": false
+    },
+    {
+      "query": "Write E2E tests for the checkout flow",
+      "should_trigger": false
+    },
+    {
+      "query": "Fix this failing test",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up pytest for a new project",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this PR's test coverage",
+      "should_trigger": false
+    },
+    {
+      "query": "Refactor this module to use async",
+      "should_trigger": false
+    },
+    {
+      "query": "Design a test strategy for our new greenfield service",
+      "should_trigger": false
+    },
+    {
+      "query": "Run the test suite and tell me what fails",
+      "should_trigger": false
+    },
+    {
+      "query": "Mock this API call in my test",
+      "should_trigger": false
+    }
+  ]
+}

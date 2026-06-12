@@ -50,10 +50,18 @@ All available skills organized by category. Each skill lives in `skills/skills/<
 |-------|-------------|
 | [fsi-compliance-checker](skills/fsi-compliance-checker/) | Reviews code, architecture, and infrastructure changes against PCI-DSS v4.0 and MAS TRM, producing control-mapped findings with remediation guidance. |
 
+## Cloud Architecture
+
+| Skill | Description |
+|-------|-------------|
+| [aws-well-architected-review](skills/aws-well-architected-review/) | Reviews AWS architectures, IaC, and design docs against the Well-Architected Framework's six pillars, loading only relevant pillar references, with severity-rated findings and concrete remediation. |
+
 ## Software Engineering Workflow
 
 | Skill | Description |
 |-------|-------------|
+| [code-standards-adopter](skills/code-standards-adopter/) | Infers a codebase's implicit coding conventions and makes them explicit: evidence-based lint configs, a conventions document, and agent steering rules so AI-written code matches team style. |
+| [legacy-code-testing](skills/legacy-code-testing/) | Adds tests to untested legacy code safely: characterization tests that pin current behavior, seam identification for untestable dependencies, and risk-ranked coverage strategy. |
 | [code-review-assistant](skills/code-review-assistant/) | Performs code reviews analyzing security, performance, and maintainability. Applies SOLID principles and checks for anti-patterns with structured feedback. |
 | [git-workflow](skills/git-workflow/) | Git workflow automation including conventional commit messages, branching strategies, merge conflict resolution, and changelog generation. |
 | [api-design](skills/api-design/) | Designs RESTful and GraphQL APIs with OpenAPI spec generation, proper resource naming, pagination, filtering, error responses, and versioning. |
