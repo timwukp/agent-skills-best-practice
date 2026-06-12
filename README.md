@@ -25,6 +25,8 @@ To install skills from this repo into Kiro in one step:
 - **Software Engineering Skills**: 8 practical workflow skills covering code review, Git workflow, API design, Docker Compose generation, database schema design, CI/CD pipelines, Terraform modules, and Python project setup
 - **Secure SDLC Skills**: 5 Scrum + DevSecOps role skills (threat modeling, security/user story writing, sprint planning with security debt, sprint security review)
 - **FSI Compliance**: compliance checker mapping changes to PCI-DSS v4.0 and MAS TRM controls, with domain-organized reference files
+- **Cloud Architecture**: AWS Well-Architected review skill with per-pillar reference files (security, reliability, cost, performance, operations, sustainability)
+- **AI Adoption Skills**: code-standards-adopter (make AI-written code match your team's style) and legacy-code-testing (characterization tests before refactoring)
 
 > **Looking for the document skills (docx, pdf, pptx, xlsx)?** Those are Anthropic's source-available (not open source) production skills. They were removed from this repo to keep all content under open-source licenses — find them in the official [anthropics/skills](https://github.com/anthropics/skills) repository.
 

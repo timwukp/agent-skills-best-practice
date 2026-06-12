@@ -1,0 +1,36 @@
+{
+  "skill_name": "code-standards-adopter",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We're rolling out AI coding tools on our 5-year-old TypeScript monorepo. Infer our conventions and generate a steering file so AI-written code matches our style. The repo is in the current directory.",
+      "expected_output": "A sampled analysis (10-20 representative files) producing per-dimension conventions with observed frequencies, an under-50-line steering file containing only conventions an agent would get wrong, and inconsistencies reported separately with counts.",
+      "expectations": [
+        "Samples representative files rather than claiming to read everything",
+        "Every emitted rule cites observed frequency or evidence from the codebase",
+        "Steering file is concise and excludes anything a formatter already enforces",
+        "Inconsistencies are presented with counts for team decision, not silently resolved"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Generate an ESLint config that matches how our JavaScript codebase is actually written - we have no lint setup at all today.",
+      "expected_output": "An ESLint config inferred from observed code patterns, with non-default rules commented with their evidence, after checking no conflicting config exists.",
+      "expectations": [
+        "Checks for existing linter/formatter configs before generating",
+        "Non-default rules carry evidence comments (e.g. frequency counts)",
+        "Config is descriptive of current code, not an imposed external standard"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our repo has only 6 small Python files, all written by different people in different styles. Extract our code standards.",
+      "expected_output": "An honest assessment that the codebase is too small/inconsistent to infer conventions, with what was actually observed, and a recommendation to adopt a community standard as the baseline.",
+      "expectations": [
+        "Declines to fabricate conventions from insufficient evidence",
+        "Reports what was actually observed in the 6 files",
+        "Recommends a community standard baseline as the constructive path"
+      ]
+    }
+  ]
+}

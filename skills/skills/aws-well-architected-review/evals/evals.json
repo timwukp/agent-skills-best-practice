@@ -1,0 +1,36 @@
+{
+  "skill_name": "aws-well-architected-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this architecture: public ALB -> ECS Fargate service -> RDS Postgres (single AZ, db.m5.large) in us-east-1. S3 bucket for user uploads with public-read ACL. One NAT gateway. Secrets in task definition env vars. It's our production payments API.",
+      "expected_output": "Well-Architected review loading Security+Reliability+Cost, with High findings: public-read S3 on user data, plaintext secrets in task env, single-AZ production RDS, single NAT gateway; each finding names the resource and gives concrete remediation; severity calibrated to payments criticality.",
+      "expectations": [
+        "Identifies public S3 ACL, env-var secrets, and single-AZ RDS all as High severity",
+        "Every finding names the specific resource and gives a concrete remediation",
+        "Severity calibration references the production payments criticality",
+        "Report follows the skill's format including pillars-not-reviewed and good practices"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our AWS bill doubled. Here's the setup: 40 m4.xlarge instances at ~15% CPU running 24/7 including dev/test, gp2 volumes everywhere, CloudWatch logs with no retention set, all traffic through NAT gateways, zero savings plans. Cost review please.",
+      "expected_output": "Cost-pillar review with quantified findings: previous-gen oversized fleet, no commitment coverage, gp2 to gp3, log retention, NAT endpoint opportunities, dev/test scheduling - each with estimated impact direction.",
+      "expectations": [
+        "Loads the cost pillar and covers right-sizing, commitments, gp3, log retention, NAT endpoints, and scheduling",
+        "Findings are quantified or directionally estimated, not vague",
+        "Prioritizes a fix-first list by impact"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Quick well-architected check on this Terraform for an internal batch job: Lambda on a daily schedule, writes to DynamoDB, IAM role with AdministratorAccess, no alarms.",
+      "expected_output": "A scoped review (Security + Operations primarily): High on AdministratorAccess role with least-privilege replacement, Medium on missing alarms/observability for the job; severity calibrated to internal batch (not inflated); skipped pillars stated.",
+      "expectations": [
+        "Flags AdministratorAccess as the top finding with a least-privilege policy remediation",
+        "Severity is calibrated to an internal batch workload, not inflated",
+        "States which pillars were skipped and why"
+      ]
+    }
+  ]
+}

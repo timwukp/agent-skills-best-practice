@@ -1,0 +1,77 @@
+{
+  "skill_name": "aws-well-architected-review",
+  "queries": [
+    {
+      "query": "Run a well-architected review on this design",
+      "should_trigger": true
+    },
+    {
+      "query": "Review this AWS architecture before we go to production",
+      "should_trigger": true
+    },
+    {
+      "query": "Check my Terraform against AWS best practices",
+      "should_trigger": true
+    },
+    {
+      "query": "Is this architecture production-ready?",
+      "should_trigger": true
+    },
+    {
+      "query": "WAR review of our new service",
+      "should_trigger": true
+    },
+    {
+      "query": "Our AWS bill is out of control - review the architecture for cost",
+      "should_trigger": true
+    },
+    {
+      "query": "Review this CDK stack for reliability issues",
+      "should_trigger": true
+    },
+    {
+      "query": "Assess this design doc against the six pillars",
+      "should_trigger": true
+    },
+    {
+      "query": "Architecture review: ALB, ECS, RDS setup for our new API",
+      "should_trigger": true
+    },
+    {
+      "query": "Create a Terraform module for a VPC",
+      "should_trigger": false
+    },
+    {
+      "query": "Why is my Lambda timing out?",
+      "should_trigger": false
+    },
+    {
+      "query": "Is this change PCI-DSS compliant?",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up the CI/CD pipeline for our AWS deploys",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain the Well-Architected Framework",
+      "should_trigger": false
+    },
+    {
+      "query": "Reduce my AWS bill by buying savings plans",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this PR for code quality",
+      "should_trigger": false
+    },
+    {
+      "query": "Threat model our payment API",
+      "should_trigger": false
+    },
+    {
+      "query": "Design the database schema for orders",
+      "should_trigger": false
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "skill_name": "code-standards-adopter",
+  "queries": [
+    {
+      "query": "Make the AI write code that matches our team style",
+      "should_trigger": true
+    },
+    {
+      "query": "Infer our coding conventions from the codebase",
+      "should_trigger": true
+    },
+    {
+      "query": "Generate a lint config based on how our code is actually written",
+      "should_trigger": true
+    },
+    {
+      "query": "Extract our code standards into a document",
+      "should_trigger": true
+    },
+    {
+      "query": "Set up steering rules from our existing code",
+      "should_trigger": true
+    },
+    {
+      "query": "Our new hires keep writing code in a different style - capture our conventions",
+      "should_trigger": true
+    },
+    {
+      "query": "Create a CLAUDE.md style section from this repo's patterns",
+      "should_trigger": true
+    },
+    {
+      "query": "What naming conventions does this codebase actually use?",
+      "should_trigger": true
+    },
+    {
+      "query": "Audit our codebase for style consistency and make the rules explicit",
+      "should_trigger": true
+    },
+    {
+      "query": "Format this file with prettier",
+      "should_trigger": false
+    },
+    {
+      "query": "Fix the ESLint errors in this PR",
+      "should_trigger": false
+    },
+    {
+      "query": "Review this code for bugs",
+      "should_trigger": false
+    },
+    {
+      "query": "Refactor this module to be cleaner",
+      "should_trigger": false
+    },
+    {
+      "query": "Write a style guide based on Google's standards",
+      "should_trigger": false
+    },
+    {
+      "query": "Set up pre-commit hooks for my Python project",
+      "should_trigger": false
+    },
+    {
+      "query": "Why is my linter failing in CI?",
+      "should_trigger": false
+    },
+    {
+      "query": "Add tests to this legacy module",
+      "should_trigger": false
+    },
+    {
+      "query": "Explain the Airbnb JavaScript style guide",
+      "should_trigger": false
+    }
+  ]
+}
