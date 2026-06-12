@@ -2,9 +2,11 @@
 
 # Agentic Skills Best Practices
 
-Best practices, examples, and training materials for building agent skills. Agent skills are folders of instructions, scripts, and resources that AI agents (Kiro IDE, Claude Code, Claude.ai) load dynamically to improve performance on specialized tasks.
+Best practices, examples, and training materials for building agent skills. Agent skills are folders of instructions, scripts, and resources that AI agents load dynamically to improve performance on specialized tasks.
 
-This repo is designed for **AWS SAs and developers** learning to build skills for [Kiro IDE](https://kiro.dev), but the skills themselves are portable across all platforms that support the [Agent Skills specification](https://agentskills.io/specification).
+**Write once, run on any compatible agent.** Every skill in this repo follows the open [Agent Skills specification](https://agentskills.io/specification) using only standard fields — no platform-private extensions. The same skill folder works, unmodified, on any platform that implements the spec: Kiro (IDE and CLI), Claude Code, Claude.ai, the Claude API, and other compatible agents. Skills from this repo have been verified end-to-end on both Kiro and Claude Code (see [TESTING.md](TESTING.md)).
+
+This repo is designed for **AWS SAs and developers** learning to build skills with [Kiro](https://kiro.dev) as the primary environment, but nothing here locks you in — the instruction-only skills are fully portable, and the few skills that bundle executable `scripts/` additionally require a platform that permits code execution and their listed dependencies.
 
 ## Quickstart
 
@@ -67,15 +69,22 @@ To install skills from this repo into Kiro in one step:
 
 ## Platform Compatibility
 
-Skills built with this repo work across:
+Skills in this repo are **portable by construction**: they use only the standard fields of the [Agent Skills specification](https://agentskills.io/specification) (`name`, `description`, `license`, `metadata`) and no platform-private extensions. Any agent that implements the spec can load them. Platforms verified or documented:
 
 | Platform | Install Location | Docs |
 |----------|-----------------|------|
-| **Kiro IDE** | `~/.kiro/skills/` | [kiro.dev/docs/skills](https://kiro.dev/docs/skills/) |
+| **Kiro IDE** | `~/.kiro/skills/` (global) or `.kiro/skills/` (workspace) | [kiro.dev/docs/skills](https://kiro.dev/docs/skills/) |
 | **Kiro CLI** | `~/.kiro/skills/` | [kiro.dev/docs/skills](https://kiro.dev/docs/skills/) |
-| **Claude Code** | Via plugin marketplace | [skills/README.md](skills/README.md) |
-| **Claude.ai** | Upload or built-in | [Claude Skills Guide](https://support.claude.com/en/articles/12512180-using-skills-in-claude) |
+| **Claude Code** | `~/.claude/skills/` or via plugin marketplace | [skills/README.md](skills/README.md) — verified end-to-end, see [TESTING.md](TESTING.md) |
+| **Claude.ai** | Upload as custom skill | [Claude Skills Guide](https://support.claude.com/en/articles/12512180-using-skills-in-claude) |
 | **Claude API** | Via Skills API | [Skills API Quickstart](https://docs.claude.com/en/api/skills-guide) |
+| **Other spec-compatible agents** | Per platform | [agentskills.io](https://agentskills.io/specification) |
+
+Portability notes:
+
+- **Instruction-only skills** (the Secure SDLC, FSI Compliance, Cloud Architecture, and most engineering skills) are fully portable — they are plain markdown and need nothing from the host beyond spec support.
+- **Skills bundling executable `scripts/`** (e.g. test generators, webapp-testing) additionally require a platform that permits code execution and the dependencies each skill declares.
+- Activation behavior can differ slightly per platform (each agent decides when a description matches); the trigger phrasing in our skill descriptions is tested on Claude Code and follows Kiro's guidance.
 
 ## Kiro Features
 
