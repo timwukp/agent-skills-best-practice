@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Review this change for PCI-DSS: we added a debug log line in the payment service that logs the full request body of card authorization calls.",
-      "expected_output": "Critical finding against PCI-DSS 3.2.1 / never-log rules (request body contains PAN/CVV), with remediation (remove or redact, structured logging with field allowlist) and a check of related logging controls.",
+      "expected_output": "Critical finding against PCI-DSS 3.3.1 / never-log rules (request body contains PAN/CVV), with remediation (remove or redact, structured logging with field allowlist) and a check of related logging controls.",
       "expectations": [
         "Identifies the violation as Critical with the correct control reference (Req 3 / logging rules)",
         "Remediation is concrete: redaction/allowlist, not 'be careful'",
@@ -24,7 +24,7 @@
     {
       "id": 3,
       "prompt": "Compliance check on this diff: new endpoint lets support staff look up customer card numbers for troubleshooting, shows full PAN, no extra auth.",
-      "expected_output": "Multiple findings: PAN display masking (3.3.1), access control/least privilege (7.2.1), MFA for CDE access (8.4.2), audit logging of access to cardholder data (10.2.1) - with severities and remediations.",
+      "expected_output": "Multiple findings: PAN display masking (3.4.1), access control/least privilege (7.2.1), MFA for CDE access (8.4.2), audit logging of access to cardholder data (10.2.1) - with severities and remediations.",
       "expectations": [
         "Catches masking, least-privilege, MFA, and audit logging issues - not just one",
         "Each finding carries a specific control ID and severity",
