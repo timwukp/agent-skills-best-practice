@@ -29,6 +29,7 @@ To install skills from this repo into Kiro in one step:
 - **FSI Compliance**: compliance checker mapping changes to PCI-DSS v4.0 and MAS TRM controls, with domain-organized reference files
 - **Cloud Architecture**: AWS Well-Architected review skill with per-pillar reference files (security, reliability, cost, performance, operations, sustainability)
 - **AI Adoption Skills**: code-standards-adopter (make AI-written code match your team's style) and legacy-code-testing (characterization tests before refactoring)
+- **AWS AI Agent Infrastructure**: agentcore-harness-builder — battle-tested skill that builds production-ready AWS Bedrock AgentCore Harness agents end to end; encodes ~10 introspection-verified API gotchas (apiFormat, optionalValue per-field, allowedTools, opus-4.8 inference rules, …) plus the [Live View human-in-the-loop SSO login workaround](skills/skills/agentcore-harness-builder/references/browser-auth.md). See [`skills/skills/agentcore-harness-builder/`](skills/skills/agentcore-harness-builder/).
 
 > **Looking for the document skills (docx, pdf, pptx, xlsx)?** Those are Anthropic's source-available (not open source) production skills. They were removed from this repo to keep all content under open-source licenses — find them in the official [anthropics/skills](https://github.com/anthropics/skills) repository.
 

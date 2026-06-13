@@ -29,6 +29,7 @@
 - **金融合规**: 将代码/架构变更映射到 PCI-DSS v4.0 和 MAS TRM 控制点的合规检查 Skill，采用按领域组织的参考文件
 - **云架构**: AWS Well-Architected 评审 Skill，按支柱组织参考文件（安全、可靠性、成本、性能、运维、可持续性）
 - **AI 落地 Skills**: code-standards-adopter（让 AI 生成的代码匹配团队风格）和 legacy-code-testing（重构前的特征测试）
+- **AWS AI Agent 基础设施**: agentcore-harness-builder — 经过实战验证的 Skill，端到端构建生产级 AWS Bedrock AgentCore Harness Agent；内置约 10 条经 introspection 验证的 API 坑（apiFormat、optionalValue 逐字段、allowedTools、opus-4.8 推理规则……）以及 [Live View 人机协作 SSO 登录变通方案](skills/skills/agentcore-harness-builder/references/browser-auth.md)。详见 [`skills/skills/agentcore-harness-builder/`](skills/skills/agentcore-harness-builder/)。
 - **Skills 目录**: 完整的分类目录请参见 [skills/CATALOG.md](skills/CATALOG.md)
 
 > **在找文档类 Skills（docx、pdf、pptx、xlsx）？** 它们是 Anthropic 的 source-available（非开源）生产级 Skills。为保持本仓库内容全部使用开源许可，已将其移除——请到官方 [anthropics/skills](https://github.com/anthropics/skills) 仓库获取。

@@ -1,0 +1,10 @@
+# Control-plane tooling for building/managing an AgentCore Harness.
+# These minimums are NOT optional: older boto3 has ZERO harness operations.
+# See references/gotchas.md (Versions).
+
+boto3>=1.43.18
+botocore>=1.43.18
+
+# Also required outside pip:
+#   AWS CLI v2 >= 2.34.57   (curl https://awscli.amazonaws.com/AWSCLIV2.pkg -o /tmp/aws.pkg && sudo installer -pkg /tmp/aws.pkg -target /)
+#   (optional) AgentCore CLI: npm i -g @aws/agentcore

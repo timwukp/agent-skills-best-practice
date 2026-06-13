@@ -93,3 +93,20 @@ claude -p "<a should-trigger query from evals/trigger_evals.json>" \
 ```
 
 Layers 2-3 are agent-orchestrated: any capable agent runner works. The essential structure is (a) routing judges that see only skill metadata + blind queries, and (b) executor/grader separation with expectations hidden from the executor.
+
+## Recorded Results — Batch 3 (agentcore-harness-builder)
+
+### Layer 1: Static validation
+Passes skill-creator `quick_validate` ("Skill is valid!").
+
+### Layer 2: Self-tests
+`scripts/test_offline.py` — **41 passed / 0 failed**. Covers: validate_config rules, wire_memory namespace→glob conversion + IAM policy builder, update_harness `optionalValue` per-field wrapping (introspection-driven), setup_observability resource-policy merging, create_harness kwargs building.
+
+### Layer 3: Live AWS introspection
+Verified every documented field shape against `boto3 1.43.29` live `service_model` (the SDK's bundled control-plane model). Caught and fixed pre-shipped errors that originated in older docs/AGENTS files: `optionalValue` is **per-field** (only `memory`/`environmentArtifact`/`authorizerConfiguration` wrap, not all structures); `apiFormat` enum is `converse_stream`/`responses`/`chat_completions`; `allowedTools` has **no** `browser_*` glob; `runtimeSessionId` ≥ 33 chars.
+
+### Layer 4: End-to-end battle-test (real Amazon QuickSight)
+Used the skill to build a Quick POC web-UI test agent and ran it end-to-end against a real (workshop-account) Amazon Quick Suite console: Harness deployed (opus-4.8, browser + code interpreter + 3 inline functions + S3-loaded skill), human-in-the-loop SSO login via Live View completed, full 4-phase test plan executed.
+
+- **Result:** PARTIAL — 12 PASS / 1 FAIL / 8 PARTIAL across 21 steps, 11 cookbook corrections captured, 21 screenshots, schema-valid JSON report.
+- **Surfaced gotcha:** Live View "Take control"/"Release" tears down the harness automation context; workaround = interact in Live View *without* clicking Take control + agent must reconnect (re-read the page, do not reuse the pre-login handle). Filed as upstream issue [aws/bedrock-agentcore-sdk-python#518](https://github.com/aws/bedrock-agentcore-sdk-python/issues/518); mitigation documented in `skills/skills/agentcore-harness-builder/references/browser-auth.md`.
