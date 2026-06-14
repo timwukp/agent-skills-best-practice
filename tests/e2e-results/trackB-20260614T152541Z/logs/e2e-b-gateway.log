@@ -1,0 +1,60 @@
+
+
+========= e2e-b-gateway run trackB-20260614T152541Z =========
+
+--- B.1 : Ensure gateway execution role ---
+[STATUS PASS duration 0.09s]
+--- stdout ---
+gateway exec role: arn:aws:iam::<ACCOUNT_ID>:role/AgentCoreTestGatewayExecRole
+
+--- stderr ---
+
+
+--- B.2 : create_gateway (MCP, AWS_IAM, SEMANTIC) + wait READY ---
+[STATUS PASS duration 10.23s]
+--- stdout ---
+created gateway: agentcore-test-gw-7a31e4cd-cklyhutgez status: CREATING
+[0] gateway status=CREATING
+[1] gateway status=READY
+
+--- stderr ---
+
+
+--- B.3 : create api-key provider + create_gateway_target (OpenAPI inline, API_KEY) + wait READY ---
+[STATUS PASS duration 10.64s]
+--- stdout ---
+created api-key provider: arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:token-vault/default/apikeycredentialprovider/agentcore-test-gwkey-b14a43dc
+created target: 5UASB3TGIW status: CREATING
+[0] target status=CREATING
+[1] target status=READY
+
+--- stderr ---
+
+
+--- B.4 : create_gateway_rule routeToTarget — documents it requires an HTTP-protocol target (MCP targets are served directly) ---
+[STATUS PASS duration 0.11s]
+--- stdout ---
+DOCUMENTED LIMITATION confirmed — routeToTarget requires HTTP-protocol targets; MCP targets are served directly. Error: An error occurred (ValidationException) when calling the CreateGatewayRule operation: routeToTarget only supports targets with HTTP protocol type, but target 'd
+
+--- stderr ---
+
+
+--- B.5 : get_gateway + list targets + list rules — verify ---
+[STATUS PASS duration 0.13s]
+--- stdout ---
+targets: 1
+
+--- stderr ---
+
+
+--- B.99 : Cleanup: delete rule, target, gateway ---
+[STATUS PASS duration 5.56s]
+--- stdout ---
+deleted target
+deleted gateway
+deleted api-key provider
+
+--- stderr ---
+
+
+=== e2e-b-gateway summary: 6/6 passed ===

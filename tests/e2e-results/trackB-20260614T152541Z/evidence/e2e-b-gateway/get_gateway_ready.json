@@ -1,0 +1,37 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "51557d3f-b1fe-45d3-8592-78378ea64696",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 15:25:51 GMT",
+      "content-type": "application/json",
+      "content-length": "827",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "51557d3f-b1fe-45d3-8592-78378ea64696",
+      "x-amz-apigw-id": "e9QwBG9YoAMEv6g=",
+      "x-amzn-trace-id": "Root=1-6a2ec7ff-2922f4bd5f4df9857895a2a1"
+    },
+    "RetryAttempts": 0
+  },
+  "gatewayArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:gateway/agentcore-test-gw-7a31e4cd-cklyhutgez",
+  "gatewayId": "agentcore-test-gw-7a31e4cd-cklyhutgez",
+  "gatewayUrl": "https://agentcore-test-gw-7a31e4cd-cklyhutgez.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp",
+  "createdAt": "2026-06-14 15:25:41.689452+00:00",
+  "updatedAt": "2026-06-14 15:25:42.788354+00:00",
+  "status": "READY",
+  "name": "agentcore-test-gw-7a31e4cd",
+  "roleArn": "arn:aws:iam::<ACCOUNT_ID>:role/AgentCoreTestGatewayExecRole",
+  "protocolType": "MCP",
+  "protocolConfiguration": {
+    "mcp": {
+      "supportedVersions": [
+        "2025-06-18"
+      ],
+      "searchType": "SEMANTIC"
+    }
+  },
+  "authorizerType": "AWS_IAM",
+  "workloadIdentityDetails": {
+    "workloadIdentityArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:workload-identity-directory/default/workload-identity/agentcore-test-gw-7a31e4cd-cklyhutgez"
+  }
+}

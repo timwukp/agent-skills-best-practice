@@ -1,0 +1,1 @@
+An error occurred (ValidationException) when calling the CreateGatewayRule operation: routeToTarget only supports targets with HTTP protocol type, but target 'demo-openapi' has protocol type 'MCP'
