@@ -1,0 +1,27 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "e1ed93e7-2f34-4b1f-b83d-d7a633882449",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 09:53:43 GMT",
+      "content-type": "application/json",
+      "content-length": "379",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "e1ed93e7-2f34-4b1f-b83d-d7a633882449",
+      "x-amz-apigw-id": "e8gGJEuuIAMEVag=",
+      "x-amzn-trace-id": "Root=1-6a2e7a26-71bd63de63a52ec27f3e8d75"
+    },
+    "RetryAttempts": 0
+  },
+  "name": "agentcore-test-reg-84025147",
+  "description": "e2e test registry",
+  "registryId": "YeE2ONmZVw46TNQa",
+  "registryArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:registry/YeE2ONmZVw46TNQa",
+  "authorizerType": "AWS_IAM",
+  "approvalConfiguration": {
+    "autoApproval": false
+  },
+  "status": "CREATING",
+  "createdAt": "2026-06-14 09:53:42.922978+00:00",
+  "updatedAt": "2026-06-14 09:53:42.922978+00:00"
+}

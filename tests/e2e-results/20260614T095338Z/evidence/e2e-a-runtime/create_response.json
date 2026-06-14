@@ -1,0 +1,24 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "78cacdc8-69c1-4d58-ae50-6f8a5bf979c0",
+    "HTTPStatusCode": 202,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 09:53:44 GMT",
+      "content-type": "application/json",
+      "content-length": "460",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "78cacdc8-69c1-4d58-ae50-6f8a5bf979c0",
+      "x-amz-apigw-id": "e8gGTGXaoAMESQg=",
+      "x-amzn-trace-id": "Root=1-6a2e7a27-0e99eac42f12171a435ce86b"
+    },
+    "RetryAttempts": 0
+  },
+  "agentRuntimeArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:runtime/agentcore_test_81b9ce18968a-FXLz4F5MDU",
+  "workloadIdentityDetails": {
+    "workloadIdentityArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:workload-identity-directory/default/workload-identity/agentcore_test_81b9ce18968a-FXLz4F5MDU"
+  },
+  "agentRuntimeId": "agentcore_test_81b9ce18968a-FXLz4F5MDU",
+  "agentRuntimeVersion": "1",
+  "createdAt": "2026-06-14 09:53:44.113292+00:00",
+  "status": "CREATING"
+}

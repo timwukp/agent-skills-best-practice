@@ -1,0 +1,137 @@
+{
+  "per_file": {
+    "advanced-config.md": [],
+    "browser-auth.md": [],
+    "decision-guide.md": [],
+    "evaluations.md": [
+      {
+        "op": "create_online_evaluation_config",
+        "service": "bedrock-agentcore-control",
+        "result": "OK",
+        "kwargs": [
+          "onlineEvaluationConfigName",
+          "rule",
+          "dataSourceConfig",
+          "evaluators",
+          "evaluationExecutionRoleArn",
+          "enableOnCreate"
+        ]
+      }
+    ],
+    "gotchas.md": [
+      {
+        "op": "update_harness",
+        "service": "bedrock-agentcore-control",
+        "result": "OK",
+        "kwargs": [
+          "harnessId",
+          "allowedTools",
+          "maxTokens",
+          "clientToken"
+        ]
+      },
+      {
+        "op": "update_harness",
+        "service": "bedrock-agentcore-control",
+        "result": "OK",
+        "kwargs": [
+          "harnessId",
+          "memory",
+          "model",
+          "clientToken"
+        ]
+      }
+    ],
+    "harness-config.md": [
+      {
+        "op": "create_harness",
+        "service": "bedrock-agentcore-control",
+        "result": "OK",
+        "kwargs": [
+          "harnessName",
+          "executionRoleArn",
+          "model",
+          "systemPrompt",
+          "tools",
+          "allowedTools",
+          "skills",
+          "truncation",
+          "environment",
+          "maxIterations",
+          "maxTokens",
+          "timeoutSeconds",
+          "tags",
+          "clientToken"
+        ]
+      },
+      {
+        "op": "token_hex",
+        "skipped": "unknown_service",
+        "snippet": "secrets.token_hex(20)"
+      },
+      {
+        "op": "tag_resource",
+        "service": "bedrock-agentcore-control",
+        "result": "OK",
+        "kwargs": [
+          "resourceArn",
+          "tags"
+        ]
+      }
+    ],
+    "identity.md": [],
+    "memory.md": [
+      {
+        "op": "create_memory",
+        "service": "bedrock-agentcore-control",
+        "result": "OK",
+        "kwargs": [
+          "name",
+          "eventExpiryDuration",
+          "memoryStrategies",
+          "clientToken"
+        ]
+      },
+      {
+        "op": "token_hex",
+        "skipped": "unknown_service",
+        "snippet": "secrets.token_hex(20)"
+      }
+    ],
+    "model-and-prompt.md": [],
+    "observability.md": [
+      {
+        "op": "put_delivery_destination",
+        "service": "logs",
+        "result": "OK",
+        "kwargs": [
+          "name",
+          "deliveryDestinationType"
+        ]
+      },
+      {
+        "op": "put_delivery_destination",
+        "service": "logs",
+        "result": "OK",
+        "kwargs": [
+          "name",
+          "outputFormat",
+          "deliveryDestinationType"
+        ]
+      }
+    ],
+    "optimizations.md": [],
+    "payments.md": [],
+    "policy.md": [],
+    "registry.md": [],
+    "skills.md": [],
+    "tools.md": []
+  },
+  "totals": {
+    "total_calls": 10,
+    "validated_ok": 8,
+    "skipped_unresolvable_var": 2,
+    "errors": 0
+  },
+  "errors": []
+}

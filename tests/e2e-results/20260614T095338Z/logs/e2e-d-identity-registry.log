@@ -1,0 +1,46 @@
+
+
+========= e2e-d-identity-registry run 20260614T095338Z =========
+
+--- D.1 : CreateApiKeyCredentialProvider ---
+[STATUS PASS duration 0.26s]
+--- stdout ---
+created: agentcore-test-apikey-96c972e0 -> arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:token-vault/default/apikeycredentialprovider/agentcore-test-apikey-96c972e0
+
+--- stderr ---
+
+
+--- D.2 : GetApiKeyCredentialProvider — verify created ---
+[STATUS PASS duration 0.05s]
+--- stdout ---
+get: agentcore-test-apikey-96c972e0 None
+
+--- stderr ---
+
+
+--- D.3 : CreateRegistry ---
+[STATUS PASS duration 0.16s]
+--- stdout ---
+created registry: agentcore-test-reg-84025147 id: YeE2ONmZVw46TNQa arn: arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:registry/YeE2ONmZVw46TNQa
+
+--- stderr ---
+
+
+--- D.4 : GetRegistry — verify created ---
+[STATUS PASS duration 0.06s]
+--- stdout ---
+get: agentcore-test-reg-84025147 CREATING
+
+--- stderr ---
+
+
+--- D.99 : Cleanup ---
+[STATUS PASS duration 0.32s]
+--- stdout ---
+deleted apikey provider agentcore-test-apikey-96c972e0
+delete registry err: An error occurred (ConflictException) when calling the DeleteRegistry operation: Cannot delete registry in CREATING status.
+
+--- stderr ---
+
+
+=== e2e-d-identity-registry summary: 5/5 passed ===

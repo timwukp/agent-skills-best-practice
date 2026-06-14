@@ -1,0 +1,38 @@
+
+
+========= e2e-e-codeinterp run 20260614T095338Z =========
+
+--- E.1 : start_code_interpreter_session ---
+[STATUS PASS duration 1.29s]
+--- stdout ---
+session: 01KV2RT7QQ9BYHHW2ZJKFAM38M
+
+--- stderr ---
+
+
+--- E.2 : invoke_code_interpreter — assert print(6*7) yields 42 ---
+[STATUS PASS duration 0.16s]
+--- stdout ---
+invoke output: {"content": [{"type": "text", "text": "CI_TEST_RESULT= 42"}], "structuredContent": {"stdout": "CI_TEST_RESULT= 42", "stderr": "", "exitCode": 0, "executionTime": 0.05692481994628906}, "isError": false}
+
+
+--- stderr ---
+
+
+--- E.3 : get_code_interpreter_session — alive ---
+[STATUS PASS duration 0.04s]
+--- stdout ---
+status: READY
+
+--- stderr ---
+
+
+--- E.99 : stop_code_interpreter_session — cleanup ---
+[STATUS PASS duration 0.11s]
+--- stdout ---
+stopped 01KV2RT7QQ9BYHHW2ZJKFAM38M
+
+--- stderr ---
+
+
+=== e2e-e-codeinterp summary: 4/4 passed ===

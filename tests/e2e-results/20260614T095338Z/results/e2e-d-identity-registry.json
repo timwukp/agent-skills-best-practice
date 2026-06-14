@@ -1,0 +1,51 @@
+{
+  "track": "e2e-d-identity-registry",
+  "run_ts": "20260614T095338Z",
+  "cases": [
+    {
+      "id": "D.1",
+      "description": "CreateApiKeyCredentialProvider",
+      "status": "PASS",
+      "duration_s": 0.26,
+      "error": null,
+      "stdout_len": 168,
+      "stderr_len": 0
+    },
+    {
+      "id": "D.2",
+      "description": "GetApiKeyCredentialProvider \u2014 verify created",
+      "status": "PASS",
+      "duration_s": 0.05,
+      "error": null,
+      "stdout_len": 41,
+      "stderr_len": 0
+    },
+    {
+      "id": "D.3",
+      "description": "CreateRegistry",
+      "status": "PASS",
+      "duration_s": 0.16,
+      "error": null,
+      "stdout_len": 147,
+      "stderr_len": 0
+    },
+    {
+      "id": "D.4",
+      "description": "GetRegistry \u2014 verify created",
+      "status": "PASS",
+      "duration_s": 0.06,
+      "error": null,
+      "stdout_len": 42,
+      "stderr_len": 0
+    },
+    {
+      "id": "D.99",
+      "description": "Cleanup",
+      "status": "PASS",
+      "duration_s": 0.32,
+      "error": null,
+      "stdout_len": 200,
+      "stderr_len": 0
+    }
+  ]
+}

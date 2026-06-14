@@ -1,0 +1,17 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "589f8071-1fb6-4091-a751-fb7680335cc8",
+    "HTTPStatusCode": 202,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 09:53:42 GMT",
+      "content-type": "application/json",
+      "content-length": "92",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "589f8071-1fb6-4091-a751-fb7680335cc8",
+      "x-amz-apigw-id": "e8gGHGPQIAMEUYA=",
+      "x-amzn-trace-id": "Root=1-6a2e7a26-02c831d41efe188d1d63f9e1"
+    },
+    "RetryAttempts": 0
+  },
+  "registryArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:registry/YeE2ONmZVw46TNQa"
+}

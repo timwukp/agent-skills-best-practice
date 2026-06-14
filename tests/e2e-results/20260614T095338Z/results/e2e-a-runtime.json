@@ -1,0 +1,42 @@
+{
+  "track": "e2e-a-runtime",
+  "run_ts": "20260614T095338Z",
+  "cases": [
+    {
+      "id": "A.1",
+      "description": "Create runtime via codeConfiguration (S3 source) + wait for READY",
+      "status": "PASS",
+      "duration_s": 15.77,
+      "error": null,
+      "stdout_len": 365,
+      "stderr_len": 0
+    },
+    {
+      "id": "A.2",
+      "description": "invoke_agent_runtime (data plane) \u2014 verify echo response",
+      "status": "ERROR",
+      "duration_s": 30.7,
+      "error": "RuntimeClientError: An error occurred (RuntimeClientError) when calling the InvokeAgentRuntime operation: Runtime initialization time exceeded. Please make sure that initialization completes in 30s.",
+      "stdout_len": 0,
+      "stderr_len": 1096
+    },
+    {
+      "id": "A.3",
+      "description": "list_agent_runtime_endpoints \u2014 assert DEFAULT endpoint exists",
+      "status": "PASS",
+      "duration_s": 0.05,
+      "error": null,
+      "stdout_len": 23,
+      "stderr_len": 0
+    },
+    {
+      "id": "A.99",
+      "description": "Cleanup: delete runtime + source object",
+      "status": "PASS",
+      "duration_s": 0.2,
+      "error": null,
+      "stdout_len": 120,
+      "stderr_len": 0
+    }
+  ]
+}
