@@ -26,6 +26,7 @@ All available skills organized by category. Each skill lives in `skills/skills/<
 | Skill | Description |
 |-------|-------------|
 | [mcp-builder](skills/mcp-builder/) | Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. |
+| [agentcore-harness-builder](skills/agentcore-harness-builder/) | Build production-ready AWS Bedrock AgentCore Harness agents end to end — declarative model + prompt, Memory, built-in Browser/Code Interpreter, Gateway/MCP tools, inline functions, Skills, advanced config, Observability, Evaluations, Optimizations, Identity, Policy, Payments, Registry. Battle-tested against real AWS API; encodes the Live View human-in-the-loop SSO login workaround. |
 | [java-unit-test-generator](skills/java-unit-test-generator/) | Generates JUnit unit tests for Java classes with loop prevention and incremental generation. |
 | [rest-api-test-generator](skills/rest-api-test-generator/) | Generates REST API tests using RestAssured or MockMvc with loop prevention and incremental validation. |
 | [selenium-ui-test-generator](skills/selenium-ui-test-generator/) | Generates Selenium WebDriver tests for React/Angular front-ends with strict loop prevention. |

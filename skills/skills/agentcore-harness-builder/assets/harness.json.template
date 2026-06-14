@@ -1,0 +1,116 @@
+{
+  "_comment": "Full-featured AgentCore Harness config template. Field shapes VERIFIED against boto3 1.43.29 (CreateHarness). Copy this, rename, strip what you don't need, replace every <PLACEHOLDER>. Validate with scripts/validate_config.py before calling AWS. See references/harness-config.md. NOTE: network + lifecycle live UNDER environment.agentCoreRuntimeEnvironment (NOT top-level); truncation uses config.slidingWindow.messagesCount; the harness name field is 'harnessName' (create) / 'harnessId' (update); inbound IAM auth is the DEFAULT so authorizerConfiguration is omitted (only set it for JWT).",
+
+  "harnessName": "<HarnessName>",
+
+  "model": {
+    "bedrockModelConfig": {
+      "modelId": "global.anthropic.claude-sonnet-4-6",
+      "apiFormat": "CONVERSE",
+      "maxTokens": 65536,
+      "temperature": 0.2,
+      "topP": 0.9
+    }
+  },
+
+  "systemPrompt": [
+    {
+      "text": "You are an expert <ROLE> for <DOMAIN>.\n\nYour job:\n1. <step 1>\n2. <step 2>\n3. <step 3>\n\nRules:\n- <hard constraint>\n- <hard constraint>\n- Classify outcomes and include evidence.\n\nOutput the final result as JSON to /mnt/reports/result-latest.json and a Markdown summary to /mnt/reports/summary.md.\n\nAfter each run, reflect on patterns worth remembering for future sessions."
+    }
+  ],
+
+  "tools": [
+    {
+      "type": "agentcore_browser",
+      "name": "browser",
+      "config": {
+        "agentCoreBrowser": {
+          "browserArn": "arn:aws:bedrock-agentcore:us-east-1:aws:browser/aws.browser.v1"
+        }
+      }
+    },
+    {
+      "type": "agentcore_code_interpreter",
+      "name": "code_interpreter",
+      "config": {
+        "agentCoreCodeInterpreter": {
+          "codeInterpreterArn": "arn:aws:bedrock-agentcore:us-east-1:aws:code-interpreter/aws.codeinterpreter.v1"
+        }
+      }
+    },
+    {
+      "type": "inline_function",
+      "name": "notify_complete",
+      "config": {
+        "inlineFunction": {
+          "description": "Signal the orchestrator that work is complete. Call after writing the report.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "report_path": { "type": "string", "description": "Path to the JSON report" },
+              "summary": { "type": "string", "description": "One-line outcome summary" }
+            },
+            "required": ["report_path"]
+          }
+        }
+      }
+    }
+  ],
+
+  "allowedTools": ["browser_*", "code_interpreter*", "skills", "notify_complete"],
+
+  "skills": [
+    {
+      "git": {
+        "url": "https://github.com/<owner>/<repo>",
+        "path": "<path/to/skills/your-skill>"
+      }
+    }
+  ],
+
+  "memory": {
+    "_comment": "Wire via scripts/wire_memory.py (CreateMemory + UpdateHarness + IAM grant). strategyId values come from the CreateMemory response. retrievalConfig value = {strategyId, topK, relevanceScore}. On UpdateHarness, wrap this whole object in optionalValue.",
+    "agentCoreMemoryConfiguration": {
+      "arn": "<MEMORY_ARN>",
+      "actorId": "ci-pipeline",
+      "messagesCount": 20,
+      "retrievalConfig": {
+        "/episodes/{actorId}/{sessionId}":  { "strategyId": "<EPISODIC_ID>",       "topK": 10, "relevanceScore": 0.2 },
+        "/users/{actorId}/preferences":     { "strategyId": "<USERPREF_ID>",       "topK": 10, "relevanceScore": 0.2 },
+        "/summaries/{actorId}/{sessionId}": { "strategyId": "<SUMMARIZATION_ID>",  "topK": 10, "relevanceScore": 0.2 },
+        "/users/{actorId}/facts":           { "strategyId": "<SEMANTIC_ID>",       "topK": 10, "relevanceScore": 0.2 }
+      }
+    }
+  },
+
+  "maxIterations": 100,
+  "maxTokens": 65536,
+  "timeoutSeconds": 1800,
+
+  "truncation": {
+    "strategy": "sliding_window",
+    "config": {
+      "slidingWindow": { "messagesCount": 150 }
+    }
+  },
+
+  "environment": {
+    "_comment": "network mode and session lifecycle live HERE, under agentCoreRuntimeEnvironment — NOT as top-level fields. lifecycle values are in SECONDS.",
+    "agentCoreRuntimeEnvironment": {
+      "networkConfiguration": { "networkMode": "PUBLIC" },
+      "lifecycleConfiguration": {
+        "idleRuntimeSessionTimeout": 900,
+        "maxLifetime": 28800
+      }
+    }
+  },
+
+  "_authorizerConfiguration_note": "OMIT authorizerConfiguration for the default IAM (SigV4) inbound auth. Only set it for JWT, e.g.: \"authorizerConfiguration\": {\"customJWTAuthorizer\": {\"discoveryUrl\": \"https://issuer/.well-known/openid-configuration\", \"allowedAudience\": [\"<aud>\"]}}",
+
+  "tags": {
+    "team": "qa-platform",
+    "environment": "production",
+    "cost-center": "engineering",
+    "agent-type": "<agent-type>"
+  }
+}

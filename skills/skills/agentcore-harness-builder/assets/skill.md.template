@@ -1,0 +1,44 @@
+---
+name: your-skill-name
+description: One line describing what this skill does and when the agent should use it.
+---
+
+<!--
+  REQUIRED: the YAML frontmatter above (name + description) must be the FIRST thing in this file,
+  starting with "---" on line 1. Without it, InvokeHarness fails at session start with:
+    "SKILL.md ... has no YAML frontmatter (must start with ---)"
+  - name: lowercase, no spaces. The agent invokes the skill via {"skill_name": "your-skill-name"}.
+  - description: one line. Keep it specific so the agent knows when to consult this skill.
+  This requirement is undocumented in the AgentCore guide. See references/skills.md.
+-->
+
+# Your Skill Name
+
+## Overview
+
+Explain what domain knowledge or procedure this skill provides and why it matters. Keep the body focused — this loads
+into the agent's context when the skill is consulted.
+
+## When to use this skill
+
+Describe the situations in which the agent should apply this skill.
+
+## Procedure
+
+1. Step one — explain the why, not just the what.
+2. Step two.
+3. Step three.
+
+## Rubrics / criteria (if applicable)
+
+Define how to judge success, classify outcomes, or rate severity. Be concrete and objective where possible.
+
+## Examples
+
+**Example 1:**
+Input: <a realistic situation>
+Output: <what the agent should produce>
+
+## Notes
+
+Keep stable, reusable methodology here rather than in the harness system prompt, so it only costs context when relevant.

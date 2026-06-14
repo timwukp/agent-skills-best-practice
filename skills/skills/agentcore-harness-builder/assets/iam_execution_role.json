@@ -1,0 +1,75 @@
+{
+  "_comment": "Execution role for an AgentCore Harness. Two documents below: the trust policy (who can assume the role) and the permissions policy (what the harness may do). Replace <REGION>, <ACCOUNT_ID>, <MEMORY_ID>, and the model id as needed. Memory data-plane permissions are added per-Memory by scripts/wire_memory.py — the block here is a template you can also apply manually. Confirm the exact service principal and action names against the current AgentCore docs; preview details can change.",
+
+  "trustPolicy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowAgentCoreToAssume",
+        "Effect": "Allow",
+        "Principal": { "Service": "bedrock-agentcore.amazonaws.com" },
+        "Action": "sts:AssumeRole",
+        "Condition": {
+          "StringEquals": { "aws:SourceAccount": "<ACCOUNT_ID>" }
+        }
+      }
+    ]
+  },
+
+  "permissionsPolicy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "InvokeModel",
+        "Effect": "Allow",
+        "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+        "Resource": [
+          "arn:aws:bedrock:*::foundation-model/*",
+          "arn:aws:bedrock:*:<ACCOUNT_ID>:inference-profile/*"
+        ]
+      },
+      {
+        "Sid": "MemoryEvents",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock-agentcore:CreateEvent",
+          "bedrock-agentcore:GetEvent",
+          "bedrock-agentcore:ListEvents",
+          "bedrock-agentcore:ListSessions",
+          "bedrock-agentcore:ListActors"
+        ],
+        "Resource": "arn:aws:bedrock-agentcore:<REGION>:<ACCOUNT_ID>:memory/<MEMORY_ID>"
+      },
+      {
+        "Sid": "MemoryRetrieval",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock-agentcore:ListMemoryRecords",
+          "bedrock-agentcore:RetrieveMemoryRecords"
+        ],
+        "Resource": "arn:aws:bedrock-agentcore:<REGION>:<ACCOUNT_ID>:memory/<MEMORY_ID>",
+        "Condition": {
+          "StringLike": {
+            "bedrock-agentcore:namespace": [
+              "/episodes/*/*",
+              "/users/*/preferences",
+              "/summaries/*/*",
+              "/users/*/facts"
+            ]
+          }
+        }
+      },
+      {
+        "Sid": "ObservabilityLogs",
+        "Effect": "Allow",
+        "Action": [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ],
+        "Resource": "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/bedrock-agentcore/*"
+      }
+    ]
+  }
+}

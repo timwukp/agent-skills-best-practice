@@ -1,0 +1,23 @@
+{
+  "skill_name": "agentcore-harness-builder",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm on the QA platform team and want to stand up an AWS Bedrock AgentCore Harness for a web UI test agent. It should use Claude Sonnet, have the built-in browser and code interpreter, persistent memory across runs, run in CI, and emit logs/traces to CloudWatch. Give me a complete harness.json plus the exact steps and commands to create it, wire memory, and verify it actually works. Use best-practice config.",
+      "expected_output": "A complete harness.json using an inference-profile model id (global.*/us.*), Converse API; tools for agentcore_browser and agentcore_code_interpreter each WITH a config block; allowedTools using globs (browser_*, code_interpreter*, skills) not plain names; memory section; explicit maxIterations/maxTokens/timeoutSeconds, truncation sliding_window, network, inbound auth, tags. Steps must include preflight (boto3>=1.43.18), create_harness, the 3-step memory wiring (create + attach + IAM grant), observability setup (TRACES->XRAY, APPLICATION_LOGS->CWL + resource policy), and a final invoke_harness smoke test. Should reference the skill's scripts/validate_config.py.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "My AgentCore harness deploys fine but the agent says it can't see the browser tool, and when I call update_harness with my memory config it gets rejected with a validation error. Here's roughly what I have: tools=[{type:agentcore_browser,name:browser}], allowedTools=[\"browser\"], and I call update_harness(memory={agentCoreMemoryConfiguration:{...}}). What's wrong?",
+      "expected_output": "Identifies three issues: (1) tools[].config is missing so the browser is stored but not wired — add config.agentCoreBrowser with the browser ARN; (2) allowedTools uses the plain name 'browser' which does not match — must use the glob 'browser_*'; (3) update_harness memory is a structure field and must be wrapped: memory={'optionalValue': {'agentCoreMemoryConfiguration': {...}}}. Bonus: mention clientToken>=33 chars and using preflight/schema-introspection.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I attached an AgentCore Memory to my harness (created the memory, then called update_harness with the memory ARN and retrievalConfig) but every single invocation fails at session start with AccessDeniedException on ListEvents. The memory definitely exists. What did I miss?",
+      "expected_output": "Explains that memory wiring is THREE steps and the third was skipped: the harness execution role needs an iam:PutRolePolicy grant for Memory data-plane actions (ListEvents/CreateEvent/GetEvent/ListSessions/ListActors) plus retrieval actions (ListMemoryRecords/RetrieveMemoryRecords) scoped to the Memory ARN, with retrievalConfig namespace {placeholder} templates converted to glob* patterns in the IAM condition. Should point to wire_memory.py which does all three steps.",
+      "files": []
+    }
+  ]
+}
