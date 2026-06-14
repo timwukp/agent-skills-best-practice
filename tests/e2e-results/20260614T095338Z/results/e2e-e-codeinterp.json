@@ -1,0 +1,42 @@
+{
+  "track": "e2e-e-codeinterp",
+  "run_ts": "20260614T095338Z",
+  "cases": [
+    {
+      "id": "E.1",
+      "description": "start_code_interpreter_session",
+      "status": "PASS",
+      "duration_s": 1.29,
+      "error": null,
+      "stdout_len": 36,
+      "stderr_len": 0
+    },
+    {
+      "id": "E.2",
+      "description": "invoke_code_interpreter \u2014 assert print(6*7) yields 42",
+      "status": "PASS",
+      "duration_s": 0.16,
+      "error": null,
+      "stdout_len": 218,
+      "stderr_len": 0
+    },
+    {
+      "id": "E.3",
+      "description": "get_code_interpreter_session \u2014 alive",
+      "status": "PASS",
+      "duration_s": 0.04,
+      "error": null,
+      "stdout_len": 14,
+      "stderr_len": 0
+    },
+    {
+      "id": "E.99",
+      "description": "stop_code_interpreter_session \u2014 cleanup",
+      "status": "PASS",
+      "duration_s": 0.11,
+      "error": null,
+      "stdout_len": 35,
+      "stderr_len": 0
+    }
+  ]
+}

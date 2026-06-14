@@ -1,0 +1,56 @@
+
+
+========= e2e-a-runtime run 20260614T095338Z =========
+
+--- A.1 : Create runtime via codeConfiguration (S3 source) + wait for READY ---
+[STATUS PASS duration 15.77s]
+--- stdout ---
+execution role: arn:aws:iam::<ACCOUNT_ID>:role/AgentCoreTestRuntimeExecRole
+uploaded source: s3://agentcore-tests-output-<ACCOUNT_ID>/runtime-source/agentcore-test-a9c5b0d0/source.zip
+created: agentcore_test_81b9ce18968a-FXLz4F5MDU arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:runtime/agentcore_test_81b9ce18968a-FXLz4F5MDU
+[0] status=CREATING
+[1] status=READY
+
+--- stderr ---
+
+
+--- A.2 : invoke_agent_runtime (data plane) — verify echo response ---
+[STATUS ERROR duration 30.7s]
+--- stdout ---
+
+--- stderr ---
+Traceback (most recent call last):
+  File "/root/agentcore-tests/scripts/test_lib.py", line 62, in go
+    fn(evidence_dir=self.evidence_dir, case_id=cid)
+  File "/root/agentcore-tests/scripts/e2e_a_runtime.py", line 150, in _
+    resp = c_data.invoke_agent_runtime(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/agentcore-tests/.venv/lib64/python3.11/site-packages/botocore/client.py", line 606, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/agentcore-tests/.venv/lib64/python3.11/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/root/agentcore-tests/.venv/lib64/python3.11/site-packages/botocore/client.py", line 1094, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.errorfactory.RuntimeClientError: An error occurred (RuntimeClientError) when calling the InvokeAgentRuntime operation: Runtime initialization time exceeded. Please make sure that initialization completes in 30s.
+
+
+--- A.3 : list_agent_runtime_endpoints — assert DEFAULT endpoint exists ---
+[STATUS PASS duration 0.05s]
+--- stdout ---
+endpoints: ['DEFAULT']
+
+--- stderr ---
+
+
+--- A.99 : Cleanup: delete runtime + source object ---
+[STATUS PASS duration 0.2s]
+--- stdout ---
+deleted runtime agentcore_test_81b9ce18968a-FXLz4F5MDU
+deleted source runtime-source/agentcore-test-a9c5b0d0/source.zip
+
+--- stderr ---
+
+
+=== e2e-a-runtime summary: 3/4 passed ===

@@ -1,0 +1,1 @@
+{"content": [{"type": "text", "text": "CI_TEST_RESULT= 42"}], "structuredContent": {"stdout": "CI_TEST_RESULT= 42", "stderr": "", "exitCode": 0, "executionTime": 0.05692481994628906}, "isError": false}

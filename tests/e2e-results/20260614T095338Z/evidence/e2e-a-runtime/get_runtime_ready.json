@@ -1,0 +1,54 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "3e049bc3-1dba-4d65-8691-d9b091dae2df",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 09:53:59 GMT",
+      "content-type": "application/json",
+      "content-length": "1070",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "3e049bc3-1dba-4d65-8691-d9b091dae2df",
+      "x-amz-apigw-id": "e8gIuHfUIAMEjpw=",
+      "x-amzn-trace-id": "Root=1-6a2e7a37-776769830f263495351409ab"
+    },
+    "RetryAttempts": 0
+  },
+  "agentRuntimeArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:runtime/agentcore_test_81b9ce18968a-FXLz4F5MDU",
+  "agentRuntimeName": "agentcore_test_81b9ce18968a",
+  "agentRuntimeId": "agentcore_test_81b9ce18968a-FXLz4F5MDU",
+  "agentRuntimeVersion": "1",
+  "createdAt": "2026-06-14 09:53:44.113292+00:00",
+  "lastUpdatedAt": "2026-06-14 09:53:51.823507+00:00",
+  "roleArn": "arn:aws:iam::<ACCOUNT_ID>:role/AgentCoreTestRuntimeExecRole",
+  "networkConfiguration": {
+    "networkMode": "PUBLIC"
+  },
+  "status": "READY",
+  "lifecycleConfiguration": {
+    "idleRuntimeSessionTimeout": 600,
+    "maxLifetime": 3600
+  },
+  "workloadIdentityDetails": {
+    "workloadIdentityArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:workload-identity-directory/default/workload-identity/agentcore_test_81b9ce18968a-FXLz4F5MDU"
+  },
+  "agentRuntimeArtifact": {
+    "codeConfiguration": {
+      "code": {
+        "s3": {
+          "bucket": "agentcore-tests-output-<ACCOUNT_ID>",
+          "prefix": "runtime-source/agentcore-test-a9c5b0d0/source.zip"
+        }
+      },
+      "runtime": "PYTHON_3_11",
+      "entryPoint": [
+        "main.py"
+      ]
+    }
+  },
+  "protocolConfiguration": {
+    "serverProtocol": "HTTP"
+  },
+  "metadataConfiguration": {
+    "requireMMDSV2": true
+  }
+}

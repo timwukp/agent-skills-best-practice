@@ -1,0 +1,14 @@
+
+
+========= e2e-0-validate-codeblocks run 20260614T095338Z =========
+
+--- 0.1 : all reference code blocks parse + boto3 ops resolve + kwargs are valid params ---
+[STATUS PASS duration 0.85s]
+--- stdout ---
+scanning 16 reference files in /root/agentcore-tests/repo/skills/skills/agentcore-harness-builder/references
+total calls: 10, validated_ok: 8, skipped(unresolvable var): 2, errors: 0
+
+--- stderr ---
+
+
+=== e2e-0-validate-codeblocks summary: 1/1 passed ===

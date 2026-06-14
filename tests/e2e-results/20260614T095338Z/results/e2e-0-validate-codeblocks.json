@@ -1,0 +1,15 @@
+{
+  "track": "e2e-0-validate-codeblocks",
+  "run_ts": "20260614T095338Z",
+  "cases": [
+    {
+      "id": "0.1",
+      "description": "all reference code blocks parse + boto3 ops resolve + kwargs are valid params",
+      "status": "PASS",
+      "duration_s": 0.85,
+      "error": null,
+      "stdout_len": 183,
+      "stderr_len": 0
+    }
+  ]
+}

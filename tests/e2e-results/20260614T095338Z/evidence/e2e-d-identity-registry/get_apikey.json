@@ -1,0 +1,30 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "ec11c7e3-800a-4aac-8b7c-23c897abd831",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 09:53:42 GMT",
+      "content-type": "application/json",
+      "content-length": "504",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "ec11c7e3-800a-4aac-8b7c-23c897abd831",
+      "x-amzn-remapped-x-amzn-requestid": "2a950343-79d6-4eb4-8c6c-1351996fcf3d",
+      "strict-transport-security": "max-age=47304000; includeSubDomains",
+      "x-amzn-remapped-content-length": "504",
+      "x-amzn-remapped-connection": "keep-alive",
+      "x-amz-apigw-id": "e8gGHGmHoAMEtJw=",
+      "cache-control": "no-store, no-cache",
+      "x-amzn-trace-id": "Root=1-6a2e7a26-73fe087152923a072b46e5ab",
+      "x-amzn-remapped-date": "Sun, 14 Jun 2026 09:53:42 GMT"
+    },
+    "RetryAttempts": 0
+  },
+  "apiKeySecretArn": {
+    "secretArn": "arn:aws:secretsmanager:us-east-1:<ACCOUNT_ID>:secret:bedrock-agentcore-identity!default/apikey/agentcore-test-apikey-96c972e0-762d3dc7-N5XHJn"
+  },
+  "apiKeySecretSource": "MANAGED",
+  "name": "agentcore-test-apikey-96c972e0",
+  "credentialProviderArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:token-vault/default/apikeycredentialprovider/agentcore-test-apikey-96c972e0",
+  "createdTime": "2026-06-14 09:53:42.551000+00:00",
+  "lastUpdatedTime": "2026-06-14 09:53:42.551000+00:00"
+}

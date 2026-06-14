@@ -1,0 +1,17 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "3778fa4c-409c-48ff-b288-ca180c5eb88b",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 09:53:41 GMT",
+      "content-type": "application/json",
+      "content-length": "140",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "3778fa4c-409c-48ff-b288-ca180c5eb88b"
+    },
+    "RetryAttempts": 0
+  },
+  "codeInterpreterIdentifier": "aws.codeinterpreter.v1",
+  "sessionId": "01KV2RT7QQ9BYHHW2ZJKFAM38M",
+  "createdAt": "2026-06-14 09:53:40.560825+00:00"
+}
