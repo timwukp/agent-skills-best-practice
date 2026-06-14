@@ -1,0 +1,69 @@
+{
+  "track": "e2e-e2-codeinterp",
+  "run_ts": "trackE2-20260614T154404Z",
+  "cases": [
+    {
+      "id": "E2.1",
+      "description": "start_code_interpreter_session",
+      "status": "PASS",
+      "duration_s": 1.21,
+      "error": null,
+      "stdout_len": 49,
+      "stderr_len": 0
+    },
+    {
+      "id": "E2.2",
+      "description": "writeFiles \u2014 write a work file",
+      "status": "PASS",
+      "duration_s": 0.1,
+      "error": null,
+      "stdout_len": 14,
+      "stderr_len": 0
+    },
+    {
+      "id": "E2.3",
+      "description": "listFiles \u2014 file is present",
+      "status": "PASS",
+      "duration_s": 0.07,
+      "error": null,
+      "stdout_len": 24,
+      "stderr_len": 0
+    },
+    {
+      "id": "E2.4",
+      "description": "readFiles \u2014 content round-trips",
+      "status": "PASS",
+      "duration_s": 0.11,
+      "error": null,
+      "stdout_len": 24,
+      "stderr_len": 0
+    },
+    {
+      "id": "E2.5",
+      "description": "executeCommand \u2014 shell cat the file",
+      "status": "PASS",
+      "duration_s": 0.17,
+      "error": null,
+      "stdout_len": 22,
+      "stderr_len": 0
+    },
+    {
+      "id": "E2.6",
+      "description": "executeCode \u2014 python reads the same file (cross-tool persistence)",
+      "status": "PASS",
+      "duration_s": 0.14,
+      "error": null,
+      "stdout_len": 38,
+      "stderr_len": 0
+    },
+    {
+      "id": "E2.99",
+      "description": "stop_code_interpreter_session",
+      "status": "PASS",
+      "duration_s": 0.11,
+      "error": null,
+      "stdout_len": 35,
+      "stderr_len": 0
+    }
+  ]
+}

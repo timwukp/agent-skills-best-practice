@@ -216,6 +216,7 @@ Load these as needed — don't read them all upfront.
 | `references/model-and-prompt.md` | Phase 2 — provider/model ids, Converse API, inference config, prompt patterns |
 | `references/tools.md` | Phase 2 — browser, code interpreter, gateway/MCP, inline functions, allowedTools |
 | `references/browser-auth.md` | Phase 2/6 — human-in-the-loop browser SSO login, S3-signal handoff, inline-function pause/resume, long read_timeout, retrieving session files |
+| `references/code-interpreter.md` | Phase 2 — Code Interpreter deep dive: session lifecycle, the 9 tools (executeCode/executeCommand/read·write·list·removeFiles/startCommandExecution/getTask/stopTask), file+command workflows, custom interpreters (PUBLIC/SANDBOX/VPC + certificates), the arguments-is-a-dict gotcha |
 | `references/skills.md` | Phase 2 — skills union, git/s3/path sources, mandatory frontmatter |
 | `references/memory.md` | Phase 4 — strategies, retrievalConfig, the 3-step wiring + IAM |
 | `references/advanced-config.md` | Phase 2 — truncation, limits, lifecycle, network, inbound auth |
