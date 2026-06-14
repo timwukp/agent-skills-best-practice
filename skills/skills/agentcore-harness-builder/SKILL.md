@@ -43,6 +43,12 @@ Agents** may be enough. Read `references/decision-guide.md` and confirm with the
 clearly right (filesystem/shell needed, multi-model switching, declarative iteration, built-in browser/code-interpreter,
 stateful memory), proceed.
 
+If Runtime is the right fit instead (you need control of the loop, AG-UI / A2A protocols, embedding in an existing app),
+this skill still helps: `references/runtime.md` covers the code-first path end to end (`BedrockAgentCoreApp`,
+`@app.entrypoint`, the `/invocations`/`/ping` HTTP contract incl. the `time_of_last_update` gotcha, AG-UI / A2A, and
+`CreateAgentRuntime` shapes). Memory, Identity, Observability wire the same way as for a Harness — pass the Runtime's
+`roleArn` to `wire_memory.py` and `setup_observability.py`.
+
 ---
 
 ## The build workflow
@@ -205,6 +211,7 @@ Load these as needed — don't read them all upfront.
 | File | When to read |
 |---|---|
 | `references/decision-guide.md` | Phase 0/1 — Harness vs Runtime vs Bedrock Agents |
+| `references/runtime.md` | Phase 1/2 — Runtime build path (code-first sibling of Harness): `BedrockAgentCoreApp`, `@app.entrypoint`, `/invocations` + `/ping` (incl. the `time_of_last_update` gotcha), AG-UI / A2A, `agentcore deploy` |
 | `references/harness-config.md` | Phase 2/3 — full field reference + update-payload rules + best-practice defaults table |
 | `references/model-and-prompt.md` | Phase 2 — provider/model ids, Converse API, inference config, prompt patterns |
 | `references/tools.md` | Phase 2 — browser, code interpreter, gateway/MCP, inline functions, allowedTools |
