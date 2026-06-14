@@ -1,0 +1,25 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "62876ead-5cee-4d52-8802-3dab6e5b1098",
+    "HTTPStatusCode": 201,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 15:38:04 GMT",
+      "content-type": "application/json",
+      "content-length": "228",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "62876ead-5cee-4d52-8802-3dab6e5b1098",
+      "x-amzn-remapped-x-amzn-requestid": "a1b9f845-1d1a-4e61-942e-0ddea4598fca",
+      "strict-transport-security": "max-age=47304000; includeSubDomains",
+      "x-amzn-remapped-content-length": "228",
+      "x-amzn-remapped-connection": "keep-alive",
+      "x-amz-apigw-id": "e9SicGubIAMEe1g=",
+      "cache-control": "no-store, no-cache",
+      "x-amzn-trace-id": "Root=1-6a2ecadc-5688358b2181ac372752d547",
+      "x-amzn-remapped-date": "Sun, 14 Jun 2026 15:38:04 GMT"
+    },
+    "RetryAttempts": 0
+  },
+  "name": "agentcore_test_wi_72146e27",
+  "workloadIdentityArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:workload-identity-directory/default/workload-identity/agentcore_test_wi_72146e27",
+  "allowedResourceOauth2ReturnUrls": []
+}

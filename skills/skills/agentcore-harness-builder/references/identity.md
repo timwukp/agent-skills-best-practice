@@ -45,3 +45,39 @@ Identity is part of the preview control plane. Introspect exact shapes before sc
 python scripts/preflight.py --show-shape CreateOauth2CredentialProvider --show-shape CreateWorkloadIdentity
 ```
 Consult the AgentCore Identity dev guide and the SDK `bedrock_agentcore.identity` module for agent-side helpers.
+
+## Executable examples (verified live, boto3 1.43.29)
+
+```python
+import boto3, secrets
+c = boto3.client("bedrock-agentcore-control", region_name="us-east-1")
+
+# --- Workload Identity (just a name; optional OAuth return URLs) ---
+wi = c.create_workload_identity(name="my_agent_workload")      # name: ^[A-Za-z][A-Za-z0-9_]*$
+#   allowedResourceOauth2ReturnUrls=["https://app.example.com/callback"]
+workload_identity_arn = wi["workloadIdentityArn"]
+
+# --- API-key credential provider (writes the key into the Token Vault / Secrets Manager) ---
+# NOTE: the caller needs secretsmanager:CreateSecret on bedrock-agentcore-identity!* .
+ak = c.create_api_key_credential_provider(name="my_api_key", apiKey="sk-...")
+api_key_provider_arn = ak["credentialProviderArn"]
+
+# --- OAuth2 credential provider (vendor-specific; secret stored in the Token Vault) ---
+oa = c.create_oauth2_credential_provider(
+    name="my_google_oauth",
+    credentialProviderVendor="GoogleOauth2",          # enum incl. Custom/Microsoft/Github/Slack/Okta/...
+    oauth2ProviderConfigInput={"googleOauth2ProviderConfig": {
+        "clientId": "<client-id>.apps.googleusercontent.com",
+        "clientSecret": "<client-secret>",
+    }},
+)
+oauth_provider_arn = oa["credentialProviderArn"]
+# CustomOauth2 instead needs oauth2ProviderConfigInput={"customOauth2ProviderConfig": {
+#   "oauthDiscovery": {"discoveryUrl": "https://issuer/.well-known/openid-configuration"},
+#   "clientId": "...", "clientSecret": "..."}}
+```
+
+These provider ARNs are exactly what a Gateway target's `credentialProviderConfigurations` or a harness
+tool's `outboundAuth` reference (see `references/gateway.md` / `references/tools.md`). Cleanup with
+`delete_workload_identity(name=...)`, `delete_api_key_credential_provider(name=...)`,
+`delete_oauth2_credential_provider(name=...)`.

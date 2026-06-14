@@ -1,0 +1,37 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "674b4791-16c8-4186-bc06-92c21f06883c",
+    "HTTPStatusCode": 202,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 15:38:09 GMT",
+      "content-type": "application/json",
+      "content-length": "596",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "674b4791-16c8-4186-bc06-92c21f06883c",
+      "x-amzn-remapped-x-amzn-requestid": "674b4791-16c8-4186-bc06-92c21f06883c",
+      "access-control-allow-origin": "*",
+      "x-amzn-remapped-content-length": "596",
+      "x-amzn-remapped-connection": "keep-alive",
+      "x-amz-apigw-id": "e9SjSGpZoAMEWlw=",
+      "vary": "origin, access-control-request-method, access-control-request-headers",
+      "access-control-expose-headers": "x-amzn-errortype,x-amzn-requestid,x-amzn-errormessage,x-amzn-trace-id,x-amz-apigw-id,date",
+      "x-amzn-trace-id": "Root=1-6a2ecae1-58a0befa2f52a69b674abeaf",
+      "x-amzn-remapped-date": "Sun, 14 Jun 2026 15:38:09 GMT"
+    },
+    "RetryAttempts": 0
+  },
+  "policyId": "agentcore_test_pol_50513b5b-p6okjcbkkc",
+  "name": "agentcore_test_pol_50513b5b",
+  "policyEngineId": "agentcore_test_pe_92a0735a-las2q9c1tz",
+  "createdAt": "2026-06-14 15:38:09.487370+00:00",
+  "updatedAt": "2026-06-14 15:38:09.487370+00:00",
+  "policyArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:policy-engine/agentcore_test_pe_92a0735a-las2q9c1tz/policy/agentcore_test_pol_50513b5b-p6okjcbkkc",
+  "status": "CREATING",
+  "definition": {
+    "cedar": {
+      "statement": "permit(principal, action, resource is AgentCore::Gateway);"
+    }
+  },
+  "description": "e2e allow-all test policy",
+  "statusReasons": []
+}

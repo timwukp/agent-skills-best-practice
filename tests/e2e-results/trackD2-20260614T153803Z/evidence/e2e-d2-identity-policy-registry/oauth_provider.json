@@ -1,0 +1,6 @@
+{
+  "name": "agentcore-test-oauth-393c015a",
+  "credentialProviderArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:token-vault/default/oauth2credentialprovider/agentcore-test-oauth-393c015a",
+  "status": "READY",
+  "callbackUrl": "https://bedrock-agentcore.us-east-1.amazonaws.com/identities/oauth2/callback/8cbba684-8b34-4af1-8e16-abc9961ea587"
+}
