@@ -166,11 +166,14 @@ Install protocol extras: `pip install "bedrock-agentcore[ag-ui]"` or `"bedrock-a
 # A) container image you already pushed to ECR
 {"containerConfiguration": {"containerUri": "<ECR_URI>:tag"}}
 
-# B) source bundle in S3 (the platform builds + runs it)
+# B) source bundle in S3 — a SELF-CONTAINED zip the platform unpacks to /var/task and runs.
+#    The platform does NOT pip-install for you: dependencies must already be vendored INTO the
+#    zip as Linux arm64 wheels (see "Container vs source" below). `agentcore deploy` builds this
+#    zip for you; with raw boto3 you build it yourself.
 {"codeConfiguration": {
     "code":      {"s3": {"bucket": "...", "prefix": "...", "versionId": "..."}},
     "runtime":   "PYTHON_3_13",            # enum: PYTHON_3_10/11/12/13/14, NODE_22
-    "entryPoint": ["main.py"],
+    "entryPoint": ["main.py"],             # or ["opentelemetry-instrument", "main.py"] for OTEL
 }}
 ```
 
@@ -250,8 +253,31 @@ needs S3 access if you point session storage at a custom bucket.
 | Choice | Use when |
 |---|---|
 | **Container** (`containerConfiguration.containerUri`) | Custom system deps, native libraries, multi-process tooling, your own existing image |
-| **Source** (`codeConfiguration` from S3 + `runtime` enum) | Pure-Python or pure-Node agent, no system deps, you want zero Docker |
+| **Source** (`codeConfiguration` from S3 + `runtime` enum) | Pure-Python/Node agent, you want zero Docker — **but you must vendor dependencies into the zip yourself** |
 
-If you hit `Runtime initialization time exceeded. Please make sure that initialization completes in 120s`,
-your container/source is too slow to start. Trim imports, lazy-load models/credentials, or pre-warm
-heavy dependencies at build time.
+### Source-deploy installs NO dependencies for you (verified by e2e)
+
+The platform unpacks your zip to `/var/task` (first on `sys.path`) and runs `python <entryPoint>`
+with **only the standard library** plus whatever you packaged. A bare `requirements.txt` in the zip
+is **ignored** — there is no server-side `pip install`. If your agent imports anything third-party
+(including `bedrock_agentcore` itself), you must vendor it as **Linux arm64** wheels (Runtime is
+arm64-only):
+
+```bash
+uv pip install --python-platform aarch64-manylinux2014 --python-version 3.13 \
+    --target=deployment_package --only-binary=:all: -r pyproject.toml
+(cd deployment_package && zip -r ../deployment_package.zip .)   # deps at zip root
+zip deployment_package.zip main.py                              # add entrypoint at zip root
+```
+
+The simplest path is **`agentcore deploy`**, which performs exactly these steps (arm64 wheel
+download → zip → S3 upload → `CreateAgentRuntime`) for you — no Docker, no ECS/EKS. The first
+deploy installs deps; subsequent updates re-use the zipped deps.
+
+> **e2e finding:** a `codeConfiguration` zip containing only `main.py` + a plain `requirements.txt`
+> fails at invoke with `Runtime initialization time exceeded. Please make sure that initialization
+> completes in 120s`. The CloudWatch *runtime* log reveals the real cause is `ModuleNotFoundError`
+> (the deps were never installed), **not** slowness. So when you hit the 120s init error on
+> source-deploy, first confirm your deps are vendored as arm64 wheels (or just use `agentcore deploy`).
+> For a genuinely slow *container*, trim imports, lazy-load models/credentials, or pre-warm heavy
+> dependencies at build time.
