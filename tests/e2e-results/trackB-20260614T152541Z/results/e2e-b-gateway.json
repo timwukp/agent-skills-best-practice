@@ -1,0 +1,60 @@
+{
+  "track": "e2e-b-gateway",
+  "run_ts": "trackB-20260614T152541Z",
+  "cases": [
+    {
+      "id": "B.1",
+      "description": "Ensure gateway execution role",
+      "status": "PASS",
+      "duration_s": 0.09,
+      "error": null,
+      "stdout_len": 79,
+      "stderr_len": 0
+    },
+    {
+      "id": "B.2",
+      "description": "create_gateway (MCP, AWS_IAM, SEMANTIC) + wait READY",
+      "status": "PASS",
+      "duration_s": 10.23,
+      "error": null,
+      "stdout_len": 125,
+      "stderr_len": 0
+    },
+    {
+      "id": "B.3",
+      "description": "create api-key provider + create_gateway_target (OpenAPI inline, API_KEY) + wait READY",
+      "status": "PASS",
+      "duration_s": 10.64,
+      "error": null,
+      "stdout_len": 245,
+      "stderr_len": 0
+    },
+    {
+      "id": "B.4",
+      "description": "create_gateway_rule routeToTarget \u2014 documents it requires an HTTP-protocol target (MCP targets are served directly)",
+      "status": "PASS",
+      "duration_s": 0.11,
+      "error": null,
+      "stdout_len": 281,
+      "stderr_len": 0
+    },
+    {
+      "id": "B.5",
+      "description": "get_gateway + list targets + list rules \u2014 verify",
+      "status": "PASS",
+      "duration_s": 0.13,
+      "error": null,
+      "stdout_len": 11,
+      "stderr_len": 0
+    },
+    {
+      "id": "B.99",
+      "description": "Cleanup: delete rule, target, gateway",
+      "status": "PASS",
+      "duration_s": 5.56,
+      "error": null,
+      "stdout_len": 56,
+      "stderr_len": 0
+    }
+  ]
+}

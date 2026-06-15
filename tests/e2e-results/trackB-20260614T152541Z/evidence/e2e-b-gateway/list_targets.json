@@ -1,0 +1,25 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "911fc48b-6beb-426d-9595-fb1a68c2d695",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 15:26:02 GMT",
+      "content-type": "application/json",
+      "content-length": "197",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "911fc48b-6beb-426d-9595-fb1a68c2d695",
+      "x-amz-apigw-id": "e9QxuHqGIAMEh7Q=",
+      "x-amzn-trace-id": "Root=1-6a2ec80a-2c62ccc32921a729638fa1ad"
+    },
+    "RetryAttempts": 0
+  },
+  "items": [
+    {
+      "targetId": "5UASB3TGIW",
+      "name": "demo-openapi",
+      "status": "READY",
+      "createdAt": "2026-06-14 15:25:52.223233+00:00",
+      "updatedAt": "2026-06-14 15:25:55.285080+00:00"
+    }
+  ]
+}

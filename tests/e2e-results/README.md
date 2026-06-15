@@ -73,3 +73,24 @@ paths are the managed **Harness** (validated separately end-to-end) and `agentco
 ├── evidence/  # raw API responses captured per case (sanitized)
 └── scripts/   # the exact test scripts used (sanitized, reproducible)
 ```
+
+## Run `trackB-20260614T152541Z` — Gateway (Track B), 6 / 6 pass
+
+Live Gateway build-side lifecycle on `bedrock-agentcore-control`:
+
+| Case | Description | Status |
+|---|---|---|
+| B.1 | ensure gateway execution role | PASS |
+| B.2 | `create_gateway` (MCP, `AWS_IAM`, `SEMANTIC`) → READY | PASS |
+| B.3 | api-key credential provider + `create_gateway_target` (OpenAPI inline, `API_KEY`) → READY | PASS |
+| B.4 | `create_gateway_rule` `routeToTarget` — documents it requires an HTTP-protocol target | PASS |
+| B.5 | `get_gateway` + `list_gateway_targets` verify | PASS |
+| B.99 | cleanup (rule, target, gateway, provider) | PASS |
+
+**Findings folded into `references/gateway.md`:**
+
+- `openApiSchema` targets using IAM auth require an `iamCredentialProvider`; use an **API_KEY** (or OAuth)
+  credential provider referencing an Identity provider ARN for non-AWS backends.
+- `routeToTarget` rules only support **HTTP-protocol** targets (`http.agentcoreRuntime`); MCP-protocol
+  targets (Lambda/OpenAPI/Smithy/MCP-server/API-Gateway) are served directly and reject `routeToTarget`.
+- The test derives the account id at runtime via STS, so `scripts/e2e_b_gateway.py` contains no account id.

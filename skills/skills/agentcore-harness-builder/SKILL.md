@@ -170,7 +170,7 @@ consider each rather than silently omitting it.
 - [ ] **Model + system prompt** — provider, inference-profile model id, Converse API, inference config (Phase 2)
 - [ ] **Browser tool** — `agentcore_browser`, wired via config, `browser_*` in allowedTools (Phase 2)
 - [ ] **Code Interpreter tool** — `agentcore_code_interpreter`, wired via config (Phase 2)
-- [ ] **Gateway / remote MCP tools** — external APIs as MCP tools (Phase 2, `references/tools.md`)
+- [ ] **Gateway / remote MCP tools** — external APIs as MCP tools (Phase 2; consume via `references/tools.md`, **build** via `references/gateway.md`)
 - [ ] **Inline functions** — human-in-the-loop / callbacks that return control to your orchestrator (Phase 2)
 - [ ] **Skills** — domain knowledge via git/s3/path source, with valid frontmatter (Phase 2)
 - [ ] **Memory** — strategy set + 3-step wiring + IAM grant (Phase 4)
@@ -215,6 +215,7 @@ Load these as needed — don't read them all upfront.
 | `references/harness-config.md` | Phase 2/3 — full field reference + update-payload rules + best-practice defaults table |
 | `references/model-and-prompt.md` | Phase 2 — provider/model ids, Converse API, inference config, prompt patterns |
 | `references/tools.md` | Phase 2 — browser, code interpreter, gateway/MCP, inline functions, allowedTools |
+| `references/gateway.md` | Phase 2 — **build** a Gateway (turn Lambda/OpenAPI/Smithy/MCP-server/API-GW/Runtime into MCP tools): `CreateGateway`/`Target`/`Rule`, inbound `authorizerType`, outbound credential providers, then wire into a harness |
 | `references/browser-auth.md` | Phase 2/6 — human-in-the-loop browser SSO login, S3-signal handoff, inline-function pause/resume, long read_timeout, retrieving session files |
 | `references/skills.md` | Phase 2 — skills union, git/s3/path sources, mandatory frontmatter |
 | `references/memory.md` | Phase 4 — strategies, retrievalConfig, the 3-step wiring + IAM |

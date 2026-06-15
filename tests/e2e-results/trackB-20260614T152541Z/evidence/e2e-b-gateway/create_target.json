@@ -1,0 +1,41 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "bcc6c4a1-068f-48a9-9fcb-9f37ef293d09",
+    "HTTPStatusCode": 202,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 15:25:52 GMT",
+      "content-type": "application/json",
+      "content-length": "963",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "bcc6c4a1-068f-48a9-9fcb-9f37ef293d09",
+      "x-amz-apigw-id": "e9QwEF6yIAMERcg=",
+      "x-amzn-trace-id": "Root=1-6a2ec800-633441521a1711bd2ee90d51"
+    },
+    "RetryAttempts": 0
+  },
+  "gatewayArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:gateway/agentcore-test-gw-7a31e4cd-cklyhutgez",
+  "targetId": "5UASB3TGIW",
+  "createdAt": "2026-06-14 15:25:52.223233+00:00",
+  "updatedAt": "2026-06-14 15:25:52.223243+00:00",
+  "status": "CREATING",
+  "name": "demo-openapi",
+  "targetConfiguration": {
+    "mcp": {
+      "openApiSchema": {
+        "inlinePayload": "{\"openapi\": \"3.0.1\", \"info\": {\"title\": \"Demo API\", \"version\": \"1.0.0\"}, \"servers\": [{\"url\": \"https://api.example.com\"}], \"paths\": {\"/ping\": {\"get\": {\"operationId\": \"ping\", \"summary\": \"ping the demo api\", \"responses\": {\"200\": {\"description\": \"ok\"}}}}}}"
+      }
+    }
+  },
+  "credentialProviderConfigurations": [
+    {
+      "credentialProviderType": "API_KEY",
+      "credentialProvider": {
+        "apiKeyCredentialProvider": {
+          "providerArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:token-vault/default/apikeycredentialprovider/agentcore-test-gwkey-b14a43dc",
+          "credentialParameterName": "X-API-Key",
+          "credentialLocation": "HEADER"
+        }
+      }
+    }
+  ]
+}
