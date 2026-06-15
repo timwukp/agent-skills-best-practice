@@ -223,6 +223,7 @@ Load these as needed — don't read them all upfront.
 | `references/observability.md` | Phase 5 — log delivery (CWL vs XRAY), resource policy, dashboards |
 | `references/evaluations.md` | Phase 7 — online evaluation config; batch/custom (console) |
 | `references/optimizations.md` | Phase 7 — recommendations + A/B tests (console-only in preview) |
+| `references/playground.md` | Phase 6 — Console Playground / Sandbox (interactive endpoint testing; console-only, no SDK ops — the repeatable path is InvokeHarness/InvokeAgentRuntime + Evaluations) |
 | `references/identity.md` | Outbound auth — Workload Identity, Token Vault, credential providers |
 | `references/policy.md` | Agent guardrails — Policy, Policy Engine, resource policy, policy generation |
 | `references/payments.md` | Payment connector/manager + payment sessions (if the agent transacts) |
