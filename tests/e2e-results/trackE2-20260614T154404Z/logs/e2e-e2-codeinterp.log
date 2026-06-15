@@ -1,0 +1,61 @@
+
+
+========= e2e-e2-codeinterp run trackE2-20260614T154404Z =========
+
+--- E2.1 : start_code_interpreter_session ---
+[STATUS PASS duration 1.21s]
+--- stdout ---
+session: 01KV3CVV1DQTA6DX4DRBXR9P0Y status: None
+
+--- stderr ---
+
+
+--- E2.2 : writeFiles — write a work file ---
+[STATUS PASS duration 0.1s]
+--- stdout ---
+writeFiles ok
+
+--- stderr ---
+
+
+--- E2.3 : listFiles — file is present ---
+[STATUS PASS duration 0.07s]
+--- stdout ---
+listFiles sees note.txt
+
+--- stderr ---
+
+
+--- E2.4 : readFiles — content round-trips ---
+[STATUS PASS duration 0.11s]
+--- stdout ---
+readFiles round-trip ok
+
+--- stderr ---
+
+
+--- E2.5 : executeCommand — shell cat the file ---
+[STATUS PASS duration 0.17s]
+--- stdout ---
+executeCommand cat ok
+
+--- stderr ---
+
+
+--- E2.6 : executeCode — python reads the same file (cross-tool persistence) ---
+[STATUS PASS duration 0.14s]
+--- stdout ---
+executeCode cross-tool persistence ok
+
+--- stderr ---
+
+
+--- E2.99 : stop_code_interpreter_session ---
+[STATUS PASS duration 0.11s]
+--- stdout ---
+stopped 01KV3CVV1DQTA6DX4DRBXR9P0Y
+
+--- stderr ---
+
+
+=== e2e-e2-codeinterp summary: 7/7 passed ===
