@@ -1,0 +1,31 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "3057e321-d548-421c-a4ce-6342ac10723f",
+    "HTTPStatusCode": 202,
+    "HTTPHeaders": {
+      "date": "Sun, 14 Jun 2026 15:38:04 GMT",
+      "content-type": "application/json",
+      "content-length": "370",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "3057e321-d548-421c-a4ce-6342ac10723f",
+      "x-amzn-remapped-x-amzn-requestid": "3057e321-d548-421c-a4ce-6342ac10723f",
+      "access-control-allow-origin": "*",
+      "x-amzn-remapped-content-length": "370",
+      "x-amzn-remapped-connection": "keep-alive",
+      "x-amz-apigw-id": "e9SieGt5oAMEVCg=",
+      "vary": "origin, access-control-request-method, access-control-request-headers",
+      "access-control-expose-headers": "x-amzn-errortype,x-amzn-requestid,x-amzn-errormessage,x-amzn-trace-id,x-amz-apigw-id,date",
+      "x-amzn-trace-id": "Root=1-6a2ecadc-4242ec3571d103286911503a",
+      "x-amzn-remapped-date": "Sun, 14 Jun 2026 15:38:04 GMT"
+    },
+    "RetryAttempts": 0
+  },
+  "policyEngineId": "agentcore_test_pe_92a0735a-las2q9c1tz",
+  "name": "agentcore_test_pe_92a0735a",
+  "createdAt": "2026-06-14 15:38:04.276629+00:00",
+  "updatedAt": "2026-06-14 15:38:04.276629+00:00",
+  "policyEngineArn": "arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:policy-engine/agentcore_test_pe_92a0735a-las2q9c1tz",
+  "status": "CREATING",
+  "description": "e2e test engine",
+  "statusReasons": []
+}

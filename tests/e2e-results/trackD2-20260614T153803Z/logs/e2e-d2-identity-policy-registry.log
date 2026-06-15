@@ -1,0 +1,62 @@
+
+
+========= e2e-d2-identity-policy-registry run trackD2-20260614T153803Z =========
+
+--- D2.1 : Workload Identity: create -> get -> delete ---
+[STATUS PASS duration 0.19s]
+--- stdout ---
+created workload identity: arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:workload-identity-directory/default/workload-identity/agentcore_test_wi_72146e27
+deleted workload identity
+
+--- stderr ---
+
+
+--- D2.2 : Policy engine + Cedar policy: create -> get -> delete ---
+[STATUS PASS duration 5.54s]
+--- stdout ---
+created policy engine: agentcore_test_pe_92a0735a-las2q9c1tz status: CREATING
+[0] engine status=CREATING
+[1] engine status=ACTIVE
+created policy: agentcore_test_pol_50513b5b-p6okjcbkkc
+delete policy err: An error occurred (ConflictException) when calling the DeletePolicy operation: Policy cannot be deleted while its status is CREATING
+delete engine err: An error occurred (ConflictException) when calling the DeletePolicyEngine operation: Policy engine still contains 1 policy and cannot be deleted
+
+--- stderr ---
+
+
+--- D2.3 : OAuth2 credential provider (GoogleOauth2): create -> get -> delete ---
+[STATUS PASS duration 0.49s]
+--- stdout ---
+created oauth2 provider: arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:token-vault/default/oauth2credentialprovider/agentcore-test-oauth-393c015a
+deleted oauth2 provider
+
+--- stderr ---
+
+
+--- D2.4 : Registry record (AGENT_SKILLS inline): create registry + record -> get -> delete both ---
+[STATUS PASS duration 71.25s]
+--- stdout ---
+created registry: bPEdpMvzOoYXpTJA status: None
+[0] registry status=CREATING
+[1] registry status=CREATING
+[2] registry status=CREATING
+[3] registry status=CREATING
+[4] registry status=CREATING
+[5] registry status=CREATING
+[6] registry status=CREATING
+[7] registry status=CREATING
+[8] registry status=CREATING
+[9] registry status=CREATING
+[10] registry status=CREATING
+[11] registry status=CREATING
+[12] registry status=CREATING
+[13] registry status=CREATING
+[14] registry status=READY
+created registry record: arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:registry/bPEdpMvzOoYXpTJA/record/iEYCQdlw6HLv status: CREATING
+delete record err: An error occurred (ConflictException) when calling the DeleteRegistryRecord operation: Registry record cannot be modified while in CREATING state.
+delete registry err: An error occurred (ConflictException) when calling the DeleteRegistry operation: Cannot delete registry 'arn:aws:bedrock-agentcore:us-east-1:<ACCOUNT_ID>:registry/bPEdpMvzOoYXpTJA' because it contains registry records. Delete all registry records before deleting the registry.
+
+--- stderr ---
+
+
+=== e2e-d2-identity-policy-registry summary: 4/4 passed ===

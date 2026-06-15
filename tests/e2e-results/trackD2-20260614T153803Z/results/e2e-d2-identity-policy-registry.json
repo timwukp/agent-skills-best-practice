@@ -1,0 +1,42 @@
+{
+  "track": "e2e-d2-identity-policy-registry",
+  "run_ts": "trackD2-20260614T153803Z",
+  "cases": [
+    {
+      "id": "D2.1",
+      "description": "Workload Identity: create -> get -> delete",
+      "status": "PASS",
+      "duration_s": 0.19,
+      "error": null,
+      "stdout_len": 183,
+      "stderr_len": 0
+    },
+    {
+      "id": "D2.2",
+      "description": "Policy engine + Cedar policy: create -> get -> delete",
+      "status": "PASS",
+      "duration_s": 5.54,
+      "error": null,
+      "stdout_len": 501,
+      "stderr_len": 0
+    },
+    {
+      "id": "D2.3",
+      "description": "OAuth2 credential provider (GoogleOauth2): create -> get -> delete",
+      "status": "PASS",
+      "duration_s": 0.49,
+      "error": null,
+      "stdout_len": 173,
+      "stderr_len": 0
+    },
+    {
+      "id": "D2.4",
+      "description": "Registry record (AGENT_SKILLS inline): create registry + record -> get -> delete both",
+      "status": "PASS",
+      "duration_s": 71.25,
+      "error": null,
+      "stdout_len": 1086,
+      "stderr_len": 0
+    }
+  ]
+}

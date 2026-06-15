@@ -34,3 +34,28 @@ Payments is preview. Introspect exact shapes before scripting:
 python scripts/preflight.py --show-shape CreatePaymentConnector --show-shape CreatePaymentManager
 ```
 Consult the AgentCore Payments dev guide and the SDK `bedrock_agentcore.payments` module.
+
+## Example (documentation only — DO NOT run against real processors)
+
+> ⚠️ **Never end-to-end test Payments.** These objects connect to **real payment processors / rails**.
+> The example below is illustrative only; validate shapes via SDK introspection, never by live-creating
+> against a real connector. (This is why the skill's e2e suite deliberately excludes Payments.)
+
+```python
+import boto3
+c = boto3.client("bedrock-agentcore-control", region_name="us-east-1")
+
+# A Payment credential provider stores processor credentials in the Token Vault (like other providers):
+#   c.create_payment_credential_provider(name="my_processor", ...)
+# A Payment Manager + Connector wire the agent to a processor:
+#   c.create_payment_manager(name="...", ...)
+#   c.create_payment_connector(name="...", ...)
+# Inspect the exact required fields with:
+sm = c.meta.service_model
+for op in ["CreatePaymentCredentialProvider", "CreatePaymentManager", "CreatePaymentConnector"]:
+    sh = sm.operation_model(op).input_shape
+    print(op, {n: n in (sh.required_members or []) for n in sh.members})
+```
+
+Treat any payment credential as a high-sensitivity secret; scope IAM tightly and prefer the Token Vault
+over inlining secrets.

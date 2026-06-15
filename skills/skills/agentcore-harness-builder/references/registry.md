@@ -49,3 +49,41 @@ details before scripting:
 python scripts/preflight.py --show-shape CreateRegistry --show-shape CreateRegistryRecord
 ```
 Provide feedback to AWS via the console's feedback link, as the experience is evolving.
+
+## Executable example (verified live, boto3 1.43.29)
+
+```python
+import boto3, secrets, time
+c = boto3.client("bedrock-agentcore-control", region_name="us-east-1")
+
+# 1) Create the registry. NOTE: the response returns only registryArn (NO registryId) —
+#    derive the id from the ARN's last path segment.
+reg = c.create_registry(name="my-org-registry", description="org agent registry",
+                        clientToken=secrets.token_hex(20))
+registry_id = reg["registryArn"].rsplit("/", 1)[-1]
+
+# 2) A registry becomes READY asynchronously (~60-90s observed). CreateRegistryRecord rejects a
+#    registry that is still CREATING, so wait first.
+for _ in range(18):
+    if c.get_registry(registryId=registry_id).get("status") in ("READY", "ACTIVE", "AVAILABLE"):
+        break
+    time.sleep(5)
+
+# 3) Register an asset. descriptorType enum: MCP | A2A | CUSTOM | AGENT_SKILLS.
+rec = c.create_registry_record(
+    registryId=registry_id,
+    name="my-skill",
+    descriptorType="AGENT_SKILLS",
+    descriptors={"agentSkills": {"skillMd": {"inlineContent": open("SKILL.md").read()}}},
+    clientToken=secrets.token_hex(20),
+)
+record_id = rec["recordArn"].rsplit("/", 1)[-1]
+# MCP example: descriptors={"mcp": {"server": {"inlineContent": "<json>"}}}
+# A2A example: descriptors={"a2a": {"agentCard": {"inlineContent": "<json>"}}}
+```
+
+Submit for approval with `submit_registry_record_for_approval(...)` (see Approval workflows above).
+Cleanup: `delete_registry_record(registryId=..., recordId=...)` then `delete_registry(registryId=...)`.
+
+> **Verified gotchas:** (1) `CreateRegistry` returns only `registryArn` — derive the id from it;
+> (2) the registry must reach READY (~60-90s) before `CreateRegistryRecord`, else `ConflictException`.
