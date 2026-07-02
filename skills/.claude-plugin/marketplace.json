@@ -31,7 +31,7 @@
     },
     {
       "name": "engineering-skills",
-      "description": "Software engineering workflow skills: code review, Git workflow, API design, Docker Compose generation, database schema design, CI/CD pipelines, Terraform modules, Python project setup, test generation, and Kiro project setup",
+      "description": "Software engineering workflow skills: code review, Git workflow, API design, Docker Compose generation, database schema design, CI/CD pipelines, GitLab CI with Kiro CLI headless AI jobs and MCP integration, Terraform modules, Python project setup, test generation, and Kiro project setup",
       "source": "./",
       "strict": false,
       "skills": [
@@ -43,6 +43,7 @@
         "./skills/database-schema-design",
         "./skills/docker-compose-generator",
         "./skills/git-workflow",
+        "./skills/gitlab-ci-kiro-pipeline",
         "./skills/hello-world",
         "./skills/java-unit-test-generator",
         "./skills/kiro-project-setup",

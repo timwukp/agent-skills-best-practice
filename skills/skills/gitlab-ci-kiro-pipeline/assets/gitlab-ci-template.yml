@@ -1,0 +1,286 @@
+# GitLab CI/CD pipeline with Kiro CLI headless AI review.
+# Prerequisite: set KIRO_API_KEY as a masked CI/CD variable
+# (GitLab -> Settings -> CI/CD -> Variables).
+#
+# Trim this template to the jobs you need. Every AI job starts advisory
+# (allow_failure: true); promote to gating only after the team trusts it —
+# see the duplication-sync job for the gating pattern.
+
+stages:
+  - lint
+  - security
+  - review
+  - analytics
+  - pages
+
+default:
+  retry:
+    max: 2
+    when: runner_system_failure
+
+# Reusable preamble for all Kiro jobs.
+.kiro-base:
+  image: python:3.12-slim
+  variables:
+    KIRO_API_KEY: $KIRO_API_KEY
+  before_script:
+    - apt-get update && apt-get install -y curl git unzip
+    - curl -fsSL https://cli.kiro.dev/install | bash
+    - export PATH="$HOME/.local/bin:$PATH"
+    - kiro-cli --version
+
+# Reusable diff step for MR jobs.
+.mr-diff:
+  script: &mr-diff
+    - git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    - git diff origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD > /tmp/mr-diff.txt
+    - echo "Diff size:$(wc -l < /tmp/mr-diff.txt) lines"
+
+# --- Deterministic checks first (cheap, and their output feeds AI analysis) ---
+
+markdown-lint:
+  stage: lint
+  image: node:20-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - npx markdownlint-cli2 "**/*.md" 2>&1 | tee lint-results.txt || true
+  artifacts:
+    paths: [lint-results.txt]
+    when: always
+    expire_in: 1 day
+  allow_failure: true
+
+pii-check:
+  stage: security
+  image: python:3.12-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - pip install --quiet detect-secrets
+    - |
+      detect-secrets scan --all-files --exclude-files '\.git' > /tmp/secrets-report.json
+      python3 -c "
+      import json
+      data = json.load(open('/tmp/secrets-report.json'))
+      total = sum(len(v) for v in data.get('results', {}).values())
+      print(f'{total} potential secret(s) found')
+      exit(1 if total > 0 else 0)
+      "
+  allow_failure: true
+
+# --- AI review on every MR ---
+
+kiro-code-review:
+  extends: .kiro-base
+  stage: review
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - *mr-diff
+    - |
+      DIFF=$(cat /tmp/mr-diff.txt | head -500)
+      kiro-cli chat --no-interactive --trust-tools=read,grep \
+        "You are a senior security reviewer. Here is the MR diff:
+
+      $DIFF
+
+      Review for: 1) Hardcoded secrets or API keys 2) Input validation gaps 3) Unsafe deserialization or injection risks 4) Missing error handling that could leak sensitive info 5) Credential handling issues. Format as a concise markdown report with severity levels." \
+        > /tmp/review-security.md 2>&1 || true
+    - |
+      DIFF=$(cat /tmp/mr-diff.txt | head -500)
+      kiro-cli chat --no-interactive --trust-tools=read,grep \
+        "You are a senior code reviewer. Here is the MR diff:
+
+      $DIFF
+
+      Review for: 1) Bugs or logic errors 2) Code style inconsistencies 3) Missing error handling 4) Performance concerns 5) Suggestions for improvement. Be concise, only comment on real issues." \
+        > /tmp/review-quality.md 2>&1 || true
+    - echo "## Security Review" && cat /tmp/review-security.md
+    - echo "## Code Quality Review" && cat /tmp/review-quality.md
+  allow_failure: true
+
+# --- Analytics: latent-risk detection ---
+
+kiro-diff-issue-detection:
+  extends: .kiro-base
+  stage: analytics
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - *mr-diff
+    - |
+      DIFF=$(cat /tmp/mr-diff.txt | head -500)
+      kiro-cli chat --no-interactive --trust-tools=read,grep \
+        "You are a root cause prevention analyst. Review this merge request diff for potential issues that could cause production failures:
+
+      $DIFF
+
+      Identify: 1) Race conditions or concurrency issues 2) Unhandled edge cases 3) Breaking changes to APIs or configs 4) Resource leaks or missing cleanup 5) Dependency conflicts. Output a risk assessment table with issue, severity, and recommended fix." \
+        2>&1 | tee /tmp/diff-issues.md || true
+  allow_failure: true
+
+kiro-config-drift-detection:
+  extends: .kiro-base
+  stage: analytics
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - *mr-diff
+    - |
+      CONFIG_CONTENT=""
+      for pattern in "*.env" ".env*" "*config*" "*settings*"; do
+        for f in $(find . -name "$pattern" -type f -not -path "./.git/*" -not -path "./node_modules/*" 2>/dev/null | head -20); do
+          CONFIG_CONTENT="$CONFIG_CONTENT
+      --- $f ---
+      $(cat "$f" | head -100)"
+        done
+      done
+      DIFF=$(cat /tmp/mr-diff.txt | head -500)
+      kiro-cli chat --no-interactive --trust-tools=read,grep \
+        "You are a configuration drift analyst. A common production failure pattern is: environment variables or config keys are added to dev/UAT config files but forgotten in production config files.
+
+      Here is the MR diff:
+      $DIFF
+
+      Here are the config files in this repo:
+      $CONFIG_CONTENT
+
+      Analyze for: 1) NEW env vars or config keys added in dev/staging/UAT files that are MISSING from production equivalents 2) Config values that differ between environments in ways that look unintentional 3) Config keys in the diff that don't appear in all environment variants.
+
+      Output a table: | Config Key | Present In | Missing From | Risk Level |
+      Then provide specific remediation steps. If no drift is found, confirm all environments are in sync." \
+        2>&1 | tee /tmp/config-drift.md || true
+  allow_failure: true
+
+# Gating example: the agent emits a machine-readable verdict line and the
+# shell decides. Never gate on kiro-cli's own exit code.
+kiro-duplication-sync-check:
+  extends: .kiro-base
+  stage: analytics
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - *mr-diff
+    - |
+      DIFF=$(cat /tmp/mr-diff.txt | head -500)
+      MODIFIED_FILES=$(git diff --name-only origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD)
+      SIMILAR_CONTEXT=""
+      for f in $MODIFIED_FILES; do
+        [ ! -f "$f" ] && continue
+        basename=$(basename "$f")
+        similar=$(find . -name "$basename" -not -path "./.git/*" -not -path "$f" 2>/dev/null | head -5)
+        [ -n "$similar" ] && SIMILAR_CONTEXT="$SIMILAR_CONTEXT
+      Modified: $f
+      Similar files: $similar"
+      done
+      kiro-cli chat --no-interactive --trust-tools=read,grep \
+        "You are a code duplication analyst. A common production failure: developers change code in one location but miss updating duplicate or near-duplicate code elsewhere.
+
+      MR Diff:
+      $DIFF
+
+      Files with similar names found in repo:
+      $SIMILAR_CONTEXT
+
+      Analyze for: 1) Functions, classes, or logic blocks in the diff that appear duplicated elsewhere 2) Changes to one file that should be mirrored in similar files 3) Copy-paste patterns where a fix was applied to one instance but not others.
+
+      Use the read and grep tools to inspect suspicious files. Output:
+      | Changed Code | Location | Potential Duplicate | Sync Needed? |
+      Provide specific file paths and line references.
+
+      End your output with exactly one line, once:
+      DUPLICATION_VERDICT=SYNC_NEEDED or DUPLICATION_VERDICT=OK" \
+        2>&1 | tee duplication-check.md || true
+    - |
+      if grep -q "DUPLICATION_VERDICT=SYNC_NEEDED" duplication-check.md; then
+        echo "❌ A change was not mirrored in a duplicate/similar file. Blocking merge."
+        echo "   Sync the duplicate(s) listed above (or de-duplicate into a shared module)."
+        exit 1
+      fi
+  artifacts:
+    paths: [duplication-check.md]
+    when: always
+    expire_in: 1 week
+  allow_failure: false
+
+kiro-change-impact-analysis:
+  extends: .kiro-base
+  stage: analytics
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    - git diff --stat origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD > /tmp/diff-stat.txt
+    - git diff origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD > /tmp/mr-diff.txt
+    - |
+      DIFF=$(cat /tmp/mr-diff.txt | head -500)
+      STAT=$(cat /tmp/diff-stat.txt)
+      FILES_CHANGED=$(git diff --name-only origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD)
+      COMMIT_COUNT=$(git rev-list --count origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD)
+      kiro-cli chat --no-interactive --trust-tools=read,grep \
+        "You are a change impact analyst helping engineering managers assess deployment risk. Classify this merge request for a go/no-go deployment decision.
+
+      Diff stats:
+      $STAT
+
+      Files changed:
+      $FILES_CHANGED
+
+      Commits in MR: $COMMIT_COUNT
+
+      Full diff (truncated):
+      $DIFF
+
+      Provide: ## Risk Summary with **Overall Risk Level** [CRITICAL/HIGH/MEDIUM/LOW] and **Deployment Recommendation** [HOLD/PROCEED WITH CAUTION/SAFE TO DEPLOY]; ## Impact Breakdown table (Data/Schema, API/Interface, Infrastructure/Config, Business logic, Dependencies); ## Blast Radius (services affected, user-facing impact, rollback complexity); ## Recommendations (pre-deployment checks, monitoring, rollback plan). Be concise and actionable." \
+        2>&1 | tee /tmp/impact-analysis.md || true
+  allow_failure: true
+
+# --- Failure analysis: only runs when something above failed ---
+
+kiro-build-failure-remediation:
+  extends: .kiro-base
+  stage: analytics
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_failure
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: on_failure
+  script:
+    - |
+      CONTEXT="Branch: $CI_COMMIT_BRANCH
+      Commit: $CI_COMMIT_SHORT_SHA
+      Author: $CI_COMMIT_AUTHOR
+      Message: $CI_COMMIT_MESSAGE
+      Pipeline: $CI_PIPELINE_URL"
+      [ -f lint-results.txt ] && CONTEXT="$CONTEXT
+      --- Lint Results ---
+      $(tail -100 lint-results.txt)"
+      for f in $(find . -name "*.log" 2>/dev/null | head -5); do
+        CONTEXT="$CONTEXT
+      --- $f ---
+      $(tail -50 "$f")"
+      done
+      kiro-cli chat --no-interactive \
+        "You are a build failure investigator. The CI/CD pipeline has failed. Given this context:
+
+      $CONTEXT
+
+      Provide: 1) Most likely root cause 2) Step-by-step remediation instructions 3) Commands to run locally to reproduce and fix 4) Preventive measures to avoid recurrence. Be specific and actionable." \
+        2>&1 | tee /tmp/remediation.md || true
+  allow_failure: true
+
+# --- Docs to GitLab Pages on main ---
+
+pages:
+  stage: pages
+  image: python:3.12-slim
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - pip install --quiet mkdocs mkdocs-material
+    - mkdocs build --site-dir public
+  artifacts:
+    paths:
+      - public
+  allow_failure: true
