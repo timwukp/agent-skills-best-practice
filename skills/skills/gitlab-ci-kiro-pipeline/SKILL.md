@@ -14,7 +14,7 @@ Build `.gitlab-ci.yml` pipelines where Kiro CLI acts as an AI reviewer/analyst o
 2. **Pick jobs from the recipe catalog.** Read `references/job-recipes.md` for nine proven job patterns (code review, PII/secrets scan, test-failure analysis, diff issue detection, build-failure remediation, config drift, cross-repo config validation, duplication sync check, change-impact analysis). Copy only the ones the user needs.
 3. **Start from the template.** `assets/gitlab-ci-template.yml` is a complete, working pipeline skeleton. Adapt stages and jobs rather than writing from scratch.
 4. **Decide advisory vs. gating per job** (see below) and set `allow_failure` accordingly.
-5. **Verify prerequisites with the user**: the `KIRO_API_KEY` CI/CD variable must be set (masked, protected) in GitLab → Settings → CI/CD → Variables, and runners must have internet access to `https://cli.kiro.dev/install`.
+5. **Verify prerequisites with the user**: the `KIRO_API_KEY` CI/CD variable must be set (masked, protected) in GitLab → Settings → CI/CD → Variables, and confirm your runners have internet access to `https://cli.kiro.dev/install`. If your GitLab Runner sandbox lives inside your VPC and has **NO outbound internet access at all** (no NAT gateway, no internet gateway, no proxy), refer to the "Air-gapped runners" section in `references/kiro-cli-headless.md` for the no-internet VPC approach — the API side works over AWS PrivateLink, but the CLI binary must be staged internally.
 6. **Lint before delivering.** If the user has GitLab access, validate with the CI Lint API or `glab ci lint`; otherwise at minimum check YAML validity (`python3 -c "import yaml,sys; yaml.safe_load(open('.gitlab-ci.yml'))"`).
 
 ## Core anatomy of a Kiro CI job
@@ -121,7 +121,7 @@ Each job's prompt gives the agent a **role** ("You are a senior security reviewe
 ## Bundled resources
 
 - `references/job-recipes.md` — full YAML + prompt for each of the nine job patterns; read it when assembling a pipeline.
-- `references/kiro-cli-headless.md` — Kiro CLI headless flags, auth, install, cost/runtime expectations, troubleshooting. Read it when debugging a failing Kiro job or when the user asks about the CLI itself.
+- `references/kiro-cli-headless.md` — Kiro CLI headless flags, auth, install, cost/runtime expectations, troubleshooting, and air-gapped/PrivateLink-only runner setup (tested end-to-end). Read it when debugging a failing Kiro job, when the user asks about the CLI itself, or when the runner has no internet access.
 - `assets/gitlab-ci-template.yml` — complete working pipeline (lint → security → review → analytics → pages) to copy and trim.
 
 ## Common pitfalls
