@@ -4,7 +4,10 @@
 #
 # Trim this template to the jobs you need. Every AI job starts advisory
 # (allow_failure: true); promote to gating only after the team trusts it —
-# see the duplication-sync job for the gating pattern.
+# see the duplication-sync job for the gating pattern. Deterministic security
+# scans (pii-check below) are the exception: they default to gating
+# (allow_failure: false) since a secrets/PII match is a binary fact, not a
+# subjective AI judgment call that needs a trust-building period.
 
 stages:
   - lint
@@ -59,7 +62,16 @@ pii-check:
   script:
     - pip install --quiet detect-secrets
     - |
-      detect-secrets scan --all-files --exclude-files '\.git' > /tmp/secrets-report.json
+      # Uses a checked-in .secrets.baseline (generate once with
+      # `detect-secrets scan > .secrets.baseline`, review it, commit it) so
+      # known fixture/demo secrets are allow-listed by content hash instead
+      # of this whole check being advisory. If no baseline file exists yet,
+      # falls back to a plain scan.
+      if [ -f .secrets.baseline ]; then
+        detect-secrets scan --all-files --exclude-files '\.git' --baseline .secrets.baseline > /tmp/secrets-report.json
+      else
+        detect-secrets scan --all-files --exclude-files '\.git' > /tmp/secrets-report.json
+      fi
       python3 -c "
       import json
       data = json.load(open('/tmp/secrets-report.json'))
@@ -67,7 +79,7 @@ pii-check:
       print(f'{total} potential secret(s) found')
       exit(1 if total > 0 else 0)
       "
-  allow_failure: true
+  allow_failure: false
 
 # --- AI review on every MR ---
 
