@@ -62,7 +62,26 @@ markdown-lint:
 
 Deterministic secrets + PII scan. Runs `detect-secrets` and greps for emails,
 12-digit AWS account IDs, and SSN patterns. No AI — regexes are cheaper and stricter
-for this. Keep `allow_failure: true` initially; demo/fixture content trips it often.
+for this. **Defaults to `allow_failure: false`** (zero-tolerance: prefer false
+positives over a leaked credential merging in) — unlike the AI-judgment jobs
+elsewhere in this catalog, a secrets/PII match is a binary fact, not a subjective
+call, so there is no "advisory trust-building period" that makes sense here.
+
+Suppress false positives without disabling the gate:
+
+- **`detect-secrets`**: generate and commit a baseline once
+  (`detect-secrets scan > .secrets.baseline`, reviewed by a human), then scan
+  against it (`detect-secrets scan --baseline .secrets.baseline`) so known
+  fixture/demo secrets are allow-listed by content hash instead of the whole
+  check being soft.
+- **Custom regex section** (emails/account-IDs/SSNs): add path exclusions for
+  known fixture/demo locations (`grep -v '/test/' | grep -v '/fixtures/' | grep -v '/__mocks__/'`)
+  rather than loosening the patterns themselves.
+- If a team genuinely needs a short tuning period to build out the exclusion
+  list against their specific repo, state an explicit end date for the
+  `allow_failure: true` window (e.g. "advisory for two weeks, then gating") —
+  never leave it open-ended, since teams that copy this recipe rarely revisit
+  a setting that isn't blocking anything.
 
 ```yaml
 pii-check:
@@ -91,26 +110,29 @@ pii-check:
       " || FAILED=1
       echo "=== Scanning for PII patterns ==="
       PII_FOUND=0
-      # Emails (exclude example.com, git SSH URLs, placeholders)
+      # Emails (exclude example.com, git SSH URLs, placeholders, fixture/demo paths)
       if grep -rn --include="*.md" --include="*.py" --include="*.yml" --include="*.yaml" --include="*.json" \
         -E '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' . \
-        | grep -v 'example\.com' | grep -v 'node_modules' | grep -v '\.git/' | grep -v 'git@' | grep -v 'placeholder'; then
+        | grep -v 'example\.com' | grep -v 'node_modules' | grep -v '\.git/' | grep -v 'git@' | grep -v 'placeholder' \
+        | grep -v '/test/' | grep -v '/fixtures/' | grep -v '/__mocks__/'; then
         PII_FOUND=1
       fi
       # AWS account IDs (12 digits standalone)
       if grep -rn --include="*.md" --include="*.py" --include="*.yml" --include="*.yaml" --include="*.json" \
-        -E '\b[0-9]{12}\b' . | grep -v '\.git/' | grep -v 'node_modules' | grep -v 'sha256'; then
+        -E '\b[0-9]{12}\b' . | grep -v '\.git/' | grep -v 'node_modules' | grep -v 'sha256' \
+        | grep -v '/test/' | grep -v '/fixtures/' | grep -v '/__mocks__/'; then
         PII_FOUND=1
       fi
       # SSN patterns
       if grep -rn --include="*.md" --include="*.py" --include="*.yml" --include="*.yaml" --include="*.json" \
-        -E '\b[0-9]{3}-[0-9]{2}-[0-9]{4}\b' . | grep -v '\.git/'; then
+        -E '\b[0-9]{3}-[0-9]{2}-[0-9]{4}\b' . | grep -v '\.git/' \
+        | grep -v '/test/' | grep -v '/fixtures/' | grep -v '/__mocks__/'; then
         PII_FOUND=1
       fi
       [ "$PII_FOUND" -eq 1 ] && FAILED=1
       [ "$FAILED" -eq 1 ] && { echo "Security scan found issues."; exit 1; }
       echo "All security checks passed."
-  allow_failure: true
+  allow_failure: false
 ```
 
 ## 3. kiro-code-review

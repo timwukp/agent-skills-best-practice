@@ -76,6 +76,8 @@ The load-bearing choices, and why:
 
 Never gate on the raw exit code of `kiro-cli` itself (network errors would block merges) and never parse free-form prose. The verdict-line contract is what makes AI output CI-safe. Start every new job advisory; promote to gating only after the team has watched it run for a while and trusts its judgment — unless the user explicitly asks for a blocking check on day one, in which case build it gated and mention the advisory-first option.
 
+**This advisory-first default applies to AI-judgment jobs, not deterministic security scans.** A secrets/PII check (see `pii-check` in `references/job-recipes.md`) is a binary fact, not a subjective call — there's no equivalent "trust-building period" for a check that either found a leaked credential or didn't. Deterministic security scans should default to `allow_failure: false`; suppress false positives with a checked-in baseline or path exclusions for fixture/demo content, not by making the whole check advisory.
+
 Any recipe in `references/job-recipes.md` can be converted to gating this way: append the verdict contract to its prompt and add the grep step. **Scope the verdict to the blocking-worthy findings only.** If a prompt checks several severities (e.g. config drift also looks for typos and stale values), tell the model explicitly which finding class triggers the failing verdict — otherwise soft findings block merges and the team turns the gate off.
 
 Write gated-job reports to the workspace (not `/tmp`) and attach them so reviewers can read the verdict from the MR page:
