@@ -8,6 +8,18 @@ Best practices, examples, and training materials for building agent skills. Agen
 
 This repo is designed for **AWS SAs and developers** learning to build skills with [Kiro](https://kiro.dev) as the primary environment, but nothing here locks you in — the instruction-only skills are fully portable, and the few skills that bundle executable `scripts/` additionally require a platform that permits code execution and their listed dependencies.
 
+## Flagship Skills
+
+Two battle-tested skills, each validated end-to-end against real AWS infrastructure:
+
+### 🏗️ [agentcore-harness-builder](skills/skills/agentcore-harness-builder/) — build AWS Bedrock AgentCore Harness agents
+
+Builds production-ready **AWS Bedrock AgentCore Harness** agents end to end: declarative model + prompt, Memory, built-in Browser/Code Interpreter, Gateway/MCP tools, inline functions, Skills, Observability, Evaluations, Identity, Policy, and more. Battle-tested against the real AWS API — it encodes ~10 introspection-verified API gotchas (apiFormat, optionalValue per-field, allowedTools, opus-4.8 inference rules, …) plus the [Live View human-in-the-loop SSO login workaround](skills/skills/agentcore-harness-builder/references/browser-auth.md), so your agent works on the first deploy instead of the tenth.
+
+### 🦊 [gitlab-ci-kiro-pipeline](skills/skills/gitlab-ci-kiro-pipeline/) — AI-powered GitLab CI/CD with Kiro CLI headless + MCP
+
+Builds GitLab CI/CD pipelines (`.gitlab-ci.yml`) that run **Kiro CLI in headless mode** as an AI reviewer on every merge request: AI code review, config-drift detection, duplication-sync **merge gating** via machine-readable verdict lines, change-impact analysis — 12 job recipes with tested prompts and a complete pipeline template. Includes **MCP server integration in CI** (SonarQube SAST, AWS Knowledge, any customer MCP server): `--require-mcp-startup` fail-fast, `@server` tool trusting, and a no-infrastructure smoke test validated live in real MR pipelines. Complements the generic [cicd-pipeline](skills/skills/cicd-pipeline/) skill.
+
 ## Quickstart
 
 **New here?** Follow the [Kiro Skills Quickstart](QUICKSTART.md) to go from zero to a working skill in 5 minutes.
@@ -29,7 +41,8 @@ To install skills from this repo into Kiro in one step:
 - **FSI Compliance**: compliance checker mapping changes to PCI-DSS v4.0 and MAS TRM controls, with domain-organized reference files
 - **Cloud Architecture**: AWS Well-Architected review skill with per-pillar reference files (security, reliability, cost, performance, operations, sustainability)
 - **AI Adoption Skills**: code-standards-adopter (make AI-written code match your team's style) and legacy-code-testing (characterization tests before refactoring)
-- **AWS AI Agent Infrastructure**: agentcore-harness-builder — battle-tested skill that builds production-ready AWS Bedrock AgentCore Harness agents end to end; encodes ~10 introspection-verified API gotchas (apiFormat, optionalValue per-field, allowedTools, opus-4.8 inference rules, …) plus the [Live View human-in-the-loop SSO login workaround](skills/skills/agentcore-harness-builder/references/browser-auth.md). See [`skills/skills/agentcore-harness-builder/`](skills/skills/agentcore-harness-builder/).
+- **AWS AI Agent Infrastructure**: agentcore-harness-builder — see [Flagship Skills](#flagship-skills) above
+- **Agentic CI/CD**: gitlab-ci-kiro-pipeline — GitLab pipelines with Kiro CLI headless AI review jobs and MCP server integration; see [Flagship Skills](#flagship-skills) above
 
 > **Looking for the document skills (docx, pdf, pptx, xlsx)?** Those are Anthropic's source-available (not open source) production skills. They were removed from this repo to keep all content under open-source licenses — find them in the official [anthropics/skills](https://github.com/anthropics/skills) repository.
 
