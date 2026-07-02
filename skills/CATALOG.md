@@ -69,6 +69,7 @@ All available skills organized by category. Each skill lives in `skills/skills/<
 | [docker-compose-generator](skills/docker-compose-generator/) | Generates multi-stage Dockerfiles and docker-compose.yml files optimized for size, security, and common technology stacks. |
 | [database-schema-design](skills/database-schema-design/) | Designs normalized database schemas with migration scripts, indexing strategies, and relationship best practices. |
 | [cicd-pipeline](skills/cicd-pipeline/) | Generates CI/CD pipeline configurations for GitHub Actions, GitLab CI, and AWS CodePipeline with build, test, and deploy stages. |
+| [gitlab-ci-kiro-pipeline](skills/gitlab-ci-kiro-pipeline/) | Builds GitLab CI/CD pipelines that run Kiro CLI in headless mode as an AI reviewer on merge requests: code review, config-drift detection, duplication sync gating, change-impact analysis, and MCP server integration (SonarQube SAST, AWS Knowledge) — with machine-readable verdict gates. Complements the generic cicd-pipeline skill. |
 | [terraform-module](skills/terraform-module/) | Creates Terraform modules following AWS Well-Architected Framework with proper variables, outputs, and module composition patterns. |
 | [python-project-setup](skills/python-project-setup/) | Sets up Python projects with modern tooling including pyproject.toml, ruff, mypy, pytest, and pre-commit hooks. |
 
