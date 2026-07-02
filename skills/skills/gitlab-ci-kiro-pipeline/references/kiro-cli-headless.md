@@ -178,6 +178,113 @@ Observed in the reference pipeline (500-line diff, read/grep over a small repo):
 Add ~30s per job for apt+install. A five-Kiro-job MR pipeline lands around 4 minutes
 total with default runner concurrency.
 
+## Air-gapped runners (no internet access, AWS PrivateLink only)
+
+Some enterprise GitLab Runners live inside a VPC with **no NAT gateway and no
+internet gateway at all** — only an AWS PrivateLink Interface VPC Endpoint for the
+Kiro/Q Developer API. This is a fully supported, **tested and verified** pattern
+(see Validation below), but it splits into two independent problems that get
+solved differently:
+
+1. **API calls from `kiro-cli chat`** (headless auth + inference) — covered by
+   AWS PrivateLink. Fully private, no code changes needed beyond DNS.
+2. **The CLI binary itself and its installer script** — NOT covered by PrivateLink.
+   `cli.kiro.dev`, `prod.download.cli.kiro.dev` are ordinary internet domains; a
+   runner with zero egress cannot reach them. This half requires manually staging
+   the binary inside the customer's network.
+
+### Setting up the PrivateLink endpoint
+
+Create an Interface VPC Endpoint for the Kiro/Q Developer service in the VPC that
+hosts the runners, with Private DNS enabled:
+
+```bash
+aws ec2 create-vpc-endpoint \
+  --vpc-id <vpc-id> \
+  --vpc-endpoint-type Interface \
+  --service-name com.amazonaws.<region>.q \
+  --subnet-ids <subnet-id> \
+  --security-group-ids <sg-allowing-443-from-runners> \
+  --private-dns-enabled
+```
+
+Valid service names (region-dependent): `com.amazonaws.us-east-1.q`,
+`com.amazonaws.us-east-1.codewhisperer`, `com.amazonaws.eu-central-1.q`,
+`com.amazonaws.us-gov-west-1.q`, `com.amazonaws.us-gov-east-1.q`. With Private DNS
+enabled, a single endpoint automatically resolves `q.<region>.amazonaws.com`,
+`runtime.<region>.kiro.dev`, `management.<region>.kiro.dev`, and
+`telemetry.<region>.kiro.dev` to private IPs inside the VPC — no extra endpoints or
+split-horizon DNS config needed for the API side. This does **not** cover
+`cli.kiro.dev`, `prod.download.cli.kiro.dev`, or `auth.desktop.kiro.dev` — those
+stay on their public IPs and are simply unreachable from a zero-egress subnet
+(DNS still resolves; the TCP connection just has nowhere to route).
+
+### Staging the CLI binary internally
+
+Because the installer script (`curl -fsSL https://cli.kiro.dev/install | bash`)
+needs internet access it doesn't have in this topology, replace it with a
+manual stage-and-fetch step:
+
+1. **On a machine with internet access** (not the runner), pull the version
+   manifest and the binary for your target platform, then verify the checksum:
+   ```bash
+   curl -fsSL https://prod.download.cli.kiro.dev/stable/latest/manifest.json -o manifest.json
+   # pick the package matching your platform, e.g. os=linux, architecture=x86_64,
+   # fileType=tarGz, variant=headless -> "download": "<version>/kirocli-x86_64-linux.tar.gz"
+   curl -fsSL "https://prod.download.cli.kiro.dev/stable/<version>/kirocli-x86_64-linux.tar.gz" -o kirocli.tar.gz
+   sha256sum kirocli.tar.gz   # compare against manifest.json's "sha256" field for that package
+   ```
+2. **Upload the verified binary to an internal artifact store** reachable from
+   the runner's VPC without internet — an S3 bucket behind an **S3 Gateway
+   Endpoint** (free, private, no NAT needed) is the simplest option; an internal
+   Artifactory/Nexus/GitLab Package Registry works the same way.
+3. **Change the GitLab job's install step** to pull from the internal store
+   instead of the public installer:
+   ```yaml
+   script:
+     - aws s3 cp s3://internal-artifact-bucket/kiro-cli/<version>/kirocli-x86_64-linux.tar.gz .
+     - tar -xzf kirocli-x86_64-linux.tar.gz -C /tmp/extract
+     - KIRO_CLI_SKIP_SETUP=1 /tmp/extract/kirocli/install.sh
+     - export PATH="$HOME/.local/bin:$PATH"
+     - kiro-cli --version
+   ```
+4. **Keep the binary current.** Since updates no longer happen automatically, set
+   up a small recurring job (outside the closed VPC) that re-pulls the manifest,
+   diffs the version, and re-uploads to the internal store — otherwise runners
+   silently drift to a stale CLI version.
+
+### Headless auth still works the same way
+
+Once the binary is staged and PrivateLink is up, authentication is unchanged from
+the normal headless flow: set `KIRO_API_KEY` as usual (see Authentication above).
+No special air-gapped auth mode is needed — the API key flows over the same
+PrivateLink connection as any other `kiro-cli chat` call.
+
+### Validation
+
+This pattern was tested end-to-end in a disposable AWS environment (not a
+customer account): an isolated VPC with no Internet Gateway or NAT Gateway, a
+`com.amazonaws.<region>.q` PrivateLink endpoint (Private DNS enabled), and a
+private-subnet EC2 instance with no public IP. Confirmed working:
+
+- The instance genuinely has no route to the public internet (`cli.kiro.dev`
+  resolves to a public IP but is unreachable), while `q.<region>.amazonaws.com`
+  resolves to a private IP inside the VPC and is reachable.
+- A binary staged via S3 + an S3 Gateway Endpoint (standing in for an internal
+  artifact store) installs and runs correctly with a checksum-verified transfer.
+- A raw TCP + TLS handshake to `q.<region>.amazonaws.com:443`, independent of
+  the CLI, succeeds and terminates at the PrivateLink endpoint (server
+  certificate `CN=*.codewhisperer.<region>.vpce.amazonaws.com`).
+- `kiro-cli chat --no-interactive` with `KIRO_API_KEY` set returns exit code 0
+  with a genuine, metered model response over this path.
+
+Not covered by this test: MCP server behavior and multi-job pipeline mechanics
+in this specific air-gapped topology (unaffected by the network path and
+already covered by the rest of this skill), and real customer governance
+settings under headless mode. Customers should still run their own pipeline
+test after wiring this up. Full test methodology, environment design, and
+results: `tests/e2e-results/gitlab-ci-kiro-pipeline-airgap-20260702T112000Z/README.md`.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
@@ -190,3 +297,5 @@ total with default runner concurrency.
 | Verdict grep matches when it shouldn't | Agent quoted the token while explaining the contract | Use a longer prefixed token; instruct "output the line only once" |
 | Job fails at startup with MCP connect error | Server unreachable/misconfigured (and `--require-mcp-startup` set — working as intended) | Check server URL/token variables, network egress from runner, runtime (npx/uvx) installed |
 | Review never mentions MCP tool data | Tool not trusted, server silently down (no `--require-mcp-startup`), or prompt never asked | Add server to `--trust-tools`, add `--require-mcp-startup`, name the query in the prompt |
+| Job hangs at `curl cli.kiro.dev/install` | Runner has no internet egress; PrivateLink only covers API traffic, not the installer | Stage the binary internally — see "Air-gapped runners" above |
+| `kiro-cli chat` fails with "Failed to open browser for authentication" | `KIRO_API_KEY` not set — CLI fell back to interactive login, which needs a browser/device the runner doesn't have | Set `KIRO_API_KEY` as shown in Authentication above; headless mode never opens a browser once it's set |
