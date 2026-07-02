@@ -8,6 +8,18 @@
 
 本仓库面向 **AWS SA 和开发者**，以 [Kiro](https://kiro.dev) 为主要学习环境，但不会造成任何平台锁定——纯指令型 Skills 完全可移植；少数捆绑可执行 `scripts/` 的 Skills 额外要求目标平台允许执行代码并安装其声明的依赖。
 
+## 旗舰 Skills
+
+两个经过实战验证的 Skills，均已在真实 AWS 基础设施上完成端到端验证：
+
+### 🏗️ [agentcore-harness-builder](skills/skills/agentcore-harness-builder/) — 构建 AWS Bedrock AgentCore Harness Agent
+
+端到端构建生产级 **AWS Bedrock AgentCore Harness** Agent：声明式模型 + 提示词、Memory、内置 Browser/Code Interpreter、Gateway/MCP 工具、内联函数、Skills、Observability、Evaluations、Identity、Policy 等。经真实 AWS API 实战验证——内置约 10 条经 introspection 验证的 API 坑（apiFormat、optionalValue 逐字段、allowedTools、opus-4.8 推理规则……）以及 [Live View 人机协作 SSO 登录变通方案](skills/skills/agentcore-harness-builder/references/browser-auth.md)，让你的 Agent 第一次部署就能跑通，而不是第十次。
+
+### 🦊 [gitlab-ci-kiro-pipeline](skills/skills/gitlab-ci-kiro-pipeline/) — AI 驱动的 GitLab CI/CD（Kiro CLI 无头模式 + MCP）
+
+构建让 **Kiro CLI 以无头模式**在每个合并请求上充当 AI 审查者的 GitLab CI/CD 流水线（`.gitlab-ci.yml`）：AI 代码审查、配置漂移检测、通过机器可读判定行实现的重复代码同步**合并门禁**、变更影响分析——12 个带已验证提示词的作业配方和一套完整流水线模板。包含 **CI 中的 MCP 服务器集成**（SonarQube SAST、AWS Knowledge、任意客户 MCP 服务器）：`--require-mcp-startup` 快速失败、`@server` 工具信任，以及经真实 MR 流水线验证的零基础设施冒烟测试。与通用型 [cicd-pipeline](skills/skills/cicd-pipeline/) Skill 互补。
+
 ## 快速入门
 
 **新手？** 请按照 [Kiro Skills 快速入门指南](QUICKSTART.md) 在 5 分钟内从零开始创建一个可用的 Skill。
@@ -29,7 +41,8 @@
 - **金融合规**: 将代码/架构变更映射到 PCI-DSS v4.0 和 MAS TRM 控制点的合规检查 Skill，采用按领域组织的参考文件
 - **云架构**: AWS Well-Architected 评审 Skill，按支柱组织参考文件（安全、可靠性、成本、性能、运维、可持续性）
 - **AI 落地 Skills**: code-standards-adopter（让 AI 生成的代码匹配团队风格）和 legacy-code-testing（重构前的特征测试）
-- **AWS AI Agent 基础设施**: agentcore-harness-builder — 经过实战验证的 Skill，端到端构建生产级 AWS Bedrock AgentCore Harness Agent；内置约 10 条经 introspection 验证的 API 坑（apiFormat、optionalValue 逐字段、allowedTools、opus-4.8 推理规则……）以及 [Live View 人机协作 SSO 登录变通方案](skills/skills/agentcore-harness-builder/references/browser-auth.md)。详见 [`skills/skills/agentcore-harness-builder/`](skills/skills/agentcore-harness-builder/)。
+- **AWS AI Agent 基础设施**: agentcore-harness-builder — 见上方[旗舰 Skills](#旗舰-skills)
+- **Agentic CI/CD**: gitlab-ci-kiro-pipeline — 带 Kiro CLI 无头 AI 审查作业和 MCP 服务器集成的 GitLab 流水线；见上方[旗舰 Skills](#旗舰-skills)
 - **Skills 目录**: 完整的分类目录请参见 [skills/CATALOG.md](skills/CATALOG.md)
 
 > **在找文档类 Skills（docx、pdf、pptx、xlsx）？** 它们是 Anthropic 的 source-available（非开源）生产级 Skills。为保持本仓库内容全部使用开源许可，已将其移除——请到官方 [anthropics/skills](https://github.com/anthropics/skills) 仓库获取。
