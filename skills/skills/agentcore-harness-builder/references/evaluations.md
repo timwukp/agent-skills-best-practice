@@ -1,60 +1,113 @@
 # Evaluations
 
-AgentCore **Evaluations** (preview) scores agent behavior from its traces. The control-plane SDK exposes an **online
-evaluation configuration** API (verified in boto3 1.43.29); **batch evaluation** and **custom evaluators** are surfaced
-in the console and may not yet have dedicated SDK operations — introspect before assuming.
+AgentCore **Evaluations** (preview) scores agent behavior from its traces. There are TWO surfaces, on TWO
+different SDK clients — introspect both before assuming anything is console-only:
 
-## What's in the SDK (verified)
+- **Online evaluation configs** — control plane (`bedrock-agentcore-control`): continuous scoring of live traffic.
+- **Batch evaluations** — **data plane (`bedrock-agentcore`)**: on-demand offline scoring of historical sessions.
+  Earlier versions of this file said batch had no SDK — wrong; the ops were on the other client.
 
-`CreateOnlineEvaluationConfig` / `GetOnlineEvaluationConfig` / `ListOnlineEvaluationConfigs` /
-`UpdateOnlineEvaluationConfig` / `DeleteOnlineEvaluationConfig`.
+## PREREQUISITE: turn trace sampling ON (or nothing will ever score)
 
-`CreateOnlineEvaluationConfig` input shape:
+Harness runtimes default to `trace_sampled=False`. Evaluators do **not** read the raw DEFAULT log-group
+lines — they read **structured OTel spans** (via CloudWatch Transaction Search → the account `aws/spans`
+log group). With sampling off (the default):
 
-| Field | Type | Notes |
-|---|---|---|
-| `onlineEvaluationConfigName` | string **[req]** | Name of the config. |
-| `rule` | structure **[req]** | `{samplingConfig [req], filters, sessionConfig}` — what traffic to evaluate and how to sample. |
-| `dataSourceConfig` | structure **[req]** | `{cloudWatchLogs: {...}}` — where traces come from (ties into `observability.md`). |
-| `evaluators` | list | Which evaluators to run. |
-| `insights` | list | Insight configs. |
-| `clusteringConfig` | structure | `{frequencies [req]}` for clustering results. |
-| `evaluationExecutionRoleArn` | string **[req]** | Role used to read traces / write results. |
-| `enableOnCreate` | boolean **[req]** | Start scoring immediately. |
-| `tags` | map | Standard tags. |
+- an online evaluation config sits ACTIVE/ENABLED **forever with zero scores and zero errors**;
+- a batch evaluation FAILS with `All N sessions failed` even though the sessions clearly exist.
+
+Fix — one env var on the harness (verified live: spans appear and evaluations score immediately after):
 
 ```python
+ctl.update_harness(harnessId=HID,
+    environmentVariables={"OTEL_TRACES_SAMPLER": "always_on"},
+    clientToken=secrets.token_hex(20))
+```
+
+Also confirm Transaction Search is active (`xray get-trace-segment-destination` → `CloudWatchLogs/ACTIVE`).
+
+## Online evaluation configs (control plane — verified)
+
+`CreateOnlineEvaluationConfig` / `GetOnlineEvaluationConfig` / `ListOnlineEvaluationConfigs` /
+`UpdateOnlineEvaluationConfig` / `DeleteOnlineEvaluationConfig`, plus `CreateEvaluator` etc. for custom
+evaluators. **16 Builtin evaluators ship ready to reference** (`list_evaluators()`): Correctness,
+GoalSuccessRate, ToolSelectionAccuracy, Helpfulness, Faithfulness, the Trajectory* family, and more —
+prefer them over building custom ones.
+
+```python
+c = boto3.client("bedrock-agentcore-control", region_name=REGION)
 c.create_online_evaluation_config(
-    onlineEvaluationConfigName="ui-test-quality",
-    rule={"samplingConfig": {...}, "filters": [...]},
-    dataSourceConfig={"cloudWatchLogs": {...}},
-    evaluators=[...],
+    onlineEvaluationConfigName="ui_qa_harness_quality",   # regex [a-zA-Z][a-zA-Z0-9_]{0,47} — NO dashes
+    rule={"samplingConfig": {"samplingPercentage": 100.0}},
+    dataSourceConfig={"cloudWatchLogs": {
+        "logGroupNames": ["/aws/bedrock-agentcore/runtimes/<runtime-id>-DEFAULT"],
+        "serviceNames": ["harness_<Name>.DEFAULT"]}},      # must match the span resource service.name
+    evaluators=[{"evaluatorId": "Builtin.Correctness"},
+                {"evaluatorId": "Builtin.GoalSuccessRate"},
+                {"evaluatorId": "Builtin.ToolSelectionAccuracy"}],
     evaluationExecutionRoleArn=eval_role_arn,
     enableOnCreate=True,
-)
+    clientToken=secrets.token_hex(20))                     # clientToken min length 33 — token_hex(16) FAILS
 ```
+
+Validation gotchas (all observed live):
+
+| Field | Gotcha |
+|---|---|
+| `onlineEvaluationConfigName` | `[a-zA-Z][a-zA-Z0-9_]{0,47}` — dashes rejected |
+| `clientToken` | min length **33** — use `secrets.token_hex(20)` |
+| `evaluationExecutionRoleArn` | validated **server-side at create** against the log groups; scope-limited log ARNs can fail — grant broad logs read |
+
+Results land in `/aws/bedrock-agentcore/evaluations/results/<config-id>` (log group auto-created) and
+surface in CloudWatch → AgentCore Observability. Online scoring is **asynchronous batch-cadence** — expect
+minutes-to-hours of lag; do not diagnose "broken" from lag alone (diagnose from missing spans instead).
+
+## Batch evaluations (DATA plane — verified, was wrongly assumed console-only)
+
+On `bedrock-agentcore` (the data-plane client): `StartBatchEvaluation` / `GetBatchEvaluation` /
+`ListBatchEvaluations` / `StopBatchEvaluation` / `DeleteBatchEvaluation`. Scores historical sessions in
+**minutes** — the fast path when you can't wait for the online cadence (demos, CI gates):
+
+```python
+data = boto3.client("bedrock-agentcore", region_name=REGION)
+r = data.start_batch_evaluation(
+    batchEvaluationName="ui_qa_batch",
+    evaluators=[{"evaluatorId": "Builtin.Correctness"},
+                {"evaluatorId": "Builtin.GoalSuccessRate"},
+                {"evaluatorId": "Builtin.ToolSelectionAccuracy"}],
+    dataSourceConfig={"cloudWatchLogs": {
+        "serviceNames": ["harness_<Name>.DEFAULT"],
+        "logGroupNames": ["/aws/bedrock-agentcore/runtimes/<runtime-id>-DEFAULT"],
+        "filterConfig": {"sessionIds": ["<runtimeSessionId>", ...]}}},   # or timeRange
+    clientToken=secrets.token_hex(20))
+# poll: data.get_batch_evaluation(batchEvaluationId=r["batchEvaluationId"])
+# → evaluationResults.evaluatorSummaries[].statistics.averageScore
+```
+
+`dataSourceConfig` alternatives: `onlineEvaluationConfigSource` (reuse an online config's source +
+`timeRange`) instead of raw `cloudWatchLogs`. A job evaluates up to 500 sessions, up to 10 evaluators.
+Statuses: PENDING → IN_PROGRESS → COMPLETED / COMPLETED_WITH_ERRORS / FAILED. Aggregate results are in the
+Get response; per-session details go to
+`/aws/bedrock-agentcore/evaluations/batch-evaluations/results/default` (stream `run-<id>`).
+
+IAM for the caller: `bedrock-agentcore:StartBatchEvaluation` / `GetBatchEvaluation` / `ListBatchEvaluations`.
 
 ## How it fits the workflow
 
-1. Wire **observability first** — traces must exist in CloudWatch Logs for `dataSourceConfig.cloudWatchLogs` to read.
-2. Create an online evaluation config that samples live traffic, runs evaluators, and writes scores.
-3. **Results surface in AgentCore Observability** — view them on the CloudWatch Observability page for the agent.
-4. Use the scores to drive **Optimizations** (`optimizations.md`): identify the weak dimension, propose a fix, A/B
-   test it.
+1. Wire **observability** (`observability.md`) AND set `OTEL_TRACES_SAMPLER=always_on` — spans must exist first.
+2. Create an **online evaluation config** for continuous scoring of live traffic.
+3. Need scores NOW (demo, CI gate)? Run a **batch evaluation** over recent sessions — minutes, not hours.
+4. Use the scores to drive **Optimizations** (`optimizations.md`): identify the weak dimension, propose a fix,
+   A/B test it.
 
-## Batch evaluation & custom evaluators (console)
-
-The console also offers **batch evaluation** (score a set of captured traces offline and Compare across variations) and
-**custom evaluators** (your own scoring logic for domain-specific criteria — e.g. for a UI-test agent:
-evidence-completeness, severity-classification accuracy, false-positive rate). If you need these programmatically,
-introspect for any newer ops first:
+Re-introspect both clients as the preview evolves:
 ```bash
-python scripts/preflight.py --show-shape CreateOnlineEvaluationConfig
-python -c "import boto3;print([o for o in boto3.client('bedrock-agentcore-control',region_name='us-east-1').meta.service_model.operation_names if 'Eval' in o])"
+python -c "import boto3; print([o for o in boto3.client('bedrock-agentcore-control',region_name='us-east-1').meta.service_model.operation_names if 'Eval' in o])"
+python -c "import boto3; print([o for o in boto3.client('bedrock-agentcore',region_name='us-east-1').meta.service_model.operation_names if 'valuat' in o])"
 ```
 
 ## Layering note
 
-Distinguish these from the *skill-creator* eval loop used to build this Kiro skill: that tests whether **this skill**
-produces good harness configs; AgentCore Evaluations test whether the **deployed harness agent** behaves well at
-runtime.
+Distinguish these from the *skill-creator* eval loop used to build this Kiro skill: that tests whether **this
+skill** produces good harness configs; AgentCore Evaluations test whether the **deployed harness agent**
+behaves well at runtime.
