@@ -40,6 +40,9 @@ r = data.start_recommendation(
             {"evaluatorArn": "arn:aws:bedrock-agentcore:::evaluator/Builtin.GoalSuccessRate"}]}}},
     clientToken=secrets.token_hex(20))
 # poll data.get_recommendation(recommendationId=r["recommendationId"]) until COMPLETED
+# result: recommendation.recommendationResult.systemPromptRecommendationResult
+#   .recommendedSystemPrompt + .explanation
+# NOTE list_recommendations() returns key "recommendationSummaries", not "recommendations"
 ```
 
 Gotchas (all observed live):
