@@ -47,6 +47,16 @@ Valid Builtin insight IDs (from the service's own validation error): `Builtin.In
 `Builtin.Insight.UserIntent`, `Builtin.Insight.Explanation`, `Builtin.Insight.ExecutionSummary`.
 The created config appears in the console under Optimizations → Insights, fully editable there.
 
+**On-demand insight reports** (the console's "Create custom report") are `StartBatchEvaluation` with
+`insights=` instead of `evaluators=` (same either/or rule). Results come back as **typed structures on
+`GetBatchEvaluation`** — `failureAnalysisResult.failures[]` (clusters → subCategories → rootCauses),
+`userIntentResult.userIntents[]`, `executionSummaryResult.executionSummaries[]` (approachTaken /
+finalOutcome per session) — NOT in the output log group. Two gotchas: with
+`dataSourceConfig.onlineEvaluationConfigSource` you must NOT pass `insights` (the config's own list is
+used), and a time-range source can silently match 0 sessions — target explicit
+`filterConfig.sessionIds` for deterministic reports. Scheduled (DAILY/WEEKLY/MONTHLY) reports from the
+recurring config surface in the console's report list on their own cadence.
+
 ## StartRecommendation — working example (verified live)
 
 ```python
