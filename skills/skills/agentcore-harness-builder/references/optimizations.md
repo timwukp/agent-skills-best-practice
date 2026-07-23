@@ -13,7 +13,7 @@ The first half is still true — the control plane has nothing — but the ops e
 | Feature | Data-plane ops | Scriptable? |
 |---|---|---|
 | Recommendations | `StartRecommendation` / `GetRecommendation` / `ListRecommendations` / `DeleteRecommendation` | **Yes** (verified: created live) |
-| A/B tests | `CreateABTest` / `GetABTest` / `ListABTests` / `UpdateABTest` / `DeleteABTest` | Yes (shape verified; targets a **Gateway** + variants + eval config) |
+| A/B tests | `CreateABTest` / `GetABTest` / `ListABTests` / `UpdateABTest` / `DeleteABTest` | Yes — but `gatewayArn` is **required**: no Gateway front, no traffic split. Variants are configuration bundles (`bundleArn`+`bundleVersion`) or targets, with weights + per-variant online eval configs. Harnesses invoked directly (InvokeHarness) can't A/B natively — do serial compare + `UpdateHarness` instead |
 | Insights | **fully scriptable via `CreateOnlineEvaluationConfig`** — the console's "Create insights" page is a wrapper over the same API: pass `insights` instead of `evaluators` | **Yes** (verified: created live, shows in console Insights tab) |
 
 Always introspect **both** clients before declaring anything console-only:
