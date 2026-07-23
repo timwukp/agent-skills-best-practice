@@ -14,7 +14,7 @@ The first half is still true — the control plane has nothing — but the ops e
 |---|---|---|
 | Recommendations | `StartRecommendation` / `GetRecommendation` / `ListRecommendations` / `DeleteRecommendation` | **Yes** (verified: created live) |
 | A/B tests | `CreateABTest` / `GetABTest` / `ListABTests` / `UpdateABTest` / `DeleteABTest` | Yes (shape verified; targets a **Gateway** + variants + eval config) |
-| Insights | no direct Create/List ops — referenced via `insights: [{insightId}]` on `CreateOnlineEvaluationConfig` | Partially (console creates; configs reference) |
+| Insights | **fully scriptable via `CreateOnlineEvaluationConfig`** — the console's "Create insights" page is a wrapper over the same API: pass `insights` instead of `evaluators` | **Yes** (verified: created live, shows in console Insights tab) |
 
 Always introspect **both** clients before declaring anything console-only:
 
@@ -22,6 +22,30 @@ Always introspect **both** clients before declaring anything console-only:
 python -c "import boto3; print([o for o in boto3.client('bedrock-agentcore-control',region_name='us-east-1').meta.service_model.operation_names if 'Recommend' in o or 'ABTest' in o])"
 python -c "import boto3; print([o for o in boto3.client('bedrock-agentcore',region_name='us-east-1').meta.service_model.operation_names if 'Recommend' in o or 'ABTest' in o])"
 ```
+
+## Insights — scriptable through CreateOnlineEvaluationConfig (verified live)
+
+The console's Optimizations → "Create insights" page is a wrapper over the **online evaluation config** API.
+An insights config is an online evaluation config that passes `insights` INSTEAD of `evaluators`
+("Exactly one of evaluators or insights must be provided"):
+
+```python
+c = boto3.client("bedrock-agentcore-control", region_name=REGION)
+c.create_online_evaluation_config(
+    onlineEvaluationConfigName="ui_qa_insights",
+    rule={"samplingConfig": {"samplingPercentage": 100.0}},
+    dataSourceConfig={"cloudWatchLogs": {"logGroupNames": [...], "serviceNames": [...]}},
+    insights=[{"insightId": "Builtin.Insight.FailureAnalysis"},
+              {"insightId": "Builtin.Insight.UserIntent"},
+              {"insightId": "Builtin.Insight.ExecutionSummary"}],
+    clusteringConfig={"frequencies": ["DAILY"]},        # DAILY | WEEKLY | MONTHLY — report schedule
+    evaluationExecutionRoleArn=eval_role_arn,
+    enableOnCreate=True, clientToken=secrets.token_hex(20))
+```
+
+Valid Builtin insight IDs (from the service's own validation error): `Builtin.Insight.FailureAnalysis`,
+`Builtin.Insight.UserIntent`, `Builtin.Insight.Explanation`, `Builtin.Insight.ExecutionSummary`.
+The created config appears in the console under Optimizations → Insights, fully editable there.
 
 ## StartRecommendation — working example (verified live)
 
