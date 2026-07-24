@@ -90,7 +90,22 @@ Statuses: PENDING → IN_PROGRESS → COMPLETED / COMPLETED_WITH_ERRORS / FAILED
 Get response; per-session details go to
 `/aws/bedrock-agentcore/evaluations/batch-evaluations/results/default` (stream `run-<id>`).
 
-IAM for the caller: `bedrock-agentcore:StartBatchEvaluation` / `GetBatchEvaluation` / `ListBatchEvaluations`.
+IAM for the caller — `StartBatchEvaluation` uses **FAS** (forward-access sessions): the service performs
+several actions with the CALLER's credentials, so the caller needs more than the obvious three
+(`bedrock-agentcore:StartBatchEvaluation` / `GetBatchEvaluation` / `ListBatchEvaluations`), all observed live:
+
+- `logs:DescribeLogGroups` on **`Resource: "*"`** — a scoped log-group ARN fails the service's verification
+  ("Cannot verify log group … ensure the execution role has logs:DescribeLogGroups").
+- `logs:PutRetentionPolicy` + `logs:CreateLogGroup` — the service creates the results log group with the
+  caller's credentials ("FAS credentials do not have permission to set log group retention policy").
+- read access to the account `aws/spans` log group (Transaction Search destination) — evaluators read span
+  documents from there, and per-session failures report "log events but no span documents" otherwise.
+
+Two more operational gotchas:
+- `batchEvaluationName` is **account-unique forever** — a completed job still holds its name
+  (ConflictException on reuse); suffix names with a random token.
+- Sessions that ran **before** `OTEL_TRACES_SAMPLER=always_on` was set can never be scored (no span
+  documents exist) — filter them out of `sessionIds`, or the job lands in COMPLETED_WITH_ERRORS/FAILED.
 
 ## How it fits the workflow
 
