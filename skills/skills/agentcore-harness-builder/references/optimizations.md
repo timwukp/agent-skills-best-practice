@@ -85,6 +85,38 @@ Gotchas (all observed live):
 - `agentTraces` alternatives: `cloudwatchLogs` (log-group ARNs + serviceNames + time range), `sessionSpans`, or `batchEvaluation` (reuse a batch evaluation's traces via its ARN — composes with `evaluations.md`).
 - Traces must contain **span documents** — set `OTEL_TRACES_SAMPLER=always_on` on the harness first (see `evaluations.md` prerequisite; without it every trace-consuming feature silently has nothing to read).
 
+## A/B tests — full SDK anatomy (verified via introspection + console cross-check)
+
+`CreateABTest` / `GetABTest` / `UpdateABTest` / `ListABTests` / `DeleteABTest` (data plane). A/B rides a
+**Gateway**: creating one materializes a weighted Gateway *rule* that splits traffic.
+
+**Two variant types** (console: "Select from configuration bundles" vs "Select from gateway targets"):
+
+| Variant type | SDK field | What it compares |
+|---|---|---|
+| Configuration bundles | `variantConfiguration.configurationBundle {bundleArn, bundleVersion}` | two versioned config bundles (e.g. current vs recommended system prompt) applied over the same target |
+| Gateway targets | `variantConfiguration.target {name}` | two gateway targets — **including two `agentcoreRuntime` endpoints**, i.e. two runtime/harness versions |
+
+The target-type is the practical route for **harness** A/B: front the harness with a gateway
+(`CreateGatewayTarget` → `targetConfiguration.http.agentcoreRuntime {arn, qualifier}`), register control and
+variant runtimes as two targets, and let the A/B rule weight-route between them.
+
+**Configuration bundles are git-like versioned JSON**: `components` is a **document-type map** (arbitrary
+JSON values — verified live: `{"systemPrompt": {"configuration": {...}}}` accepted), with `branchName`,
+`commitMessage`, version lineage (`parentVersionIds`). `StartRecommendation` can both *consume* a bundle
+(`systemPrompt.configurationBundle` + `systemPromptJsonPath`) and *emit* one
+(`recommendationResult.systemPromptRecommendationResult.configurationBundle`) — so the loop
+Insights → Recommendation → bundle → A/B variant is fully scriptable.
+
+**Results are a real stats engine** — `GetABTest.results.evaluatorMetrics[]` per evaluator:
+`controlStats {sampleSize, mean}` vs `variantResults[] {mean, absoluteChange, percentChange, pValue,
+confidenceInterval {lower, upper}, isSignificant}`. Deploy the winner by `UpdateABTest` re-weighting
+(e.g. 0/100) or applying the winning bundle; `executionStatus` enum: NOT_STARTED / RUNNING / PAUSED / STOPPED.
+
+Also on `CreateGatewayRule` directly (what A/B automates): `actions[].configurationBundle
+.staticOverride|.weightedOverride {trafficSplit}` and `actions[].routeToTarget.staticRoute|.weightedRoute` —
+plus `conditions[].matchPrincipals/matchPaths` for principal- or path-scoped rollouts (canary by caller).
+
 ## The full loop (console + SDK mix)
 
 1. **Recommendation** — generate improved system prompts / tool descriptions (SDK or console).
