@@ -85,7 +85,14 @@ Gotchas (all observed live):
 - `agentTraces` alternatives: `cloudwatchLogs` (log-group ARNs + serviceNames + time range), `sessionSpans`, or `batchEvaluation` (reuse a batch evaluation's traces via its ARN — composes with `evaluations.md`).
 - Traces must contain **span documents** — set `OTEL_TRACES_SAMPLER=always_on` on the harness first (see `evaluations.md` prerequisite; without it every trace-consuming feature silently has nothing to read).
 
-## A/B tests — full SDK anatomy (verified via introspection + console cross-check)
+## A/B tests — full SDK anatomy
+
+> **Verification level: shape-verified, NOT yet exercised end-to-end.** Everything in this section comes
+> from SDK introspection cross-checked against the console wizard, plus one live probe (bundle `components`
+> accepts arbitrary JSON — created and deleted). No Gateway, A/B test, or traffic split has been run for
+> real yet; statistical results (`GetABTest.results`) are described from the output shape, not observed.
+> The rest of this file (Recommendations, Insights, batch reports) IS verified end-to-end with live
+> artifacts. Treat this section as a reliable map, not a tested route.
 
 `CreateABTest` / `GetABTest` / `UpdateABTest` / `ListABTests` / `DeleteABTest` (data plane). A/B rides a
 **Gateway**: creating one materializes a weighted Gateway *rule* that splits traffic.
