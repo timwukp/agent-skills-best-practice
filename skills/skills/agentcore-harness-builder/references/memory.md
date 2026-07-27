@@ -1,15 +1,50 @@
 # Memory
 
-AgentCore Memory is a **separate resource** from the harness. It gives the agent short-term context (recent messages)
-and long-term knowledge (extracted records) that persist across sessions. Attaching it correctly is a **3-step**
-process — the step most people miss is the IAM grant.
+Memory gives the agent short-term context (recent messages) and long-term knowledge (extracted records) that persist
+across sessions. The harness `memory` field is a **union of three members** (live-verified):
+
+| Union member | What it is | When |
+|---|---|---|
+| `managedMemoryConfiguration` | **DEFAULT** — AWS creates and owns the Memory resource; zero wiring | almost always start here |
+| `disabled` | `{}` — explicitly no memory | stateless agents |
+| `agentCoreMemoryConfiguration` | **BYO** — you create/own a separate Memory resource | sharing one Memory across agents, custom strategies/namespaces |
 
 ## Contents
-- [Strategy types](#strategies)
-- [retrievalConfig](#retrievalconfig)
-- [The 3-step wiring](#three-step-wiring)
-- [IAM grant + namespace conversion](#iam-grant)
+- [Managed memory (default)](#managed-memory)
+- [BYO: strategy types](#strategies)
+- [BYO: retrievalConfig](#retrievalconfig)
+- [BYO: the 3-step wiring](#three-step-wiring)
+- [BYO: IAM grant + namespace conversion](#iam-grant)
 - [actorId conventions](#actorid)
+
+---
+
+## Managed memory
+
+The simple path: pick strategies and AWS creates and owns the Memory resource with auto-derived retrieval defaults.
+
+```json
+"memory": {
+  "managedMemoryConfiguration": {
+    "strategies": ["SEMANTIC", "SUMMARIZATION"],
+    "eventExpiryDuration": 90
+  }
+}
+```
+
+- `strategies` enum: `SEMANTIC` | `SUMMARIZATION` | `USER_PREFERENCE` | `EPISODIC`.
+- `eventExpiryDuration` (days) and `encryptionKeyArn` are optional.
+- `retrievalConfig` is **auto-derived** (`topK=10`, `relevanceScore=0.2`) — you don't set it.
+- No `CreateMemory` call, no strategy-id bookkeeping — but the **execution role still needs memory data-plane
+  permissions** (`CreateEvent/DeleteEvent/GetEvent/ListEvents/RetrieveMemoryRecords` on
+  `arn:...:memory/harness_*` — the auto-created Memory is named `harness_<name>_<suffix>`). Without it,
+  `InvokeHarness` fails at runtime with `AccessDeniedException ... ListEvents` (**verified live**). The
+  `ManagedMemoryEvents` statement in `assets/iam_execution_role.json` covers this.
+
+To opt out of memory entirely: `"memory": {"disabled": {}}`.
+
+Everything below is the **BYO advanced path** (`agentCoreMemoryConfiguration`) — a separate Memory resource you
+create and wire yourself. Attaching it correctly is a **3-step** process; the step most people miss is the IAM grant.
 
 ---
 
@@ -88,7 +123,7 @@ memory = {
 
 - The field is **`strategyId`**, NOT `memoryStrategyId` (the API-ref name misleads; the validation error is the hint).
 - Strategy ids come from the `CreateMemory` response (each created strategy gets an id like `..._Episodic-PV6UaxHitM`).
-- `topK` 10 / `relevanceScore` 0.2 are broad-recall preview defaults; tighten for precision.
+- `topK` 10 / `relevanceScore` 0.2 are broad-recall defaults (the same values managed memory auto-derives); tighten for precision.
 - On `UpdateHarness`, wrap the whole thing: `memory={"optionalValue": {"agentCoreMemoryConfiguration": {...}}}`.
 
 ---
@@ -111,12 +146,12 @@ Skip step 3 and **every** invocation fails at session start with `AccessDeniedEx
 
 ## IAM grant
 
-Step 3 grants two permission sets on the new Memory ARN:
+Step 3 grants two permission sets on the new Memory ARN (current per AWS docs):
 
-| Action set | When needed | Example actions |
+| Action set | When needed | Actions |
 |---|---|---|
-| Memory events (read+write) | every session start | `ListEvents`, `CreateEvent`, `GetEvent`, `ListSessions`, `ListActors` |
-| Record retrieval | every start with `retrievalConfig` | `ListMemoryRecords`, `RetrieveMemoryRecords` (scoped by `bedrock-agentcore:namespace`) |
+| Memory events (read+write) | every session start | `CreateEvent`, `DeleteEvent`, `GetEvent`, `ListEvents` |
+| Record retrieval | every start with `retrievalConfig` | `RetrieveMemoryRecords` (scoped by `bedrock-agentcore:namespace`) |
 
 **Namespace conversion** for the retrieval condition — `retrievalConfig` keys use `{placeholder}` syntax; the IAM
 `StringLike` condition needs glob form:
@@ -126,7 +161,8 @@ Step 3 grants two permission sets on the new Memory ARN:
 | `retrievalConfig` keys | `{placeholder}` | `/episodes/{actorId}/{sessionId}` |
 | IAM `StringLike` value | glob `*` | `/episodes/*/*` |
 
-Convert via regex `\{[^}]+\}` → `*`. Convention: an inline policy named `<HarnessName>MemoryAccess`.
+Convert via regex `\{[^}]+\}` → `*`. Convention: an inline policy named `<HarnessId>MemoryAccess`
+(what `scripts/wire_memory.py` creates).
 
 ---
 

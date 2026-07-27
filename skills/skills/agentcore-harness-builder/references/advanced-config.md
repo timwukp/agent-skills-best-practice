@@ -21,7 +21,8 @@ Bounds the conversation context fed to the model on long sessions. Verified shap
 - `sliding_window` keeps the most recent N messages. 150 is a good default for long browse/test sessions.
 - Lower it to cut token cost on chatty agents; raise it if early context matters throughout.
 - Long-term recall should come from **Memory** (retrieval), not from an enormous window — the window is for recency.
-- On `UpdateHarness`, wrap in `optionalValue` (it's a structure field).
+- On `UpdateHarness`, `truncation` passes **directly** — no `optionalValue` wrapper (live-verified; only
+  `memory`/`environmentArtifact`/`authorizerConfiguration` wrap).
 
 ## Invocation limits
 
@@ -89,7 +90,8 @@ Who is allowed to call `InvokeHarness`, via the top-level `authorizerConfigurati
   } }
   ```
 
-On `UpdateHarness`, `authorizerConfiguration` is a structure field → wrap in `optionalValue`.
+On `UpdateHarness`, `authorizerConfiguration` is one of the three fields that DO wrap in `optionalValue`
+(with `memory` and `environmentArtifact`); `model`/`environment`/`truncation` pass directly.
 
 ## Environment variables & custom image (advanced)
 

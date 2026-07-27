@@ -8,8 +8,8 @@ configs, and inference settings live **inside** the chosen config:
 ```json
 "model": {
   "bedrockModelConfig": {
-    "modelId": "global.anthropic.claude-sonnet-4-6",
-    "apiFormat": "CONVERSE",
+    "modelId": "global.anthropic.claude-sonnet-5",
+    "apiFormat": "converse_stream",
     "maxTokens": 65536,
     "temperature": 0.2,
     "topP": 0.9
@@ -33,17 +33,22 @@ The non-Bedrock providers store their key as a secret ARN (`apiKeyArn`) — wire
 
 - **Prefer an inference profile id**, not a bare foundation-model id. Profiles route across regions for capacity and
   resilience:
-  - `global.*` — global cross-region profile (e.g. `global.anthropic.claude-sonnet-4-6`)
-  - `us.*` — US cross-region profile (e.g. `us.anthropic.claude-sonnet-4-5-20250514-v1:0`)
-- A bare `anthropic.claude-...-v1:0` works but ties you to one region's capacity.
+  - `global.*` — global cross-region profile (e.g. `global.anthropic.claude-sonnet-5`)
+  - `us.*` — US cross-region profile (e.g. `us.anthropic.claude-sonnet-5`)
+- **Recommended default: `global.anthropic.claude-sonnet-5`** (live-confirmed available). For the hardest
+  reasoning/agentic tasks, use `global.anthropic.claude-opus-5`. Older `claude-sonnet-4-6` still works as the
+  service default but prefer the 5-series.
+- A bare `anthropic.claude-...` id works but ties you to one region's capacity.
 - The execution role must have `bedrock:InvokeModel` / Converse permissions for the chosen id (and the underlying
   foundation model the profile maps to).
 
 ### API format
 
-Set `apiFormat` inside the model config. **`CONVERSE`** is the recommended Bedrock contract — a unified,
-provider-agnostic interface for messages, tool-use, and streaming. It's why `invoke_harness` takes
-`messages=[{"role":"user","content":[{"text":"..."}]}]` and streams `contentBlockDelta` events.
+Set `apiFormat` inside the model config. The enum (live-verified) is **`converse_stream`** / `responses` /
+`chat_completions` — the old `CONVERSE` value is stale and rejected. Use **`converse_stream`** for Bedrock models:
+the unified, provider-agnostic contract for messages, tool-use, and streaming. It's why `invoke_harness` takes
+`messages=[{"role":"user","content":[{"text":"..."}]}]` and streams `contentBlockDelta` events. `responses` and
+`chat_completions` route OpenAI-style formats via Bedrock Mantle.
 
 ### Multi-provider / per-invocation override
 

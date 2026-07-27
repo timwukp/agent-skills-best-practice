@@ -64,12 +64,11 @@ def build_iam_policy(memory_arn: str) -> dict:
         "Version": "2012-10-17",
         "Statement": [
             {"Sid": "MemoryEvents", "Effect": "Allow",
-             "Action": ["bedrock-agentcore:CreateEvent", "bedrock-agentcore:GetEvent",
-                        "bedrock-agentcore:ListEvents", "bedrock-agentcore:ListSessions",
-                        "bedrock-agentcore:ListActors"],
+             "Action": ["bedrock-agentcore:CreateEvent", "bedrock-agentcore:DeleteEvent",
+                        "bedrock-agentcore:GetEvent", "bedrock-agentcore:ListEvents"],
              "Resource": memory_arn},
             {"Sid": "MemoryRetrieval", "Effect": "Allow",
-             "Action": ["bedrock-agentcore:ListMemoryRecords", "bedrock-agentcore:RetrieveMemoryRecords"],
+             "Action": ["bedrock-agentcore:RetrieveMemoryRecords"],
              "Resource": memory_arn,
              "Condition": {"StringLike": {"bedrock-agentcore:namespace": namespaces}}},
         ],
@@ -92,8 +91,10 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
+    print(f"Region: {args.region}")
     strategies = build_strategies()
-    policy_name = f"{args.memory_name}MemoryAccess"
+    # Convention (references/memory.md): inline policy named <HarnessId>MemoryAccess on the execution role.
+    policy_name = f"{args.harness_id}MemoryAccess"
 
     if args.dry_run:
         print("DRY RUN — 3-step memory wiring\n")
@@ -127,6 +128,14 @@ def main() -> int:
         sid = s.get("strategyId") or s.get("memoryStrategyId") or s.get("id")
         if nm and sid:
             strategy_ids[nm] = sid
+    # GUARD: never silently attach memory with a missing ARN or an empty/partial retrievalConfig.
+    expected = {name for _k, name, _ns, _d in DEFAULT_STRATEGIES}
+    if not memory_arn or strategy_ids.keys() != expected:
+        print("FAIL  could not extract memoryArn and/or all strategy ids from the CreateMemory response.")
+        print(f"      memoryArn={memory_arn!r}, extracted strategy ids={strategy_ids!r}, expected names={sorted(expected)}.")
+        print("      Refusing to continue — attaching now would silently produce an empty retrievalConfig.")
+        print("      Inspect the response shape (preflight.py --show-shape CreateMemory) and re-run.")
+        sys.exit(1)
     print(f"OK    step 1: created memory {memory_arn} with strategies {list(strategy_ids)}")
 
     # STEP 2

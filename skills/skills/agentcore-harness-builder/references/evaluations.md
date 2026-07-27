@@ -1,6 +1,6 @@
 # Evaluations
 
-AgentCore **Evaluations** (preview) scores agent behavior from its traces. There are TWO surfaces, on TWO
+AgentCore **Evaluations** scores agent behavior from its traces. There are TWO surfaces, on TWO
 different SDK clients — introspect both before assuming anything is console-only:
 
 - **Online evaluation configs** — control plane (`bedrock-agentcore-control`): continuous scoring of live traffic.
@@ -115,7 +115,7 @@ Two more operational gotchas:
 4. Use the scores to drive **Optimizations** (`optimizations.md`): identify the weak dimension, propose a fix,
    A/B test it.
 
-Re-introspect both clients as the preview evolves:
+Re-introspect both clients as the service evolves:
 ```bash
 python -c "import boto3; print([o for o in boto3.client('bedrock-agentcore-control',region_name='us-east-1').meta.service_model.operation_names if 'Eval' in o])"
 python -c "import boto3; print([o for o in boto3.client('bedrock-agentcore',region_name='us-east-1').meta.service_model.operation_names if 'valuat' in o])"
@@ -123,6 +123,6 @@ python -c "import boto3; print([o for o in boto3.client('bedrock-agentcore',regi
 
 ## Layering note
 
-Distinguish these from the *skill-creator* eval loop used to build this Kiro skill: that tests whether **this
+Distinguish these from the eval cases bundled with this skill (`evals/evals.json`): those test whether **this
 skill** produces good harness configs; AgentCore Evaluations test whether the **deployed harness agent**
 behaves well at runtime.

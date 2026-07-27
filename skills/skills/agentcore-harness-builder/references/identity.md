@@ -40,7 +40,7 @@ services (third-party APIs, OAuth providers). It complements the harness's **inb
 
 ## API surface
 
-Identity is part of the preview control plane. Introspect exact shapes before scripting:
+Identity ops evolve quickly. Introspect exact shapes before scripting:
 ```bash
 python scripts/preflight.py --show-shape CreateOauth2CredentialProvider --show-shape CreateWorkloadIdentity
 ```

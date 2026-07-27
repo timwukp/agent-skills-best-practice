@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """Set up Observability for a Harness: CloudWatch log delivery + X-Ray tracing.
 
+Creates, idempotently:
+  1. the destination CloudWatch log group (+ retention),
+  2. the AWSLogDeliveryWrite20150319 resource policy extension for delivery.logs.amazonaws.com,
+  3. delivery sources for APPLICATION_LOGS and TRACES (resourceArn derived from --harness-id),
+  4. a CWL delivery destination for logs and an XRAY destination for traces,
+  5. create_delivery linking each source to its destination.
+
 Encodes the two gotchas:
   - X-Ray delivery destinations take NO outputFormat (only name + deliveryDestinationType=XRAY).
   - APPLICATION_LOGS delivery to a custom log group needs the AWSLogDeliveryWrite20150319 resource
@@ -9,8 +16,8 @@ Encodes the two gotchas:
 Note: the runtime already emits rich OTel logs to /aws/bedrock-agentcore/runtimes/<name>-<id>-DEFAULT;
 that DEFAULT group is where dashboard data lives. This sets up an additional explicit delivery.
 
-The exact CloudWatch Logs delivery API member names for an AgentCore source can shift in preview;
-this script is structured and --dry-run by intent so you can confirm shapes before executing.
+ALSO REQUIRED for Evaluations: set OTEL_TRACES_SAMPLER=always_on on the harness
+(update_harness environmentVariables) — sampling is OFF by default and evaluators read spans.
 
 Usage:
     python setup_observability.py --harness-id <ID> --region us-east-1 \
@@ -45,6 +52,26 @@ def merge_resource_policy(existing_doc: dict | None, new_stmt: dict) -> dict:
     return existing_doc
 
 
+def delivery_plan(harness_id: str, log_group: str) -> dict:
+    """The source/destination/delivery names + wiring for a harness (pure, testable)."""
+    prefix = f"harness-{harness_id}"[:50]
+    return {
+        "sources": [
+            {"name": f"{prefix}-app-logs", "logType": "APPLICATION_LOGS"},
+            {"name": f"{prefix}-traces", "logType": "TRACES"},
+        ],
+        "destinations": [
+            {"name": f"{prefix}-cwl", "deliveryDestinationType": "CWL", "log_group": log_group},
+            # X-Ray destinations take NO outputFormat and no destinationResourceArn
+            {"name": f"{prefix}-xray", "deliveryDestinationType": "XRAY"},
+        ],
+        "deliveries": [
+            {"source": f"{prefix}-app-logs", "destination": f"{prefix}-cwl"},
+            {"source": f"{prefix}-traces", "destination": f"{prefix}-xray"},
+        ],
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Set up Harness observability (logs + traces)")
     ap.add_argument("--harness-id", required=True)
@@ -54,34 +81,43 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    plan = {
-        "1_log_group": f"ensure log group {args.log_group} exists; set retention {args.retention_days}d "
-                       "(DEFAULT group never expires unless set)",
-        "2_delivery_source_logs": f"put_delivery_source(name=...-app-logs, logType=APPLICATION_LOGS, "
-                                  f"resourceArn=<harness/runtime arn for {args.harness_id}>)",
-        "3_delivery_source_traces": "put_delivery_source(name=...-traces, logType=TRACES, resourceArn=<...>)",
-        "4_dest_logs": f"put_delivery_destination(name=...-cwl, deliveryDestinationType=CWL, "
-                       f"destination={args.log_group})",
-        "5_dest_traces": "put_delivery_destination(name=...-xray, deliveryDestinationType=XRAY)  "
-                         "# NO outputFormat for XRAY",
-        "6_create_delivery": "create_delivery(deliverySource -> deliveryDestination) for each pair",
-        "7_resource_policy": f"extend {RESOURCE_POLICY_NAME} on {args.log_group} for delivery.logs.amazonaws.com "
-                             "(append, preserve existing statements)",
-    }
+    print(f"Region: {args.region}")
+    plan = delivery_plan(args.harness_id, args.log_group)
 
     if args.dry_run:
         print("DRY RUN — observability setup plan:\n")
-        for k in sorted(plan):
-            print(f"  {k}: {plan[k]}")
+        print(f"  1. ensure log group {args.log_group} (retention {args.retention_days}d)")
+        print(f"  2. extend resource policy {RESOURCE_POLICY_NAME} for delivery.logs.amazonaws.com")
+        print(f"  3. resourceArn = GetHarness({args.harness_id}).harnessArn")
+        for s in plan["sources"]:
+            print(f"  4. put_delivery_source(name={s['name']}, logType={s['logType']}, resourceArn=<harness arn>)")
+        for d in plan["destinations"]:
+            extra = f", destinationResourceArn=<{d['log_group']}>" if d.get("log_group") else "  # NO outputFormat for XRAY"
+            print(f"  5. put_delivery_destination(name={d['name']}, type={d['deliveryDestinationType']}{extra})")
+        for dl in plan["deliveries"]:
+            print(f"  6. create_delivery({dl['source']} -> {dl['destination']})")
         print("\nExample resource-policy statement to append:")
         print(json.dumps(desired_policy_statement("<ACCOUNT_ID>", args.region, args.log_group), indent=2))
-        print("\nConfirm live CWL-delivery member names before executing (preview API).")
+        print("\nREMINDER: also set OTEL_TRACES_SAMPLER=always_on on the harness or evaluations score nothing.")
         return 0
 
     import boto3
     logs = boto3.client("logs", region_name=args.region)
     sts = boto3.client("sts", region_name=args.region)
+    control = boto3.client("bedrock-agentcore-control", region_name=args.region)
     account_id = sts.get_caller_identity()["Account"]
+
+    # resolve the harness ARN — the delivery-source resourceArn
+    try:
+        h = control.get_harness(harnessId=args.harness_id)
+        resource_arn = h.get("harnessArn") or h.get("arn")
+    except Exception as e:  # noqa: BLE001
+        print(f"FAIL  get_harness({args.harness_id}): {e}")
+        return 1
+    if not resource_arn:
+        print("FAIL  could not resolve harness ARN from GetHarness response.")
+        return 1
+    print(f"OK    harness ARN: {resource_arn}")
 
     # 1. log group + retention
     try:
@@ -96,7 +132,7 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001
         print(f"WARN  put_retention_policy: {e}")
 
-    # 7. resource policy (the critical, commonly-missed step) — do this so deliveries can write
+    # 2. resource policy (the critical, commonly-missed step) — do this so deliveries can write
     new_stmt = desired_policy_statement(account_id, args.region, args.log_group)
     existing_doc = None
     try:
@@ -113,11 +149,54 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001
         print(f"WARN  put_resource_policy: {e}")
 
-    print("\nNOTE: the delivery-source/destination/create-delivery calls (steps 2-6) use preview API "
-          "member names that vary. Re-run with --dry-run to see the plan, confirm shapes via the docs, "
-          "then wire them. The DEFAULT log group /aws/bedrock-agentcore/runtimes/<name>-<id>-DEFAULT "
-          "already has rich OTel data for dashboards.")
-    return 0
+    ok = True
+
+    # 3. delivery sources (put_* is create-or-update, hence idempotent)
+    source_arns = {}
+    for s in plan["sources"]:
+        try:
+            r = logs.put_delivery_source(name=s["name"], logType=s["logType"], resourceArn=resource_arn)
+            source_arns[s["name"]] = r["deliverySource"]["name"]
+            print(f"OK    delivery source {s['name']} ({s['logType']})")
+        except Exception as e:  # noqa: BLE001
+            print(f"FAIL  put_delivery_source {s['name']}: {e}")
+            ok = False
+
+    # 4. delivery destinations — CWL for logs, XRAY for traces (NO outputFormat for XRAY)
+    dest_arns = {}
+    log_group_arn = f"arn:aws:logs:{args.region}:{account_id}:log-group:{args.log_group}:*"
+    for d in plan["destinations"]:
+        kwargs = {"name": d["name"], "deliveryDestinationType": d["deliveryDestinationType"]}
+        if d["deliveryDestinationType"] == "CWL":
+            kwargs["deliveryDestinationConfiguration"] = {"destinationResourceArn": log_group_arn}
+        try:
+            r = logs.put_delivery_destination(**kwargs)
+            dest_arns[d["name"]] = r["deliveryDestination"]["arn"]
+            print(f"OK    delivery destination {d['name']} ({d['deliveryDestinationType']})")
+        except Exception as e:  # noqa: BLE001
+            print(f"FAIL  put_delivery_destination {d['name']}: {e}")
+            ok = False
+
+    # 5. deliveries (create_delivery is not idempotent — tolerate ConflictException)
+    for dl in plan["deliveries"]:
+        dest_arn = dest_arns.get(dl["destination"])
+        if not dest_arn or dl["source"] not in source_arns:
+            print(f"SKIP  delivery {dl['source']} -> {dl['destination']} (prerequisite failed above)")
+            continue
+        try:
+            logs.create_delivery(deliverySourceName=dl["source"], deliveryDestinationArn=dest_arn)
+            print(f"OK    delivery {dl['source']} -> {dl['destination']}")
+        except logs.exceptions.ConflictException:
+            print(f"OK    delivery {dl['source']} -> {dl['destination']} (already exists)")
+        except Exception as e:  # noqa: BLE001
+            print(f"FAIL  create_delivery {dl['source']} -> {dl['destination']}: {e}")
+            ok = False
+
+    print("\nREMINDER: set OTEL_TRACES_SAMPLER=always_on on the harness (update_harness "
+          "environmentVariables) — sampling is OFF by default and evaluations read spans. "
+          "The DEFAULT log group /aws/bedrock-agentcore/runtimes/<name>-<id>-DEFAULT already has "
+          "rich OTel data for dashboards.")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

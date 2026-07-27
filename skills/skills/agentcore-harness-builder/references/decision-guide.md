@@ -16,11 +16,12 @@ Need custom orchestration (multi-agent, custom retry/fallback loops)?   ── y
 Embedding the agent inside an existing app/HTTP server?                 ── yes ─→ RUNTIME
         │ no
 Sub-second latency / very high-volume short stateless calls?            ── yes ─→ RUNTIME
-        │ no
-Want fully no-code, console-only tool calling, no fs/shell?             ── yes ─→ BEDROCK AGENTS
         │ otherwise
                                                                           └──────→ HARNESS (default for managed agents)
 ```
+
+**Do not recommend classic Bedrock Agents** ("Agents Classic"): it is in maintenance mode and closed to new
+customers as of 2026-07-30. The AgentCore Harness is AWS's recommended path for managed agents.
 
 ## Side by side
 
@@ -59,10 +60,11 @@ Runtime path uses the agent-side SDK (`pip install bedrock-agentcore`): `Bedrock
 `BrowserClient`, `CodeInterpreterClient`, `MemorySessionManager`, and `serve_ag_ui` / `serve_a2a` for AG-UI / A2A
 protocols. Deploy via the `@aws/agentcore` CLI (`agentcore create` / `agentcore deploy`) or the generated CDK.
 
-## Choose neither (plain Bedrock Agents) when
+## What about plain Bedrock Agents?
 
-Fully no-code console configuration is enough; only simple tool calling, no filesystem/shell; no multi-model or
-mid-session switching needed.
+Classic Bedrock Agents is now **"Agents Classic"** — maintenance mode, closed to new customers as of **2026-07-30**.
+Existing Agents Classic workloads keep running, but new builds (and migrations) should use the AgentCore Harness,
+which is AWS's recommended path for managed, declarative agents.
 
 ## Note
 

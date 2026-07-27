@@ -1,6 +1,6 @@
 # Optimizations
 
-AgentCore **Optimizations** (preview) improves an agent by generating better system prompts / tool descriptions
+AgentCore **Optimizations** improves an agent by generating better system prompts / tool descriptions
 (**Recommendations**), analyzing sessions (**Insights**), and validating changes with **A/B tests** before
 deploying the winner.
 

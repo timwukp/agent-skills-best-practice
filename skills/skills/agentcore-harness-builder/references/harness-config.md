@@ -27,9 +27,9 @@ is a complete working example using these exact shapes — start from it. When i
 | `model` | structure | `bedrockModelConfig` / `openAiModelConfig` / `geminiModelConfig` / `liteLlmModelConfig`. See `model-and-prompt.md`. |
 | `systemPrompt` | list | `[{"text": "..."}]`. |
 | `tools` | list | Each `{type, name, config}`. See `tools.md`. |
-| `allowedTools` | list | Globs: `["browser_*","code_interpreter*","skills"]`. |
+| `allowedTools` | list | `["*"]` or plain names (`["browser","code_interpreter","skills"]`) — **no** `browser_*` glob (matches nothing). |
 | `skills` | list | Each a union `{path|s3|git}`. See `skills.md`. |
-| `memory` | structure | `agentCoreMemoryConfiguration`. See `memory.md`. |
+| `memory` | structure | Union: `managedMemoryConfiguration` (default) / `agentCoreMemoryConfiguration` (BYO) / `disabled`. See `memory.md`. |
 | `truncation` | structure | `{strategy, config:{slidingWindow:{messagesCount}}}`. |
 | `environment` | structure | Holds **networkConfiguration + lifecycleConfiguration** (see below) + filesystem. |
 | `environmentArtifact` | structure | `{containerConfiguration:{containerUri}}` — custom image (advanced). |
@@ -69,15 +69,15 @@ are **nested**:
 
 | Setting | Recommended | Rationale |
 |---|---|---|
-| Model | inference-profile id (`global.*`/`us.*`) | cross-region capacity |
-| `model.bedrockModelConfig.apiFormat` | `CONVERSE` | unified tool-use + streaming |
+| Model | `global.anthropic.claude-sonnet-5` (or `global.anthropic.claude-opus-5` for the hardest tasks) | inference profile → cross-region capacity |
+| `model.bedrockModelConfig.apiFormat` | `converse_stream` | unified tool-use + streaming (enum: `converse_stream` / `responses` / `chat_completions`) |
 | `maxIterations` / `maxTokens` / `timeoutSeconds` | 100 / 65536 / 1800 | multi-step work, large output, long sessions |
 | `truncation` | `sliding_window`, `messagesCount` 150 | recency window, bounded cost |
-| `allowedTools` | `["browser_*","code_interpreter*","skills"]` | globs that match wired primitives |
+| `allowedTools` | `["*"]` or plain names (`["browser","code_interpreter","skills"]`) | `browser_*` globs match NOTHING and hide the tool |
 | network mode | `PUBLIC` | VPC only for private connectivity |
 | lifecycle | idle 900s, maxLifetime 28800s | reclaim idle microVMs; 8h hard cap |
 | inbound auth | omit (IAM/SigV4) | simplest secure default; JWT for end-users |
-| memory `messagesCount` / `topK` / `relevanceScore` | 20 / 10 / 0.2 | recent window + broad recall (preview) |
+| memory `messagesCount` / `topK` / `relevanceScore` | 20 / 10 / 0.2 | recent window + broad recall (same defaults managed memory auto-derives) |
 | tags | team, environment, cost-center, agent-type | governance + cost allocation |
 
 ---
@@ -90,10 +90,10 @@ c = boto3.client("bedrock-agentcore-control", region_name="us-east-1")
 resp = c.create_harness(
     harnessName="MyHarness",
     executionRoleArn=role_arn,
-    model={"bedrockModelConfig": {"modelId": "global.anthropic.claude-sonnet-4-6",
-                                  "apiFormat": "CONVERSE", "maxTokens": 65536, "temperature": 0.2}},
+    model={"bedrockModelConfig": {"modelId": "global.anthropic.claude-sonnet-5",
+                                  "apiFormat": "converse_stream", "maxTokens": 65536, "temperature": 0.2}},
     systemPrompt=[{"text": SYSTEM_PROMPT}],
-    tools=[...], allowedTools=["browser_*", "code_interpreter*", "skills"], skills=[...],
+    tools=[...], allowedTools=["browser", "code_interpreter", "skills"], skills=[...],
     truncation={"strategy": "sliding_window", "config": {"slidingWindow": {"messagesCount": 150}}},
     environment={"agentCoreRuntimeEnvironment": {
         "networkConfiguration": {"networkMode": "PUBLIC"},
@@ -108,11 +108,15 @@ resp = c.create_harness(
 
 ## Update payload rules
 
-`UpdateHarness` takes `harnessId` plus the same fields minus `tags`. The `optionalValue` wrapper applies **only to
-structure fields**; verified structure fields are: `authorizerConfiguration`, `environment`, `environmentArtifact`,
-`memory`, `model`, `truncation`. Lists/ints/strings (`allowedTools`, `tools`, `skills`, `systemPrompt`, `maxTokens`,
-etc.) pass directly. `tags` → separate `TagResource`. `clientToken` ≥ 33 chars. Use `scripts/update_harness.py`,
-which introspects the live shape and wraps correctly.
+`UpdateHarness` takes `harnessId` plus the same fields minus `tags`. The `optionalValue` wrapper applies to ONLY
+three fields (live-verified): `memory`, `environmentArtifact`, `authorizerConfiguration`. Everything else —
+including the structures `model`, `environment`, and `truncation` — passes **directly**, as do lists/ints/strings
+(`allowedTools`, `tools`, `skills`, `systemPrompt`, `maxTokens`, etc.). `tags` → separate `TagResource`.
+`clientToken` ≥ 33 chars. Use `scripts/update_harness.py`, which introspects the live shape (a field wraps only if
+its shape has an `optionalValue` member) and wraps correctly.
+
+Every `UpdateHarness` creates a new immutable **version** — see `versioning.md` for endpoints/qualifiers and
+production rollout.
 
 ---
 

@@ -21,29 +21,35 @@ def main() -> int:
     ap.add_argument("--harness-arn", required=True)
     ap.add_argument("--prompt", required=True)
     ap.add_argument("--session-id", default=None, help="Reuse a session id to continue a conversation")
+    ap.add_argument("--qualifier", default=None,
+                    help="Endpoint name or version to invoke (e.g. 'prod', '3'). "
+                         "Omit for DEFAULT = latest version. See references/versioning.md.")
     ap.add_argument("--region", default="us-east-1")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
+    print(f"Region: {args.region}")
     # runtimeSessionId must be >= 33 chars (API constraint). token_hex(16)=32 -> +prefix = 38.
     session_id = args.session_id or f"smoke-{secrets.token_hex(16)}"
     if len(session_id) < 33:
         session_id = (session_id + "-" + secrets.token_hex(16))[:64]
     messages = [{"role": "user", "content": [{"text": args.prompt}]}]
+    kwargs = {"harnessArn": args.harness_arn, "runtimeSessionId": session_id, "messages": messages}
+    if args.qualifier:
+        kwargs["qualifier"] = args.qualifier
 
     if args.dry_run:
         print("DRY RUN — invoke_harness(...) with:")
         print(f"  harnessArn      = {args.harness_arn}")
         print(f"  runtimeSessionId= {session_id}")
+        print(f"  qualifier       = {args.qualifier or '(none -> DEFAULT endpoint, latest version)'}")
         print(f"  messages        = {messages}")
         return 0
 
     import boto3
     client = boto3.client("bedrock-agentcore", region_name=args.region)  # DATA plane
     try:
-        resp = client.invoke_harness(harnessArn=args.harness_arn,
-                                     runtimeSessionId=session_id,
-                                     messages=messages)
+        resp = client.invoke_harness(**kwargs)
     except Exception as e:  # noqa: BLE001
         print(f"FAIL  invoke_harness rejected/failed: {e}")
         print("      Common causes: missing SKILL.md frontmatter, missing Memory IAM grant (step 3), "

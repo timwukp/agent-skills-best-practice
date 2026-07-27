@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Update an AgentCore Harness with the correct, type-driven payload rules.
+"""Update an AgentCore Harness with the correct payload rules.
 
-The hard part of UpdateHarness is that the `optionalValue` wrapper applies ONLY to *structure*
-fields, while lists/integers/strings pass directly. This script introspects the LIVE input shape
-and wraps correctly, so you don't have to memorize the table. It also:
+The hard part of UpdateHarness is that the `optionalValue` wrapper applies ONLY to the fields whose
+live shape has an `optionalValue` member — memory / environmentArtifact / authorizerConfiguration.
+Everything else (including the structures model / environment / truncation) passes directly.
+This script introspects the LIVE input shape and wraps correctly, so you don't have to memorize
+the table. It also:
   - routes `tags` to a separate TagResource call (UpdateHarness rejects tags)
   - generates a valid clientToken (>= 33 chars)
 
@@ -70,8 +72,25 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
+    print(f"Region: {args.region}")
     with open(args.config, encoding="utf-8") as f:
         cfg = _strip_comments(json.load(f))
+
+    # live-verified fallback: only these three wrap in optionalValue
+    fallback_fields = {"memory", "environmentArtifact", "authorizerConfiguration"}
+    tags = cfg.get("tags")
+
+    if args.dry_run:
+        # no boto3 needed in dry-run — use the known optionalValue set
+        payload = wrap_payload(cfg, fallback_fields, args.fields)
+        payload["harnessId"] = args.harness_id
+        payload["clientToken"] = secrets.token_hex(20)
+        print(f"DRY RUN — optionalValue-wrapped fields: {sorted(fallback_fields)}")
+        print("update_harness(**payload) with:")
+        print(json.dumps(payload, indent=2, default=str))
+        if tags:
+            print(f"\nthen tag_resource(resourceArn={args.harness_arn or '<ARN>'}, tags={tags})")
+        return 0
 
     import boto3
     client = boto3.client("bedrock-agentcore-control", region_name=args.region)
@@ -80,21 +99,11 @@ def main() -> int:
         structure_fields = get_structure_fields(client)
     except Exception as e:  # noqa: BLE001
         print(f"WARN  could not introspect UpdateHarness shape ({e}); falling back to known optionalValue set.")
-        structure_fields = {"memory", "environmentArtifact", "authorizerConfiguration"}
+        structure_fields = fallback_fields
 
     payload = wrap_payload(cfg, structure_fields, args.fields)
     payload["harnessId"] = args.harness_id
     payload["clientToken"] = secrets.token_hex(20)
-
-    tags = cfg.get("tags")
-
-    if args.dry_run:
-        print(f"DRY RUN — structure fields (optionalValue-wrapped): {sorted(structure_fields)}")
-        print("update_harness(**payload) with:")
-        print(json.dumps(payload, indent=2, default=str))
-        if tags:
-            print(f"\nthen tag_resource(resourceArn={args.harness_arn or '<ARN>'}, tags={tags})")
-        return 0
 
     try:
         client.update_harness(**payload)

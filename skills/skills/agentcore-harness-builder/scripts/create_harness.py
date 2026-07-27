@@ -48,6 +48,7 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="Print the API call without executing")
     args = ap.parse_args()
 
+    print(f"Region: {args.region}")
     cfg = load_config(args.config)
     kwargs = build_kwargs(cfg, args.role_arn)
 
