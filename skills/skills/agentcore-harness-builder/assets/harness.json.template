@@ -5,8 +5,8 @@
 
   "model": {
     "bedrockModelConfig": {
-      "modelId": "global.anthropic.claude-sonnet-4-6",
-      "apiFormat": "CONVERSE",
+      "modelId": "global.anthropic.claude-sonnet-5",
+      "apiFormat": "converse_stream",
       "maxTokens": 65536,
       "temperature": 0.2,
       "topP": 0.9
@@ -19,24 +19,15 @@
     }
   ],
 
+  "_tools_note": "Built-ins (browser / code interpreter) need NO config — omitting it wires the AWS-owned default resource in the harness's region. Only set config.agentCoreBrowser.browserArn / config.agentCoreCodeInterpreter.codeInterpreterArn to pin a custom or cross-region resource (arn:aws:bedrock-agentcore:<REGION>:aws:browser/aws.browser.v1).",
   "tools": [
     {
       "type": "agentcore_browser",
-      "name": "browser",
-      "config": {
-        "agentCoreBrowser": {
-          "browserArn": "arn:aws:bedrock-agentcore:us-east-1:aws:browser/aws.browser.v1"
-        }
-      }
+      "name": "browser"
     },
     {
       "type": "agentcore_code_interpreter",
-      "name": "code_interpreter",
-      "config": {
-        "agentCoreCodeInterpreter": {
-          "codeInterpreterArn": "arn:aws:bedrock-agentcore:us-east-1:aws:code-interpreter/aws.codeinterpreter.v1"
-        }
-      }
+      "name": "code_interpreter"
     },
     {
       "type": "inline_function",
@@ -57,7 +48,8 @@
     }
   ],
 
-  "allowedTools": ["browser_*", "code_interpreter*", "skills", "notify_complete"],
+  "_allowedTools_note": "Valid entries: '*', plain tool names, file-tool globs ('file_*'), '@builtin', '@server/tool'. There is NO 'browser_*'/'code_interpreter*' glob — those match nothing and HIDE the tool. Allowlist built-ins by plain name.",
+  "allowedTools": ["browser", "code_interpreter", "skills", "notify_complete"],
 
   "skills": [
     {
@@ -69,7 +61,7 @@
   ],
 
   "memory": {
-    "_comment": "Wire via scripts/wire_memory.py (CreateMemory + UpdateHarness + IAM grant). strategyId values come from the CreateMemory response. retrievalConfig value = {strategyId, topK, relevanceScore}. On UpdateHarness, wrap this whole object in optionalValue.",
+    "_comment": "memory is a union: managedMemoryConfiguration (DEFAULT — AWS creates/owns the memory; just pick strategies, e.g. {\"managedMemoryConfiguration\": {\"strategies\": [\"SEMANTIC\", \"SUMMARIZATION\"]}}), disabled ({}) to opt out, or the BYO agentCoreMemoryConfiguration below. BYO: wire via scripts/wire_memory.py (CreateMemory + UpdateHarness + IAM grant); strategyId values come from the CreateMemory response; retrievalConfig value = {strategyId, topK, relevanceScore}. On UpdateHarness, wrap this whole object in optionalValue. See references/memory.md.",
     "agentCoreMemoryConfiguration": {
       "arn": "<MEMORY_ARN>",
       "actorId": "ci-pipeline",

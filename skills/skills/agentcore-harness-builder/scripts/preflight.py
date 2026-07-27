@@ -2,11 +2,14 @@
 """Preflight checks for building an AgentCore Harness.
 
 Verifies the environment can actually create/manage harnesses BEFORE you waste time:
-  - boto3 >= 1.43.18 (older versions have ZERO harness operations)
-  - the 5 harness operations exist on the control-plane client
-  - AWS credentials resolve and the region is a preview region
+  - boto3 >= 1.43.51 (older versions lack harness/endpoint operations or current field shapes)
+  - the core harness operations exist on the control-plane client
+  - AWS credentials resolve
   - prints the LIVE CreateHarness / UpdateHarness input shapes (schema introspection),
     which is the source of truth when docs and reality disagree
+
+Harness is GA in ~16 regions; EXAMPLE_REGIONS below are examples, not a gate — check the
+AgentCore regions page for the full list.
 
 Usage:
     python preflight.py --region us-east-1
@@ -17,9 +20,11 @@ Exit code 0 = good to go; non-zero = a blocker was found.
 import argparse
 import sys
 
-MIN_BOTO3 = (1, 43, 18)
-PREVIEW_REGIONS = {"us-east-1", "us-west-2", "eu-central-1", "ap-southeast-2"}
-HARNESS_OPS = {"CreateHarness", "UpdateHarness", "GetHarness", "ListHarnesses", "DeleteHarness"}
+MIN_BOTO3 = (1, 43, 51)
+EXAMPLE_REGIONS = {"us-east-1", "us-west-2", "eu-central-1", "ap-southeast-2"}
+HARNESS_OPS = {"CreateHarness", "UpdateHarness", "GetHarness", "ListHarnesses", "DeleteHarness",
+               "CreateHarnessEndpoint", "UpdateHarnessEndpoint", "GetHarnessEndpoint",
+               "ListHarnessEndpoints", "ListHarnessVersions"}
 
 
 def _ver_tuple(v: str):
@@ -59,15 +64,15 @@ def check_harness_ops(region: str) -> bool:
         print(f"FAIL  missing harness operations: {sorted(missing)}")
         print("      Your boto3/botocore is too old for harness support. Upgrade.")
         return False
-    print(f"OK    all 5 harness operations present: {sorted(HARNESS_OPS)}")
+    print(f"OK    all {len(HARNESS_OPS)} harness operations present (incl. endpoint/version ops)")
     return True
 
 
 def check_credentials_region(region: str) -> bool:
     import boto3
     ok = True
-    if region not in PREVIEW_REGIONS:
-        print(f"WARN  region '{region}' is not a known AgentCore preview region {sorted(PREVIEW_REGIONS)}")
+    print(f"OK    using region '{region}' (Harness is GA in ~16 regions, e.g. {sorted(EXAMPLE_REGIONS)}; "
+          "see the AgentCore regions page for the full list)")
     try:
         ident = boto3.client("sts", region_name=region).get_caller_identity()
         print(f"OK    credentials resolve: account {ident['Account']}, arn {ident['Arn']}")

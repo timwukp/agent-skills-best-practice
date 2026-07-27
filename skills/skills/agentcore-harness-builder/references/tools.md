@@ -18,15 +18,17 @@ the tool.**
 
 ```json
 "tools": [ { "type": "...", "name": "...", "config": { ... } } ],
-"allowedTools": [ "browser_*", "code_interpreter*", "skills" ]
+"allowedTools": [ "browser", "code_interpreter", "skills" ]
 ```
 
 - `tools[].type` — one of `agentcore_browser`, `agentcore_code_interpreter`, `agentcore_gateway`, `remote_mcp`,
   `inline_function`.
 - `tools[].name` — the configuration name (e.g. `browser`).
-- **`tools[].config` is documented optional but practically required.** Without it, the tool is *stored but not wired*
-  — the agent never sees it. The `config` union has one key per type: `agentCoreBrowser`, `agentCoreCodeInterpreter`,
-  `agentCoreGateway`, `remoteMcp`, `inlineFunction`.
+- **`tools[].config` is optional for the built-ins** (`agentcore_browser`, `agentcore_code_interpreter`): omit it
+  and the harness wires the AWS-owned default resource in its region. It **is required** for `agentcore_gateway`,
+  `remote_mcp`, and `inline_function` — without it those are *stored but not wired* and the agent never sees them.
+  The `config` union has one key per type: `agentCoreBrowser`, `agentCoreCodeInterpreter`, `agentCoreGateway`,
+  `remoteMcp`, `inlineFunction`.
 
 The managed harness loader image already contains the runtime wiring for the built-in tools — you do **not** need a
 custom container image.
@@ -35,39 +37,36 @@ custom container image.
 
 ## Browser
 
-Cloud-managed Chrome/Playwright. Wire it with the AWS-owned browser ARN:
+Cloud-managed Chrome/Playwright. No config needed — this alone wires the AWS-owned default browser:
 
 ```json
-{
-  "type": "agentcore_browser",
-  "name": "browser",
-  "config": { "agentCoreBrowser": { "browserArn": "arn:aws:bedrock-agentcore:us-east-1:aws:browser/aws.browser.v1" } }
-}
+{ "type": "agentcore_browser", "name": "browser" }
 ```
+
+To pin a custom or cross-region browser, add
+`"config": { "agentCoreBrowser": { "browserArn": "arn:aws:bedrock-agentcore:<REGION>:aws:browser/aws.browser.v1" } }`.
 
 When wired, the agent gets a single **`browser`** tool (named by the `name` field) that it drives with actions like
 navigate, get_text, click, type, evaluate (JS), and screenshot. **Allowlist it by name (`"browser"`) or `"*"` — NOT
 `"browser_*"`** (that glob matches nothing and hides the tool). Verified live: the agent successfully navigated a page,
 read its `<h1>`, and ran a JS `evaluate` through this single tool. (Older docs describing six separate `browser_*`
-primitives are outdated for the managed harness.) An empty inner config `{}` uses the default browser ARN, but an
-explicit ARN is more robust.
+primitives are outdated for the managed harness.)
 
 ---
 
 ## Code Interpreter
 
-Sandboxed Python/JS/TS execution:
+Sandboxed Python/JS/TS execution. No config needed:
 
 ```json
-{
-  "type": "agentcore_code_interpreter",
-  "name": "code_interpreter",
-  "config": { "agentCoreCodeInterpreter": { "codeInterpreterArn": "arn:aws:bedrock-agentcore:us-east-1:aws:code-interpreter/aws.codeinterpreter.v1" } }
-}
+{ "type": "agentcore_code_interpreter", "name": "code_interpreter" }
 ```
 
-Allowlist with `"code_interpreter*"`. Use it for calculations, data analysis, report/JSON generation, and verifying
-results by execution rather than guessing.
+To pin a custom interpreter, add
+`"config": { "agentCoreCodeInterpreter": { "codeInterpreterArn": "arn:aws:bedrock-agentcore:<REGION>:aws:code-interpreter/aws.codeinterpreter.v1" } }`.
+
+Allowlist by name (`"code_interpreter"`) or `"*"` — NOT `"code_interpreter*"` (glob matches nothing). Use it for
+calculations, data analysis, report/JSON generation, and verifying results by execution rather than guessing.
 
 ---
 
@@ -90,10 +89,16 @@ To expose external APIs as agent tools:
      "url": "https://my-mcp-server/mcp", "headers": {"Authorization": "Bearer ..."}
   }}}
   ```
-  `url` is required; `headers` is an optional string→string map for auth.
+  `url` is required; `headers` is an optional string→string map for auth. Header values support **token-vault
+  substitution**: a value like `"Bearer ${arn:aws:bedrock-agentcore:...:token-vault/...}"` is resolved from the
+  Identity Token Vault at session start, so secrets never sit in the config (see `identity.md`).
+- **Web Search connector** — AWS also offers a managed web-search Gateway target (connectorId `web-search`,
+  currently us-east-1). Create a Gateway target with that connector and wire the Gateway as above when the agent
+  needs general web search without the full browser.
 
-Allowlist the resulting tool names (use a glob if the server exposes many). Building a new MCP server itself is the
-domain of the separate `mcp-builder` skill — use that to author the server, then wire it here.
+Allowlist the resulting tool names (use `@server/tool` patterns if the server exposes many). Building a new MCP
+server itself is outside this skill's scope — if an `mcp-builder` skill is available in your environment, use it to
+author the server, then wire it here.
 
 ---
 

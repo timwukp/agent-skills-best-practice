@@ -19,7 +19,7 @@ file/command workflows, custom interpreters, and the verified gotchas. All shape
 
 | Path | How |
 |---|---|
-| **Attached to a harness** | Add `{"type": "agentcore_code_interpreter", "config": {"agentCoreCodeInterpreter": {"codeInterpreterArn": "...aws:code-interpreter/aws.codeinterpreter.v1"}}}` and allowlist `code_interpreter*`. The agent calls it. See `references/tools.md`. |
+| **Attached to a harness** | Add `{"type": "agentcore_code_interpreter", "name": "code_interpreter"}` (no config needed for the built-in) and allowlist by name `"code_interpreter"` or `"*"` — NOT the `code_interpreter*` glob (matches nothing). The agent calls it. See `references/tools.md`. |
 | **Direct SDK** (this file) | `boto3.client("bedrock-agentcore")` — you drive `StartCodeInterpreterSession` / `InvokeCodeInterpreter` / `StopCodeInterpreterSession` yourself. Useful for orchestrators, tests, and Runtime agents. |
 
 ## Lifecycle

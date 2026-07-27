@@ -1,6 +1,6 @@
 # Agent Registry
 
-The **AWS Agent Registry** (preview) is a centralized catalog for discovering and managing **agents, MCP servers,
+The **AWS Agent Registry** is a centralized catalog for discovering and managing **agents, MCP servers,
 tools, and skills** across an organization. Use it to make a finished harness (and its skills/tools) discoverable and
 governed, rather than tribal knowledge.
 
@@ -30,9 +30,9 @@ Phase 8 (govern), after the harness is built, verified, and (ideally) evaluated/
 
 ## Approval workflows
 
-If you've also reviewed the *Kiro Service Approval Accelerator* material, the same principle applies: registry records
-can require approval before they're visible/usable org-wide. Configure the approval configuration on the registry and
-integrate the IdP so the right approvers authorize new records.
+Registry records can require approval before they're visible/usable org-wide. Configure the approval configuration on
+the registry and integrate the IdP so the right approvers authorize new records
+(`submit_registry_record_for_approval` / `update_registry_record_status`).
 
 ## API surface (verified, boto3 1.43.29)
 

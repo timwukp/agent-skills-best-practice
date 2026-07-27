@@ -18,18 +18,19 @@ something fails unexpectedly, scan this file first.
 
 ## Versions
 
-AgentCore is **public preview** and adds operations frequently. Use the latest SDK/CLI unless you have a reason not to.
+Harness is **GA** (~16 regions; only Payments remains preview), but AgentCore still adds operations frequently. Use
+the latest SDK/CLI unless you have a reason not to.
 
 | Tool | Minimum | Why it matters |
 |---|---|---|
-| `boto3` / `botocore` | **≥ 1.43.18** | Older versions have **zero** harness ops. 1.42.79 → 0 harness ops; 1.43.18 → 5 (`create/update/get/list/delete_harness`). |
+| `boto3` / `botocore` | **≥ 1.43.51** | Older versions lack harness ops entirely (1.42.79 → 0) or lack endpoint/version ops and current field shapes. |
 | AWS CLI v2 | **≥ 2.34.57** | Earlier CLI lacks `create-harness`/`update-harness`/etc. |
 | `@aws/agentcore` (npm) | latest | Optional scaffolding CLI (`agentcore create/deploy`). |
-| Region | `us-east-1` (or `us-west-2`, `eu-central-1`, `ap-southeast-2`) | Preview availability. |
+| Region | any Harness GA region (e.g. `us-east-1`, `us-west-2`, `eu-central-1`, `ap-southeast-2`) | See the AgentCore regions page for the full ~16-region list. |
 
 ```bash
 pip3 install --upgrade boto3 botocore
-python3 -c "import boto3; print(boto3.__version__)"   # expect >= 1.43.18
+python3 -c "import boto3; print(boto3.__version__)"   # expect >= 1.43.51
 aws --version                                          # expect >= 2.34.57
 ```
 
@@ -37,7 +38,9 @@ Verify the ops actually exist:
 ```python
 import boto3
 ops = [o for o in boto3.client("bedrock-agentcore-control").meta.service_model.operation_names if "Harness" in o]
-print(ops)  # expect CreateHarness, UpdateHarness, GetHarness, ListHarnesses, DeleteHarness
+print(ops)  # expect CreateHarness, UpdateHarness, GetHarness, ListHarnesses, DeleteHarness,
+            #        CreateHarnessEndpoint, UpdateHarnessEndpoint, GetHarnessEndpoint,
+            #        ListHarnessEndpoints, DeleteHarnessEndpoint, ListHarnessVersions
 ```
 
 ---
@@ -74,32 +77,45 @@ rejected with a `ValidationException` you don't understand.
 - Control plane = `boto3.client("bedrock-agentcore-control")`. Data plane (invoke) = `boto3.client("bedrock-agentcore")`.
 - The agent-side SDK's `AgentCoreRuntimeClient` allowlists only `*_agent_runtime*` methods, so it does **not** expose
   harness ops. Call `bedrock-agentcore-control` directly for harness work.
+- **Dual caller permissions**: because a harness wraps a runtime, the *caller* often needs BOTH families —
+  invoking needs `bedrock-agentcore:InvokeHarness` **and** `InvokeAgentRuntime`; creating needs `CreateHarness`
+  **and** `CreateAgentRuntime` (plus `CreateMemory` if wiring BYO memory) — or you get confusing AccessDenied on
+  the "other" API.
+- **SECURITY — `InvokeAgentRuntimeCommand`** (data plane) runs a shell command directly on the harness session VM
+  and is **NOT gated by `allowedTools`** — it's gated only by the caller's IAM. Do not grant it to callers who
+  should only converse with the agent.
+- **Invoke-time overrides**: `InvokeHarness` accepts per-call overrides without redeploying — `model`,
+  `systemPrompt`, `tools`, `skills`, `allowedTools`, `maxIterations`, `maxTokens`, `timeoutSeconds`, `actorId` —
+  plus `qualifier` (endpoint/version, see `references/versioning.md`) and `runtimeUserId`/trace fields.
 
 ---
 
 ## UpdateHarness payload rules
 
-The rules are **type-driven**, not field-name-driven. Confirm via introspection (above).
+The rules are **field-specific** — not every structure wraps. Confirm via introspection (above): a field wraps only
+if its live shape literally has an `optionalValue` member.
 
-**1. `optionalValue` wrapper applies only to complex *structure* fields:**
+**1. `optionalValue` wraps ONLY `memory`, `environmentArtifact`, `authorizerConfiguration` (live-verified):**
 ```python
-# correct: list/integer fields pass directly (NO wrapper)
-control.update_harness(harnessId=h, allowedTools=["browser_*","code_interpreter*","skills"],
-                       maxTokens=65536, clientToken=tok)
+# correct: lists/ints/strings AND model/environment/truncation pass directly (NO wrapper)
+control.update_harness(harnessId=h, allowedTools=["*"],
+                       maxTokens=65536,
+                       model={"bedrockModelConfig": {...}},
+                       truncation={"strategy": "sliding_window", "config": {...}},
+                       clientToken=tok)
 
-# correct: structure fields wrap with optionalValue
+# correct: only these three wrap with optionalValue
 control.update_harness(harnessId=h,
     memory={"optionalValue": {"agentCoreMemoryConfiguration": {...}}},
-    model={"optionalValue": {"bedrockModelConfig": {...}}},
     clientToken=tok)
 ```
 
-| Field | Shape | Wrapper? |
-|---|---|---|
-| `allowedTools`, `tools`, `skills`, `systemPrompt` | list | **none** |
-| `maxTokens`, `maxIterations`, `timeoutSeconds` | integer | **none** |
-| `executionRoleArn` | string | **none** |
-| `memory`, `model`, `environment`, `environmentArtifact`, `authorizerConfiguration`, `truncation` | structure | **`optionalValue`** |
+| Field | Wrapper? |
+|---|---|
+| `allowedTools`, `tools`, `skills`, `systemPrompt` (lists) | **none** |
+| `maxTokens`, `maxIterations`, `timeoutSeconds` (ints), `executionRoleArn` (string) | **none** |
+| `model`, `environment`, `truncation` (structures — but no wrapper!) | **none** |
+| `memory`, `environmentArtifact`, `authorizerConfiguration` | **`optionalValue`** |
 
 **2. `tags` is NOT on `UpdateHarness`** — use a separate `tag_resource(resourceArn=…, tags={…})` call (idempotent).
 `CreateHarness` *does* accept `tags` at creation.
@@ -131,7 +147,13 @@ Without it, `InvokeHarness` fails at session start: *"SKILL.md … has no YAML f
 
 ## Memory wiring
 
-Three coordinated steps — not two. See `references/memory.md` for full detail.
+**Managed memory is the default** — `memory.managedMemoryConfiguration` with a `strategies` list needs no wiring
+(AWS creates and owns the Memory resource), **but the execution role still needs memory data-plane permissions**:
+the auto-created Memory is named `harness_<name>_*`, and without `CreateEvent/DeleteEvent/GetEvent/ListEvents/
+RetrieveMemoryRecords` on `arn:...:memory/harness_*` the first `InvokeHarness` fails with
+`AccessDeniedException ... ListEvents` (**verified live**; the `ManagedMemoryEvents` statement in
+`assets/iam_execution_role.json` covers it). The 3-step dance below applies only to **BYO**
+(`agentCoreMemoryConfiguration`). See `references/memory.md` for full detail.
 
 1. `CreateMemory` (with the strategy set).
 2. `UpdateHarness(memory={"optionalValue": {"agentCoreMemoryConfiguration": {…}}})`.
@@ -153,9 +175,11 @@ Four gotchas that silently leave tools invisible to the agent:
 1. **Harness is already a container deployment.** The managed loader image
    (`public.ecr.aws/.../harness-<region>:latest`) already wires `agentcore_browser`, `agentcore_code_interpreter`,
    `skills`. You do **not** need a custom image to use built-in tools.
-2. **`tools[].config` is documented optional but practically required.** Omit it and the tool is stored on the harness
-   but **not wired** at runtime — the agent never sees it. The `config` union has 5 keys: `remoteMcp`,
-   `agentCoreBrowser`, `agentCoreGateway`, `inlineFunction`, `agentCoreCodeInterpreter`.
+2. **Built-ins need NO `config`** — `{"type": "agentcore_browser", "name": "browser"}` alone wires the AWS-owned
+   default browser (same for code interpreter). `config` is only needed to pin a custom/cross-region resource ARN,
+   and it IS still required for `agentcore_gateway`, `remote_mcp`, and `inline_function` — omit it there and the
+   tool is stored but **not wired**. The `config` union has 5 keys: `remoteMcp`, `agentCoreBrowser`,
+   `agentCoreGateway`, `inlineFunction`, `agentCoreCodeInterpreter`.
 3. **`allowedTools` does NOT use a `browser_*` glob.** Valid patterns: `*`, builtin names/globs (`shell`, `file_*`),
    `@builtin`, `@server[/tool]`. Match browser/code-interpreter/inline tools by **name** (`"browser"`,
    `"code_interpreter"`) or use `"*"` (or omit allowedTools). `"browser_*"` filters the tool OUT -> `Unknown tool`. **Verified live.**
@@ -202,9 +226,11 @@ Confirmed by introspection; these differ from intuition or the console labels:
 - **`CreateMemory` requires `eventExpiryDuration`** (int days 3–365) in addition to `name`. `UpdateMemory.memoryStrategies`
   is a **structure** (`addMemoryStrategies`/`modifyMemoryStrategies`/`deleteMemoryStrategies`), not a list.
 - **`retrievalConfig` value** = `{strategyId, topK, relevanceScore}` (confirms `strategyId`).
-- **Evaluations** = `CreateOnlineEvaluationConfig` (+ Get/List/Update/Delete). Batch eval / custom evaluators are
-  console features; no dedicated SDK ops confirmed.
-- **Optimizations** = **ZERO control-plane ops** in this SDK → console/preview-only. Don't script it.
+- **Evaluations** span BOTH clients: control plane has `CreateOnlineEvaluationConfig` (+ Get/List/Update/Delete)
+  and `CreateEvaluator` etc.; the **data plane** has `StartBatchEvaluation` / `GetBatchEvaluation` / etc.
+  Introspect both clients before declaring anything console-only.
+- **Optimizations** are SDK-scriptable: `start_recommendation`, `create_ab_test`, `create_online_evaluation_config`
+  and friends. See `references/optimizations.md`.
 - **Other services present:** Gateway (full CRUD + rules/targets), Identity (WorkloadIdentity, Token Vault, API-key/
   OAuth/Payment credential providers), Policy (Policy + PolicyEngine + ResourcePolicy + PolicyGeneration), Payments
   (Connector/Manager/CredentialProvider + data-plane PaymentSession), Registry (registry + records + SearchRegistryRecords).

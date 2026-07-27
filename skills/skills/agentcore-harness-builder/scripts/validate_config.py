@@ -27,7 +27,7 @@ def warn(msg: str) -> None:
     WARNINGS.append(msg)
 
 
-# Tool type -> the config union key that actually wires it
+# Tool type -> the config union key that wires it
 TOOL_CONFIG_KEY = {
     "agentcore_browser": "agentCoreBrowser",
     "agentcore_code_interpreter": "agentCoreCodeInterpreter",
@@ -35,11 +35,15 @@ TOOL_CONFIG_KEY = {
     "remote_mcp": "remoteMcp",
     "inline_function": "inlineFunction",
 }
-# Tool type -> glob you'd expect in allowedTools so the agent can actually call it
-TOOL_GLOB_HINT = {
-    "agentcore_browser": "browser_*",
-    "agentcore_code_interpreter": "code_interpreter*",
-}
+# Built-in tool types where config is OPTIONAL — {"type": ..., "name": ...} alone wires the
+# AWS-owned default resource. Config is still REQUIRED for gateway / remote MCP / inline functions.
+CONFIG_OPTIONAL_TYPES = {"agentcore_browser", "agentcore_code_interpreter"}
+
+# Live-verified apiFormat enum for bedrockModelConfig ("CONVERSE" is stale and rejected).
+VALID_API_FORMATS = {"converse_stream", "responses", "chat_completions"}
+
+# allowedTools globs that look plausible but match NOTHING (they hide the tool). Live-verified.
+BAD_ALLOWED_GLOB = re.compile(r"^(browser|code_interpreter)\S*\*$")
 
 
 def validate_model(cfg: dict) -> None:
@@ -55,6 +59,10 @@ def validate_model(cfg: dict) -> None:
     if not (model_id.startswith(("global.", "us.", "eu.", "apac.")) or "inference-profile" in model_id):
         warn(f"model.modelId '{model_id}' looks like a bare foundation-model id; prefer an "
              "inference-profile id (global.* / us.*) for cross-region capacity.")
+    api_format = bm.get("apiFormat")
+    if api_format and api_format not in VALID_API_FORMATS:
+        err(f"model.bedrockModelConfig.apiFormat '{api_format}': invalid. Valid values (live-verified): "
+            f"{sorted(VALID_API_FORMATS)}. Use 'converse_stream' for Bedrock models ('CONVERSE' is stale).")
 
 
 def validate_system_prompt(cfg: dict) -> None:
@@ -73,36 +81,38 @@ def validate_tools(cfg: dict) -> None:
     tools = cfg.get("tools", [])
     allowed = cfg.get("allowedTools", [])
     if not isinstance(allowed, list):
-        err("allowedTools: must be a list of glob strings.")
+        err("allowedTools: must be a list of strings.")
         allowed = []
-    if tools and not allowed:
-        err("allowedTools: empty but tools are declared — the agent will see nothing. "
-            "Add globs like ['browser_*','code_interpreter*','skills'].")
+    if tools and "allowedTools" in cfg and not allowed:
+        err("allowedTools: empty list but tools are declared — the agent will see nothing. "
+            "Use ['*'], plain names ('browser', 'code_interpreter', 'skills'), or omit allowedTools.")
     for i, t in enumerate(tools):
         ttype = t.get("type")
         name = t.get("name", f"<tool[{i}]>")
         if ttype not in TOOL_CONFIG_KEY:
             warn(f"tools[{i}] '{name}': unrecognized type '{ttype}'. Known: {sorted(TOOL_CONFIG_KEY)}.")
             continue
-        # config is documented-optional but practically required to wire
         if "config" not in t or not t["config"]:
-            err(f"tools[{i}] '{name}' (type {ttype}): missing 'config'. Without it the tool is stored "
-                f"but NOT wired — the agent can't use it. Add config.{TOOL_CONFIG_KEY[ttype]}.")
+            # Built-ins (browser / code interpreter) need NO config — they wire the AWS-owned
+            # default resource. Everything else still needs config to be wired at all.
+            if ttype not in CONFIG_OPTIONAL_TYPES:
+                err(f"tools[{i}] '{name}' (type {ttype}): missing 'config'. Without it the tool is stored "
+                    f"but NOT wired — the agent can't use it. Add config.{TOOL_CONFIG_KEY[ttype]}.")
         else:
             if TOOL_CONFIG_KEY[ttype] not in t["config"]:
                 err(f"tools[{i}] '{name}': config present but missing the '{TOOL_CONFIG_KEY[ttype]}' key "
                     f"that matches type '{ttype}'.")
-        # allowedTools glob coverage for built-in tools
-        hint = TOOL_GLOB_HINT.get(ttype)
-        if hint and "*" not in "".join(allowed):
-            # only warn when no globs at all are present
-            warn(f"tools[{i}] '{name}': allowedTools has no glob; built-in tools need a glob like "
-                 f"'{hint}' (the plain name '{name}' will NOT match and is filtered out).")
-    # plain-name-without-glob trap
+    # allowedTools syntax check — valid: '*', plain name, file-tool globs ('file_*'),
+    # '@builtin[/tool]', '@server[/tool]'. There is NO 'browser_*'/'code_interpreter*' glob:
+    # those match NOTHING and silently hide the tool (live-verified).
     for a in allowed:
-        if a in ("browser", "code_interpreter"):
-            err(f"allowedTools entry '{a}': plain name does not match declared built-in tool primitives. "
-                f"Use a glob: '{a}_*' or '{a}*'.")
+        if not isinstance(a, str):
+            err(f"allowedTools entry {a!r}: must be a string.")
+            continue
+        if BAD_ALLOWED_GLOB.match(a):
+            base = "browser" if a.startswith("browser") else "code_interpreter"
+            err(f"allowedTools entry '{a}': this glob matches NOTHING — the tool is filtered OUT and the "
+                f"agent reports 'Unknown tool'. Allowlist by plain NAME ('{base}') or use '*'.")
 
 
 def validate_skills(cfg: dict) -> None:

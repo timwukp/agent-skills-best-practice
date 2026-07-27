@@ -46,14 +46,26 @@ implements this idempotently.
 ## Setup flow (what the script does)
 
 1. Create/identify the destination CloudWatch log group; set retention.
-2. `put_delivery_source` for the harness/runtime for `APPLICATION_LOGS` and `TRACES`.
-3. `put_delivery_destination` — a CWL destination for logs, an XRAY destination for traces (no outputFormat).
-4. `create_delivery` linking each source to its destination.
-5. Extend the `AWSLogDeliveryWrite20150319` resource policy on the log group.
+2. Extend the `AWSLogDeliveryWrite20150319` resource policy on the log group.
+3. Resolve the harness ARN (`GetHarness`) — the `resourceArn` for delivery sources.
+4. `put_delivery_source` for the harness for `APPLICATION_LOGS` and `TRACES`.
+5. `put_delivery_destination` — a CWL destination for logs, an XRAY destination for traces (no outputFormat).
+6. `create_delivery` linking each source to its destination (idempotent; tolerates existing deliveries).
 
 ```bash
 python scripts/setup_observability.py --harness-id <ID> --region us-east-1 \
     --log-group /aws/bedrock-agentcore/harness/<NAME> --retention-days 30
+```
+
+## Trace sampling: OTEL_TRACES_SAMPLER=always_on
+
+Harness runtimes default to `trace_sampled=False`. If you plan to use **Evaluations** (or want spans in
+Transaction Search at all), set this on the harness — without it, evaluations silently score nothing:
+
+```python
+ctl.update_harness(harnessId=HID,
+    environmentVariables={"OTEL_TRACES_SAMPLER": "always_on"},
+    clientToken=secrets.token_hex(20))
 ```
 
 ## Dashboards & metrics

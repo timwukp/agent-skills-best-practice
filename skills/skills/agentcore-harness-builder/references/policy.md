@@ -38,7 +38,7 @@ of operations exists in `bedrock-agentcore-control`.
 
 ## API surface
 
-Policy is preview. Introspect exact shapes before scripting:
+Policy ops evolve quickly. Introspect exact shapes before scripting:
 ```bash
 python scripts/preflight.py --show-shape CreatePolicy --show-shape CreatePolicyEngine --show-shape StartPolicyGeneration
 ```

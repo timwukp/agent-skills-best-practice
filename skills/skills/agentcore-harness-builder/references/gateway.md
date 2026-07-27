@@ -27,7 +27,7 @@ adding targets, and (optionally) routing rules. All shapes verified against `bot
 |---|---|
 | **Gateway** (`agentcore_gateway`) | You want AWS to host an MCP server that adapts **existing** APIs/Lambdas into tools, with managed inbound auth (JWT/IAM), semantic tool discovery, and per-target outbound credentials. Best when you have many tools or heterogeneous backends. |
 | **`remote_mcp`** | You already run a streamable-HTTP MCP server and just want the harness to connect to it. No adaptation needed. |
-| **Build your own MCP server** | The protocol/logic is custom. Author it with the separate `mcp-builder` skill, then expose via `remote_mcp` or host it on a Runtime. |
+| **Build your own MCP server** | The protocol/logic is custom. Author it yourself (an `mcp-builder` skill, if available in your environment, can help), then expose via `remote_mcp` or host it on a Runtime. |
 
 ## Objects
 

@@ -1,12 +1,13 @@
 # Skills
 
-Skills give a harness reusable domain knowledge and procedures — the same progressive-disclosure pattern as Kiro
-skills. The agent invokes a skill by name through the built-in `skills` tool; the harness loads the `SKILL.md` (and its
-bundled files) at session start.
+Skills give a harness reusable domain knowledge and procedures — the same progressive-disclosure pattern as the
+agent-skills standard (SKILL.md with frontmatter + on-demand body). The agent invokes a skill by name through the
+built-in `skills` tool; the harness loads the `SKILL.md` (and its bundled files) at session start.
 
 ## The source union (exactly one per skill)
 
-`skills` is a list; each entry has **exactly one** source type. Verified shapes (boto3 1.43.29):
+`skills` is a list; each entry has **exactly one** source type (union members live-verified: `path`, `s3`, `git`,
+`awsSkills`):
 
 ```python
 # A) path — a STRING path to a file already inside the container (custom-image deployments)
@@ -21,6 +22,9 @@ bundled files) at session start.
 # C') private git — add auth referencing an Identity credential provider
 {"git": {"url": "https://github.com/owner/private-repo", "path": "skills/x",
          "auth": {"credentialArn": "<credential-provider-arn>", "username": "<optional>"}}}
+
+# D) awsSkills — skills from the AWS-managed skills catalog, by catalog path
+{"awsSkills": {"paths": ["<catalog-path>", ...]}}
 ```
 
 Note `path` is a bare string (not `{"path": {...}}`), and `s3` takes a single `uri` (not separate bucket/prefix).

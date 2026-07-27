@@ -52,10 +52,12 @@ def test_validate_config():
 
     bad = {
         "name": "X",  # should warn (prefer harnessName)
-        "model": {"bedrockModelConfig": {"modelId": "anthropic.claude-3-sonnet-20240229-v1:0"}},
+        "model": {"bedrockModelConfig": {"modelId": "anthropic.claude-3-sonnet-20240229-v1:0",
+                                         "apiFormat": "CONVERSE"}},  # stale enum -> error
         "systemPrompt": "bare string",
-        "tools": [{"type": "agentcore_browser", "name": "browser"}],
-        "allowedTools": ["browser"],
+        "tools": [{"type": "agentcore_browser", "name": "browser"},  # built-in: NO config needed (must NOT error)
+                  {"type": "inline_function", "name": "fn"}],        # non-built-in: config required
+        "allowedTools": ["browser_*", "code_interpreter*"],          # invalid globs -> hide the tool
         "skills": [{"git": {"url": "u", "path": "p", "branch": "feature"}},
                    {"path": {"path": "/x"}}, {"s3": {"bucket": "b", "prefix": "p"}}],
         "truncation": {"strategy": "sliding_window", "slidingWindowMessagesCount": 150},
@@ -74,8 +76,9 @@ def test_validate_config():
     os.unlink(badpath)
     check("bad config exits non-zero", r2.returncode != 0)
     for needle in ["systemPrompt: must be a LIST",
+                   "apiFormat 'CONVERSE': invalid",
                    "missing 'config'",
-                   "plain name does not match",
+                   "this glob matches NOTHING",
                    "has a 'branch' field",
                    "must be a STRING",
                    "single 'uri'",
@@ -85,6 +88,8 @@ def test_validate_config():
                    "there is no 'type' field",
                    "correct field is 'strategyId'"]:
         check(f"flags: {needle[:42]}", needle in out, "missing in output")
+    check("built-in browser without config does NOT error",
+          "'browser' (type agentcore_browser): missing 'config'" not in out)
 
 
 # ---------- wire_memory ----------
@@ -122,15 +127,18 @@ def test_wire_memory():
 def test_update_harness():
     print("update_harness:")
     uh = load("update_harness")
-    structs = {"memory", "model", "environment", "environmentArtifact", "authorizerConfiguration", "truncation"}
-    cfg = {"allowedTools": ["browser_*"], "maxTokens": 100,
+    # live-verified: ONLY these three wrap in optionalValue; model/environment/truncation pass directly
+    structs = {"memory", "environmentArtifact", "authorizerConfiguration"}
+    cfg = {"allowedTools": ["*"], "maxTokens": 100,
            "memory": {"agentCoreMemoryConfiguration": {"arn": "a"}},
            "model": {"bedrockModelConfig": {"modelId": "m"}},
+           "truncation": {"strategy": "sliding_window"},
            "tags": {"t": "v"}, "name": "X"}
     p = uh.wrap_payload(cfg, structs, None)
-    check("structure field wrapped in optionalValue", p["memory"] == {"optionalValue": cfg["memory"]})
-    check("model wrapped", p["model"] == {"optionalValue": cfg["model"]})
-    check("list field NOT wrapped", p["allowedTools"] == ["browser_*"])
+    check("memory wrapped in optionalValue", p["memory"] == {"optionalValue": cfg["memory"]})
+    check("model NOT wrapped (passes directly)", p["model"] == cfg["model"])
+    check("truncation NOT wrapped (passes directly)", p["truncation"] == cfg["truncation"])
+    check("list field NOT wrapped", p["allowedTools"] == ["*"])
     check("int field NOT wrapped", p["maxTokens"] == 100)
     check("tags excluded from payload", "tags" not in p)
     check("name excluded from payload", "name" not in p)
@@ -156,6 +164,14 @@ def test_setup_observability():
     merged3 = so.merge_resource_policy(merged2, stmt)
     count = sum(1 for s in merged3["Statement"] if s["Sid"] == stmt["Sid"])
     check("merge is idempotent on Sid", count == 1)
+    plan = so.delivery_plan("h-123", "/aws/x")
+    check("plan has APPLICATION_LOGS + TRACES sources",
+          {s["logType"] for s in plan["sources"]} == {"APPLICATION_LOGS", "TRACES"})
+    check("plan has CWL + XRAY destinations",
+          {d["deliveryDestinationType"] for d in plan["destinations"]} == {"CWL", "XRAY"})
+    xray = next(d for d in plan["destinations"] if d["deliveryDestinationType"] == "XRAY")
+    check("XRAY destination has no log group / outputFormat", "log_group" not in xray and "outputFormat" not in xray)
+    check("deliveries pair each source with a destination", len(plan["deliveries"]) == 2)
 
 
 # ---------- create_harness ----------
