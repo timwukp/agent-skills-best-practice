@@ -59,7 +59,8 @@ are **nested**:
   ```
   `networkMode` is required inside `networkConfiguration`; `networkModeConfig` (subnets/SGs) is only needed for VPC.
   Lifecycle values are in **seconds**.
-- **Inference** (maxTokens/temperature/topP/apiFormat) → inside `model.bedrockModelConfig`. See `model-and-prompt.md`.
+- **Inference** (maxTokens/temperature/topP/apiFormat) → inside `model.bedrockModelConfig`. See `model-and-prompt.md` —
+  and note `temperature`/`topP` are REJECTED at invoke time by Claude ≥ 4.7 models (Fable 5 / Opus 5 / Sonnet 5 / 4.8 / 4.7).
 - **Truncation window** → `truncation.config.slidingWindow.messagesCount` (NOT a flat `slidingWindowMessagesCount`).
 - **Inbound auth** → `authorizerConfiguration.customJWTAuthorizer` (omit entirely for IAM/SigV4 default).
 
@@ -91,7 +92,8 @@ resp = c.create_harness(
     harnessName="MyHarness",
     executionRoleArn=role_arn,
     model={"bedrockModelConfig": {"modelId": "global.anthropic.claude-sonnet-5",
-                                  "apiFormat": "converse_stream", "maxTokens": 65536, "temperature": 0.2}},
+                                  "apiFormat": "converse_stream", "maxTokens": 65536}},
+    # no temperature: Claude >= 4.7 on Bedrock rejects it at invoke time (see model-and-prompt.md)
     systemPrompt=[{"text": SYSTEM_PROMPT}],
     tools=[...], allowedTools=["browser", "code_interpreter", "skills"], skills=[...],
     truncation={"strategy": "sliding_window", "config": {"slidingWindow": {"messagesCount": 150}}},

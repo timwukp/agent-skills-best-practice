@@ -192,6 +192,10 @@ Four gotchas that silently leave tools invisible to the agent:
 
 - Three `logType` values: `APPLICATION_LOGS` (→ CloudWatch log group), `TRACES` (→ **X-Ray**, not a log group),
   `USAGE_LOGS`.
+- **`PutDeliverySource` rejects harness ARNs** (live-verified 2026-07): *"This resource is not allowed for this
+  LogType. Valid options are [code-interpreter, memory, …, runtime, gateway]"*. Log/trace deliveries must target the
+  **auto-created runtime ARN** (`agentRuntimeName == "harness_<name>"` from `list_agent_runtimes`), never the
+  `harness/…` ARN. `scripts/setup_observability.py` does this resolution.
 - **X-Ray delivery destinations take no `outputFormat`** — pass only `name` + `deliveryDestinationType="XRAY"`.
 - If `create-delivery` succeeds but no events flow, extend the **`AWSLogDeliveryWrite20150319`** resource policy on the
   destination log group to allow `delivery.logs.amazonaws.com` — AWS does not auto-add new services. Preserve existing
@@ -216,6 +220,21 @@ Confirmed by introspection; these differ from intuition or the console labels:
 - **Inference settings live inside the model config** (`model.bedrockModelConfig.{apiFormat, maxTokens, temperature,
   topP}`). The model union has 4 providers: `bedrockModelConfig`, `openAiModelConfig`, `geminiModelConfig`,
   `liteLlmModelConfig` (non-Bedrock need `apiKeyArn`).
+- **`temperature` is rejected by Claude ≥ 4.7 at INVOKE time, not create time** (live-verified 2026-07): CreateHarness
+  and offline validation accept `temperature` happily; the FIRST InvokeHarness then fails with
+  `runtimeClientError → ValidationException: temperature is deprecated for this model`. Applies to Fable 5, Opus 5,
+  Sonnet 5, Opus 4.8, Opus 4.7 (Converse & ConverseStream, confirmed against Bedrock us-east-1); Opus 4.6/Sonnet 4.6/
+  Haiku 4.5 still accept it. Omit `temperature`/`topP` for ≥ 4.7 models.
+- **`GetHarness` nests everything under a top-level `harness` key** — the ARN is `resp["harness"]["arn"]`;
+  `resp.get("harnessArn")` silently returns None. Same nesting for CreateHarness (`resp["harness"]["harnessId"]`).
+- **`harnessId` ≠ `harnessName`**: the service appends a 10-char suffix (`<name>-<XXXXXXXXXX>`), and `GetHarness`/
+  `UpdateHarness` demand the FULL id (regex `[a-zA-Z][a-zA-Z0-9_]{0,39}-[a-zA-Z0-9]{10}`) — calling them with the bare
+  name you passed to CreateHarness is a ValidationException. Resolve via `list_harnesses` by `name` first.
+- **UpdateHarness during CREATING/UPDATING → ConflictException** ("Cannot update agent … while it is CREATING").
+  Wait for READY before any update — including the memory attach right after create.
+- **Episodic reflection namespace must equal or prefix the episodic namespace** (live-verified):
+  `namespaces=["/episodes/{actorId}/{sessionId}"]` with `reflectionConfiguration.namespaces=["/episodes/{actorId}/reflections"]`
+  is REJECTED ("must be the same as or a prefix of the episodic namespace"); use `["/episodes/{actorId}"]`.
 - **`authorizerConfiguration` has only `customJWTAuthorizer`** — there is no `type: "IAM"`. IAM/SigV4 is the default;
   **omit** `authorizerConfiguration` for it.
 - **Skills:** `path` is a bare **string**; `s3` takes a single **`uri`** (not bucket/prefix/versionId); `git` has

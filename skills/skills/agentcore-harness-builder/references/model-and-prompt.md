@@ -10,12 +10,16 @@ configs, and inference settings live **inside** the chosen config:
   "bedrockModelConfig": {
     "modelId": "global.anthropic.claude-sonnet-5",
     "apiFormat": "converse_stream",
-    "maxTokens": 65536,
-    "temperature": 0.2,
-    "topP": 0.9
+    "maxTokens": 65536
   }
 }
 ```
+
+> **`temperature`/`topP` and Claude ≥ 4.7 (live-verified 2026-07):** Bedrock REJECTS `temperature`
+> for Fable 5, Opus 5, Sonnet 5, Opus 4.8 and Opus 4.7 (`ValidationException: temperature is
+> deprecated for this model`). The error surfaces only at FIRST INVOKE — CreateHarness and
+> validate-config both accept the config, then every InvokeHarness dies with `runtimeClientError`.
+> Omit `temperature`/`topP` for those models; Opus 4.6 / Sonnet 4.6 / Haiku 4.5 still accept them.
 
 Provider union (pick exactly one):
 
@@ -58,7 +62,9 @@ overridden per invocation without redeploying — a core reason to choose Harnes
 ### Inference configuration
 
 Temperature, top-p, and `maxTokens` live **inside** the model config (e.g. `model.bedrockModelConfig.maxTokens`), and
-should align with the top-level `maxTokens` limit. For deterministic test/eval agents, set a low `temperature`.
+should align with the top-level `maxTokens` limit. For deterministic test/eval agents on models that still accept it
+(Claude ≤ 4.6), set a low `temperature`; on Claude ≥ 4.7 omit it entirely (rejected — see the callout above) and
+enforce determinism through the system prompt instead.
 
 ---
 
