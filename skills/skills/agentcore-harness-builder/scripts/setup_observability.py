@@ -88,9 +88,10 @@ def main() -> int:
         print("DRY RUN — observability setup plan:\n")
         print(f"  1. ensure log group {args.log_group} (retention {args.retention_days}d)")
         print(f"  2. extend resource policy {RESOURCE_POLICY_NAME} for delivery.logs.amazonaws.com")
-        print(f"  3. resourceArn = GetHarness({args.harness_id}).harnessArn")
+        print(f"  3. resourceArn = runtime ARN of agentRuntimeName 'harness_{args.harness_id.rsplit('-', 1)[0]}'"
+              " (NOT the harness ARN — PutDeliverySource only accepts LogType `runtime` resources)")
         for s in plan["sources"]:
-            print(f"  4. put_delivery_source(name={s['name']}, logType={s['logType']}, resourceArn=<harness arn>)")
+            print(f"  4. put_delivery_source(name={s['name']}, logType={s['logType']}, resourceArn=<runtime arn>)")
         for d in plan["destinations"]:
             extra = f", destinationResourceArn=<{d['log_group']}>" if d.get("log_group") else "  # NO outputFormat for XRAY"
             print(f"  5. put_delivery_destination(name={d['name']}, type={d['deliveryDestinationType']}{extra})")
@@ -107,17 +108,26 @@ def main() -> int:
     control = boto3.client("bedrock-agentcore-control", region_name=args.region)
     account_id = sts.get_caller_identity()["Account"]
 
-    # resolve the harness ARN — the delivery-source resourceArn
+    # resolve the delivery-source resourceArn. Two live-verified traps here:
+    #   1. GetHarness nests its payload under a top-level "harness" key — the ARN
+    #      is response["harness"]["arn"], not response["harnessArn"].
+    #   2. PutDeliverySource REJECTS harness ARNs ("This resource is not allowed
+    #      for this LogType") — deliveries only accept LogType `runtime` resources,
+    #      so target the auto-created runtime named `harness_<name>` instead.
     try:
-        h = control.get_harness(harnessId=args.harness_id)
-        resource_arn = h.get("harnessArn") or h.get("arn")
+        harness_name = args.harness_id.rsplit("-", 1)[0]
+        resource_arn = None
+        for rt in control.list_agent_runtimes().get("agentRuntimes", []):
+            if rt.get("agentRuntimeName") == f"harness_{harness_name}":
+                resource_arn = rt.get("agentRuntimeArn")
+                break
     except Exception as e:  # noqa: BLE001
-        print(f"FAIL  get_harness({args.harness_id}): {e}")
+        print(f"FAIL  list_agent_runtimes for {args.harness_id}: {e}")
         return 1
     if not resource_arn:
-        print("FAIL  could not resolve harness ARN from GetHarness response.")
+        print(f"FAIL  no runtime named harness_{harness_name} in list_agent_runtimes.")
         return 1
-    print(f"OK    harness ARN: {resource_arn}")
+    print(f"OK    runtime ARN resolved for harness {args.harness_id}")
 
     # 1. log group + retention
     try:
