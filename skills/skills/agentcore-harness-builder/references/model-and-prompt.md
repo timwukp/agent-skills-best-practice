@@ -114,3 +114,38 @@ Keep it focused. Long prompts cost tokens every turn; push reusable methodology 
 The system prompt and tool descriptions are exactly what **Optimizations** (`references/optimizations.md`) generates
 improved candidates for and A/B-tests. Write a clear first version, then let the optimization loop refine it against
 real traces.
+
+---
+
+## Model failover as a design layer (vendor-quota reality)
+
+Live-established running a 6-harness fleet: vendor model quotas are a **hard constraint**
+(even AWS-internal accounts are rate-limited by the model provider), and a multi-agent
+platform is its own token-flood generator — every agent loop is a high-frequency long
+stream, so premium-tier 5xx bursts are structural, not incidental. Design for failover
+up front:
+
+1. **Give every harness a fallback chain** (same-family so prompts need no changes),
+   e.g. `global.anthropic.claude-fable-5` → `global.anthropic.claude-opus-5`.
+2. **Recognize the quota signature**: repeated
+   `runtimeClientError → InternalServerException / ServiceUnavailableException` from
+   ConverseStream while a direct single-shot probe of the SAME model succeeds. That is
+   quota pressure, not an outage — it never surfaces as an explicit ThrottlingException.
+3. **Hot-swap is cheap**: `UpdateHarness` with only the `model` block reaches READY in
+   ~15 s; existing sessions survive the swap. Wait for READY before invoking — an update
+   during CREATING/UPDATING throws ConflictException, and a mid-propagation invoke can
+   transiently see a version without your inline functions.
+4. **Mixed allocation spreads quota pressure by design**: premium tier for
+   judgment-heavy agents (orchestrator, eval), the fallback tier for process-execution
+   agents (data-prep, deploy, monitor).
+5. **Automate it in the orchestrator**: on stream death with the 5xx signature, swap →
+   wait READY → emit an informational event → same-session salvage retry. Keep the
+   failover path best-effort so its own failure can never break the retry.
+
+```python
+h = ctl.get_harness(harnessId=harness_id)["harness"]
+model = h["model"]
+model["bedrockModelConfig"]["modelId"] = FALLBACKS[model["bedrockModelConfig"]["modelId"]]
+ctl.update_harness(harnessId=harness_id, model=model, clientToken=secrets.token_hex(20))
+# poll get_harness until status == READY (~15s), then retry the SAME runtimeSessionId
+```
