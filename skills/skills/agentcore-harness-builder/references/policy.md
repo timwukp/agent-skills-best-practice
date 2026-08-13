@@ -8,7 +8,7 @@ of operations exists in `bedrock-agentcore-control`.
 
 | Concept | Operations | Purpose |
 |---|---|---|
-| **Policy** | `CreatePolicy`, `GetPolicy`, `GetPolicySummary`, `ListPolicySummaries`, `UpdatePolicy`, `DeletePolicy` | A policy document governing agent behavior/permissions. |
+| **Policy** | `CreatePolicy`, `GetPolicy`, `GetPolicySummary`, `ListPolicySummaries`, `UpdatePolicy`, `DeletePolicy` | A policy document governing agent behavior/permissions. Stateless (Cedar) or **temporal** (stateful, session-aware — see below). |
 | **Policy Engine** | `CreatePolicyEngine`, `GetPolicyEngine`, `GetPolicyEngineSummary`, `ListPolicyEngines`, `ListPolicyEngineSummaries`, `UpdatePolicyEngine`, `DeletePolicyEngine` | The engine that evaluates/enforces policies. |
 | **Resource policy** | `PutResourcePolicy`, `GetResourcePolicy`, `DeleteResourcePolicy` | Attach a policy to a specific resource. |
 | **Policy generation** | `StartPolicyGeneration`, `GetPolicyGeneration`, `GetPolicyGenerationSummary`, `ListPolicyGenerations`, `ListPolicyGenerationSummaries`, `ListPolicyGenerationAssets` | Auto-generate a policy from observed behavior/assets. |
@@ -79,3 +79,38 @@ Attach the engine to a Gateway via `CreateGateway(policyEngineConfiguration={"ar
 
 > **Verified gotchas:** (1) engine/policy names reject hyphens; (2) Cedar statements with a wildcard
 > `resource` are rejected — constrain to `resource is <Type>` or a specific resource.
+
+## Temporal policies (stateful authorization)
+
+Announced 2026-08-06 (16 regions). Standard Cedar policies evaluate each request in isolation;
+**temporal policies** evaluate it against the agent's **prior actions within a session** — a single
+tool call can be safe alone yet harmful given what preceded it. Written in **Dogwood**, a
+Cedar-compatible language adding temporal operators.
+
+What they enable:
+- **Workflow sequencing** — action B only after action A happened (`formerly within`).
+- **Argument↔output matching** — a tool argument must match a prior tool's output.
+- **Human approval gates** — require an approval action before a privileged one.
+- **Data freshness** — block actions when the data they depend on is older than a window.
+
+Mechanics:
+- Temporal operators: `formerly within`, `since within`, `count`, `sum`.
+- Session correlation: callers pass the header `x-amzn-bedrock-agentcore-policy-session-id`; the
+  engine accumulates that session's history for evaluation.
+- **Two different mode enums — don't conflate them** (live-verified 2026-08-12, boto3 1.43.69):
+  - `CreatePolicy.enforcementMode`: `ACTIVE | LOG_ONLY` (per policy; round-trips on Get — verified)
+  - `CreateGateway.policyEngineConfiguration.mode`: `ENFORCE | LOG_ONLY` (per gateway attachment)
+- Quotas: ≤25 temporal policies per engine, ≤3 temporal operators per policy, 24h max lookback window.
+- API slot: `CreatePolicy.definition` is a union of `cedar | policyGeneration | policy{statement}`.
+  Live probe (2026-08-12): the `policy.statement` slot HAS its own parser, but the grammar guess
+  `when { formerly within 1 hour { ... } }` was rejected in both slots
+  (`ValidationException: unexpected token 'within'`) — get the exact Dogwood grammar from the
+  policy-temporal dev-guide examples before authoring; don't improvise the syntax.
+
+Start with `enforcementMode="LOG_ONLY"`, watch what would have been blocked, then switch to `ACTIVE`.
+
+> **Verified lifecycle gotchas (2026-08-12):** (1) `DeletePolicy` while the policy is `CREATING` →
+> `ConflictException: Policy cannot be deleted while its status is CREATING` — poll until it leaves
+> CREATING (a rejected statement can land as `CREATE_FAILED`, which still must be deleted);
+> (2) `DeletePolicyEngine` → `ConflictException: Policy engine still contains N policies` — delete
+> all policies (including failed ones) first.

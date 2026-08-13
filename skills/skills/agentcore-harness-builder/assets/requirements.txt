@@ -2,9 +2,9 @@
 # These minimums are NOT optional: older boto3 lacks harness/endpoint operations
 # or current field shapes. See references/gotchas.md (Versions).
 
-boto3>=1.43.51
-botocore>=1.43.51
+boto3>=1.43.68
+botocore>=1.43.68
 
 # Also required outside pip:
-#   AWS CLI v2 >= 2.34.57   (curl https://awscli.amazonaws.com/AWSCLIV2.pkg -o /tmp/aws.pkg && sudo installer -pkg /tmp/aws.pkg -target /)
+#   AWS CLI v2 >= 2.36.x (2.34.57 floor for harness ops only)   (curl https://awscli.amazonaws.com/AWSCLIV2.pkg -o /tmp/aws.pkg && sudo installer -pkg /tmp/aws.pkg -target /)
 #   (optional) AgentCore CLI: npm i -g @aws/agentcore

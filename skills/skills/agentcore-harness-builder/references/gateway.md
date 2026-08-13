@@ -10,11 +10,12 @@ adding targets, and (optionally) routing rules. All shapes verified against `bot
 
 ## Contents
 - [When a Gateway vs `remote_mcp` vs building your own](#when)
-- [The three objects: Gateway → Target → Rule](#objects)
+- [The objects: Gateway → Target → Rule → Rate limit](#objects)
 - [Create the Gateway](#create-gateway)
-- [Add Targets (the 6 kinds)](#targets)
+- [Add Targets (the 8 kinds, incl. built-in connectors like web-search)](#targets)
 - [Outbound credentials for targets](#credentials)
 - [Routing Rules (advanced)](#rules)
+- [Rate limits (per-user / per-group traffic control)](#rate-limits)
 - [Wire the Gateway into a Harness](#wire)
 - [CLI shortcut + lifecycle](#cli)
 - [Gotchas](#gotchas)
@@ -34,13 +35,16 @@ adding targets, and (optionally) routing rules. All shapes verified against `bot
 A Gateway is built from three control-plane object types (all under `bedrock-agentcore-control`):
 
 ```
-Gateway            ← the managed MCP endpoint (inbound auth + protocol)
-  └── Target(s)    ← each adapts ONE backend (Lambda / OpenAPI / Smithy / MCP server / API GW / Runtime)
-  └── Rule(s)      ← OPTIONAL request routing / traffic-split across targets
+Gateway              ← the managed MCP endpoint (inbound auth + protocol)
+  └── Target(s)      ← each adapts ONE backend (Lambda / OpenAPI / Smithy / MCP server / API GW /
+  │                     Runtime / built-in connector e.g. web-search / inference provider)
+  └── Rule(s)        ← OPTIONAL request routing / traffic-split across targets
+  └── Rate limit(s)  ← OPTIONAL per-user/per-group requests / tokens / connections caps
 ```
 
-Operations: `CreateGateway` / `CreateGatewayTarget` / `CreateGatewayRule` (+ `Get`/`List`/`Update`/`Delete`
-for each, plus `SynchronizeGatewayTargets`).
+Operations: `CreateGateway` / `CreateGatewayTarget` / `CreateGatewayRule` / `CreateGatewayRateLimit`
+(+ `Get`/`List`/`Update`/`Delete` for each, plus `SynchronizeGatewayTargets` and
+`BatchPutGatewayRateLimits`).
 
 ## Create Gateway
 
@@ -101,8 +105,8 @@ gateway_url = resp["gatewayUrl"]      # the MCP endpoint your harness/clients ca
 ## Targets
 
 Each **Target** adapts ONE backend into MCP tools. `CreateGatewayTarget` required: `gatewayIdentifier`,
-`name`, `targetConfiguration`. The `targetConfiguration` is a **union** — exactly one of `mcp.*` (five
-backend kinds) or `http.agentcoreRuntime`:
+`name`, `targetConfiguration`. The `targetConfiguration` is a **union** — exactly one of `mcp.*` (six
+member kinds), `http.agentcoreRuntime`, or `inference.*`:
 
 ```python
 t = c.create_gateway_target(
@@ -115,7 +119,7 @@ t = c.create_gateway_target(
 target_id = t["targetId"]
 ```
 
-**The 6 target forms (verified):**
+**The 8 target forms (1–6 verified live with boto3 1.43.29; 7–8 verified against boto3 1.43.69 schema):**
 
 ```python
 # 1) Lambda — your function becomes one or more tools; you supply the tool schema
@@ -147,6 +151,33 @@ target_id = t["targetId"]
 
 # 6) HTTP → AgentCore Runtime — front a Runtime you deployed
 {"http": {"agentcoreRuntime": {"arn": "<runtime-arn>", "qualifier": "DEFAULT"}}}
+
+# 7) Built-in connector — AWS-managed tools. VERIFIED LIVE 2026-08-12 (target READY + MCP
+#    tools/list). Known connectorIds: "web-search" (GA 2026-06-16, us-east-1; zero egress,
+#    no external search provider) and "bedrock-knowledge-bases" (Managed KB; tools
+#    AgenticRetrieveStream / Retrieve).
+#    THREE HARD REQUIREMENTS (each rejected with a ValidationException otherwise):
+#      a) `configurations` must be non-null AND non-empty — for web-search the entry name is
+#         "WebSearch" (the tool name), parameterValues may be {} or hold target-level filters;
+#      b) credentialProviderConfigurations=[{"credentialProviderType": "GATEWAY_IAM_ROLE"}];
+#      c) the gateway roleArn needs bedrock-agentcore:InvokeGateway (on your gateway/*) AND
+#         bedrock-agentcore:InvokeWebSearch on arn:aws:bedrock-agentcore:<region>:aws:tool/web-search.v1
+{"mcp": {"connector": {
+    "source": {"connectorId": "web-search", "version": "1.2.0"},   # version optional; 1.2.0+ = filters
+    "configurations": [{"name": "WebSearch", "parameterValues": {
+        # target-level (admin) filters, hidden from the agent — both optional:
+        "domainFilter": {"include": ["allowed.com"], "exclude": ["blocked.com"]},
+    }}],
+}}}
+# The agent then sees a `WebSearch` MCP tool (query, maxResults 1-25, and on v1.2.0+ per-request
+# filters.domainFilter / filters.publishedDateFilter) — verified via live tools/list.
+
+# 8) Inference target — front a model endpoint as a gateway target; this is the target
+#    type that `tokens` rate limits apply to (see Rate limits below).
+{"inference": {"provider": {
+    "endpoint": "<model-endpoint>",
+    "modelMapping": {...}, "operations": [...],
+}}}   # union: {"inference": {"connector": {...}}} also exists
 ```
 
 ## Credentials
@@ -199,6 +230,54 @@ c.create_gateway_rule(
 )
 ```
 
+## Rate limits
+
+Announced 2026-08-06. Per-user or per-group traffic controls on everything flowing through the
+gateway, with rules scoped by OAuth or AWS IAM identity. Three cap dimensions:
+
+| Dimension | Applies to |
+|---|---|
+| `requests` | ALL target types |
+| `tokens` | inference targets only |
+| `connections` | concurrent connections (long-lived sessions) |
+
+Executable example (VERIFIED LIVE 2026-08-12, boto3 1.43.69 — created, status ACTIVE, deleted):
+
+```python
+c.create_gateway_rate_limit(
+    gatewayIdentifier=gateway_id,
+    rateLimitId="per-user-cap",
+    dimensionKeys=["$.context.iam.principal"],          # REQUIRED; see grammar below
+    entries=[{
+        "dimensions": {"$.context.iam.principal": "*"}, # which principal(s) this entry matches
+        "requests": [{"rate": 10.0, "period": "minute"}],     # period enum: second | minute
+        # "tokens": [{"rate": ..., "period": ...}],           # inference targets only
+        # "connections": [{"rate": ..., "period": ...}],
+    }],
+    clientToken=secrets.token_hex(20),
+)
+# Bulk: c.batch_put_gateway_rate_limits(...)
+```
+
+**Dimension-key grammar (verified — extracted verbatim from the service's validation regex):**
+
+```
+targetName | toolName | qualifiedModelId
+| $.context.iam.principal | $.context.iam.sourceIdentity
+| $.context.jwt.<claim-name>
+```
+
+Per-user scoping = `$.context.iam.principal` (SigV4 callers) or `$.context.jwt.<claim>` (JWT callers,
+e.g. `$.context.jwt.sub`); per-group = a JWT group claim; per-target/tool caps = `targetName` /
+`toolName`; token limits key on `qualifiedModelId` (inference targets).
+
+**Update restriction (verified):** `UpdateGatewayRateLimit` accepts ONLY `gatewayIdentifier`,
+`rateLimitId`, `description`, `entries` — `dimensionKeys` is immutable after create (and there's no
+clientToken). To change dimensions, delete and recreate.
+
+Full op family: `CreateGatewayRateLimit` / `Get` / `Update` / `Delete` / `List` + `BatchPutGatewayRateLimits`.
+Delete rate limits before deleting the gateway.
+
 ## Wire
 
 Once the gateway is `READY`, attach it to a harness — the **consumer** shape from `references/tools.md`:
@@ -216,17 +295,17 @@ this gateway). The gateway's own inbound `authorizerType` must be satisfied by h
 
 ## CLI
 
-The `bedrock-agentcore-starter-toolkit` wraps the create→target→cleanup flow and auto-provisions the IAM
-role + a Cognito JWT authorizer if you don't pass them:
+The official CLI is now the Node.js **`@aws/agentcore`** package (repo `aws/agentcore-cli`, pre-1.0);
+the Python `bedrock-agentcore-starter-toolkit` CLI is **deprecated** ("no longer supported — please use
+the AgentCore CLI"). Install and check what your version offers before scripting against it:
 
 ```bash
-pip install bedrock-agentcore-starter-toolkit
-agentcore gateway create-mcp-gateway --name MyGateway --region us-east-1
-agentcore gateway create-mcp-gateway-target --gateway-arn <arn> --gateway-url <url> \
-    --role-arn <role> --name MyLambdaTarget --target-type lambda
-# cleanup (a gateway must have ZERO targets before delete, unless --force):
-agentcore gateway delete-mcp-gateway --name MyGateway --force
+npm install -g @aws/agentcore     # v0.26.x at time of writing; try @preview for newest commands
+agentcore --help                  # inventory the gateway-related commands in your installed version
 ```
+
+Command coverage varies across the pre-1.0 releases — for anything the CLI doesn't cover, use boto3
+`bedrock-agentcore-control` directly (all shapes in this file).
 
 ## Gotchas
 

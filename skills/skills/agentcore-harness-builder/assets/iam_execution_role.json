@@ -1,5 +1,5 @@
 {
-  "_comment": "Execution role for an AgentCore Harness. Two documents below: the trust policy (who can assume the role) and the permissions policy (what the harness may do). Replace <REGION>, <ACCOUNT_ID>, <MEMORY_ID>, and the model id as needed. Statements labeled 'Baseline*' are required for the harness session to start at all (loader image pull, workload identity, telemetry). ManagedMemoryEvents is REQUIRED whenever managed memory is on (the default): the harness auto-creates a Memory named harness_<name>_* and InvokeHarness fails with AccessDeniedException on ListEvents without it (verified live). The BYOMemory* statements apply only to bring-your-own memory (agentCoreMemoryConfiguration); scripts/wire_memory.py adds them per-Memory. NOTE dual CALLER permissions (separate from this execution role): invoking needs bedrock-agentcore:InvokeHarness AND InvokeAgentRuntime; creating needs CreateHarness AND CreateAgentRuntime (+ CreateMemory for BYO). See references/gotchas.md.",
+  "_comment": "Execution role for an AgentCore Harness. Two documents below: the trust policy (who can assume the role) and the permissions policy (what the harness may do). Replace <REGION>, <ACCOUNT_ID>, <MEMORY_ID>, and the model id as needed. Statements labeled 'Baseline*' are required for the harness session to start at all (loader image pull, workload identity, telemetry). ManagedMemoryEvents is REQUIRED whenever managed memory is on (the default): the harness auto-creates a Memory (observed naming 2026-08-12: <harnessName>-<suffix>; older: harness_<name>_*) and InvokeHarness fails with AccessDeniedException on ListEvents without it (verified live). The BYOMemory* statements apply only to bring-your-own memory (agentCoreMemoryConfiguration); scripts/wire_memory.py adds them per-Memory. NOTE dual CALLER permissions (separate from this execution role): invoking needs bedrock-agentcore:InvokeHarness AND InvokeAgentRuntime; creating needs CreateHarness AND CreateAgentRuntime (+ CreateMemory for BYO). See references/gotchas.md.",
 
   "trustPolicy": {
     "Version": "2012-10-17",
@@ -99,7 +99,7 @@
           "bedrock-agentcore:ListEvents",
           "bedrock-agentcore:RetrieveMemoryRecords"
         ],
-        "Resource": "arn:aws:bedrock-agentcore:<REGION>:<ACCOUNT_ID>:memory/harness_*"
+        "Resource": ["arn:aws:bedrock-agentcore:<REGION>:<ACCOUNT_ID>:memory/harness_*", "arn:aws:bedrock-agentcore:<REGION>:<ACCOUNT_ID>:memory/<HARNESS_NAME>-*"]
       },
       {
         "Sid": "BYOMemoryEvents",

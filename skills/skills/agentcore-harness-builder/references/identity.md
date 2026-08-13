@@ -10,7 +10,7 @@ services (third-party APIs, OAuth providers). It complements the harness's **inb
 |---|---|---|
 | **Workload Identity** | `CreateWorkloadIdentity`, `GetWorkloadIdentity`, `ListWorkloadIdentities`, `UpdateWorkloadIdentity`, `DeleteWorkloadIdentity` | A stable identity for an agent workload, used to scope access and auth. |
 | **Token Vault** | `GetTokenVault`, `SetTokenVaultCMK` | Secure store for OAuth tokens / secrets the agent uses for outbound calls. `SetTokenVaultCMK` sets a customer-managed KMS key for encryption. |
-| **API key credential provider** | `CreateApiKeyCredentialProvider` (+ Get/List/Update/Delete) | Store an API key the agent presents to a downstream API. |
+| **API key credential provider** | `CreateApiKeyCredentialProvider` (+ Get/List/Update/Delete) | Store an API key the agent presents to a downstream API. Source: service-managed (`MANAGED`, default) or **bring-your-own Secrets Manager secret** (`EXTERNAL`, GA 2026-06-01, 14 regions). |
 | **OAuth2 credential provider** | `CreateOauth2CredentialProvider` (+ Get/List/Update/Delete) | Store an OAuth2 client config; the agent obtains/refreshes tokens for outbound calls. |
 | **Payment credential provider** | `CreatePaymentCredentialProvider` (+ …) | Specialized provider for payment flows (see `payments.md`). |
 
@@ -61,6 +61,24 @@ workload_identity_arn = wi["workloadIdentityArn"]
 # NOTE: the caller needs secretsmanager:CreateSecret on bedrock-agentcore-identity!* .
 ak = c.create_api_key_credential_provider(name="my_api_key", apiKey="sk-...")
 api_key_provider_arn = ak["credentialProviderArn"]
+
+# --- Bring-your-own secret (GA 2026-06-01): reference an EXISTING Secrets Manager secret ARN
+#     instead of letting the service copy the key into a managed secret. Keeps rotation, tagging,
+#     resource policies, and your own CMK on a secret YOU own.
+#     (apiKeySecretSource enum: MANAGED | EXTERNAL; apiKeySecretConfig required when EXTERNAL.
+#      VERIFIED LIVE 2026-08-12, boto3 1.43.69; requires a recent boto3/CLI — 2.31.x lacks it.)
+ak_ext = c.create_api_key_credential_provider(
+    name="my_byo_key",
+    apiKeySecretSource="EXTERNAL",
+    apiKeySecretConfig={
+        "secretId": "arn:aws:secretsmanager:us-east-1:<ACCOUNT_ID>:secret:myteam/api-key-XXXXXX",
+        "jsonKey": "api_key",              # key within the secret's JSON payload
+    },
+)
+# Get/Create responses echo it with DIFFERENT field names (live-verified):
+#   "apiKeySecretSource": "EXTERNAL",
+#   "apiKeySecretArn": {"secretArn": "<your exact secret ARN — no vault copy is made>"},
+#   "apiKeySecretJsonKey": "api_key"
 
 # --- OAuth2 credential provider (vendor-specific; secret stored in the Token Vault) ---
 oa = c.create_oauth2_credential_provider(

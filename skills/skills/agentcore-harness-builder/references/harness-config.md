@@ -48,7 +48,7 @@ rejected.
 The console surfaces "Network", "Idle session timeout", "Max lifetime", and inference settings, but in the API they
 are **nested**:
 
-- **Network + lifecycle** → `environment.agentCoreRuntimeEnvironment`:
+- **Network + lifecycle + filesystems** → `environment.agentCoreRuntimeEnvironment`:
   ```json
   "environment": { "agentCoreRuntimeEnvironment": {
     "networkConfiguration": { "networkMode": "PUBLIC",
@@ -59,6 +59,25 @@ are **nested**:
   ```
   `networkMode` is required inside `networkConfiguration`; `networkModeConfig` (subnets/SGs) is only needed for VPC.
   Lifecycle values are in **seconds**.
+
+  `filesystemConfigurations[]` is a **union list** — each entry is exactly one of
+  (`sessionStorage` VERIFIED LIVE 2026-08-12 — created, echoed on GetHarness; others schema-verified):
+  ```json
+  {"sessionStorage":      {"mountPath": "/mnt/session"}}
+  {"s3FilesAccessPoint":  {"accessPointArn": "<s3files-ap-arn>", "mountPath": "/mnt/shared"}}
+  {"efsAccessPoint":      {"accessPointArn": "<efs-ap-arn>",     "mountPath": "/mnt/efs"}}
+  {"capacityProviderVolume": { ... }}
+  ```
+  **`s3FilesAccessPoint` takes an S3 *Files* ARN, not a plain S3 access point** — validated against
+  this exact regex (captured live from the rejection message):
+  `arn:aws[-a-z]*:s3files:<region>:<acct>:file-system/fs-<hex17-40>/access-point/fsap-<hex17-40>`.
+  S3 Files is its own service with file-system + access-point resources; a regular
+  `arn:aws:s3:...:accesspoint/...` ARN is rejected at CreateHarness validation time.
+
+  Bring-your-own mounts (added 2026-05) let sessions share data across sessions and harnesses with
+  full S3 durability/history. Limits per the dev guide: combine up to **5 mounts** on one harness
+  (≤2 EFS + ≤2 S3 Files access points plus session storage); access-point mounts require
+  **VPC network mode**. See `references/advanced-config.md` for the permission wiring.
 - **Inference** (maxTokens/temperature/topP/apiFormat) → inside `model.bedrockModelConfig`. See `model-and-prompt.md` —
   and note `temperature`/`topP` are REJECTED at invoke time by Claude ≥ 4.7 models (Fable 5 / Opus 5 / Sonnet 5 / 4.8 / 4.7).
 - **Truncation window** → `truncation.config.slidingWindow.messagesCount` (NOT a flat `slidingWindowMessagesCount`).
@@ -105,6 +124,12 @@ resp = c.create_harness(
     clientToken=secrets.token_hex(20),
 )
 ```
+
+**Response nesting (live-verified 2026-08-12):** `GetHarness` wraps everything under a `harness` key
+(`resp["harness"]["status"]`, `resp["harness"]["arn"]`, …) and `ListHarnesses` items expose the ARN as
+`arn` (not `harnessArn`). `GetHarness.harness.environment.agentCoreRuntimeEnvironment` also reveals the
+underlying harness-managed runtime (`agentRuntimeArn` / `agentRuntimeName` = `harness_<name>` /
+`agentRuntimeId`) — useful for observability wiring.
 
 ---
 

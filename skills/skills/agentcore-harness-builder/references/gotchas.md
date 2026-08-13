@@ -18,15 +18,17 @@ something fails unexpectedly, scan this file first.
 
 ## Versions
 
-Harness is **GA** (~16 regions; only Payments remains preview), but AgentCore still adds operations frequently. Use
-the latest SDK/CLI unless you have a reason not to.
+Harness is **GA** (2026-06-17, all AWS Commercial Regions where AgentCore is available; GovCloud
+US-West added 2026-08), but AgentCore still adds operations frequently — the 2026-06→08 wave added
+web-search connector targets, gateway rate limits, temporal policies, capacity providers, and
+`apiKeySecretSource`. Use the latest SDK/CLI unless you have a reason not to.
 
 | Tool | Minimum | Why it matters |
 |---|---|---|
-| `boto3` / `botocore` | **≥ 1.43.51** | Older versions lack harness ops entirely (1.42.79 → 0) or lack endpoint/version ops and current field shapes. |
-| AWS CLI v2 | **≥ 2.34.57** | Earlier CLI lacks `create-harness`/`update-harness`/etc. |
-| `@aws/agentcore` (npm) | latest | Optional scaffolding CLI (`agentcore create/deploy`). |
-| Region | any Harness GA region (e.g. `us-east-1`, `us-west-2`, `eu-central-1`, `ap-southeast-2`) | See the AgentCore regions page for the full ~16-region list. |
+| `boto3` / `botocore` | **≥ 1.43.68** | ≥1.43.51 for harness ops; ≥1.43.68 additionally carries capacity providers, gateway rate limits, connector/inference targets, `enforcementMode`, `apiKeySecretSource`, `toolResultMetadata` (verified by schema introspection). |
+| AWS CLI v2 | **≥ 2.36.x** (2.34.57 floor for harness) | 2.31.x lacks ALL harness/policy/capacity ops (verified: 57 ops, zero matches); 2.36.21 verified to carry the full new op families. |
+| `@aws/agentcore` (npm) | latest | The official CLI (the Python `bedrock-agentcore-starter-toolkit` is **deprecated**). Pre-1.0: command coverage varies by version — inventory with `--help` before scripting. |
+| Region | any Harness GA region (e.g. `us-east-1`, `us-west-2`, `eu-central-1`, `ap-southeast-2`) | Some features are narrower: Web Search us-east-1 only; temporal policies 16 regions; Identity EXTERNAL secrets 14 regions. |
 
 ```bash
 pip3 install --upgrade boto3 botocore
@@ -205,6 +207,36 @@ Four gotchas that silently leave tools invisible to the agent:
   channel. Set retention explicitly (DEFAULT never expires).
 
 ---
+
+## Verified real-API shapes — 2026-08-12/13 campaign additions (boto3 1.43.69, live)
+
+From the live-validation campaign for the 2026-05..08 feature wave (full evidence in `TEST_LOG.md`):
+
+- **`InvokeHarness` streams under the `stream` key** (`resp["stream"]`), not `response`. Event types:
+  `messageStart` / `contentBlockDelta` / `contentBlockStop` / `messageStop` / `metadata`.
+- **`GetHarness` wraps its payload in a `harness` key**; `ListHarnesses` items use `arn`.
+- **Omitting `memory` on CreateHarness attaches a managed Memory** named `<harnessName>-<suffix>`
+  (NOT `harness_<name>_*`), with `managedByResourceArn`; it can't be deleted directly and
+  cascade-deletes (async) with the harness.
+- **Web-search connector target**: `configurations=[{"name": "WebSearch", "parameterValues": {...}}]`
+  is mandatory (non-null AND non-empty), `credentialProviderConfigurations=[{GATEWAY_IAM_ROLE}]`
+  required, and the gateway role needs `bedrock-agentcore:InvokeWebSearch` on
+  `arn:aws:bedrock-agentcore:<region>:aws:tool/web-search.v1`.
+- **Rate-limit dimension keys** must match
+  `targetName|toolName|qualifiedModelId|$.context.iam.principal|$.context.iam.sourceIdentity|$.context.jwt.<claim>`;
+  `dimensionKeys` is required at create and **immutable** (`UpdateGatewayRateLimit` accepts only
+  `description`/`entries`).
+- **Policy lifecycle**: `DeletePolicy` during `CREATING` and `DeletePolicyEngine` with policies inside
+  both throw `ConflictException`; a rejected statement can land as a `CREATE_FAILED` policy that still
+  needs deleting. Temporal/Dogwood syntax is NOT plain-Cedar-plus-keywords — take it from the
+  policy-temporal dev-guide examples (`unexpected token 'within'` otherwise).
+- **`s3FilesAccessPoint` wants an `s3files:` service ARN** (`file-system/fs-*/access-point/fsap-*`) —
+  regular S3 access-point ARNs are rejected.
+- **`CreateCapacityProvider` requires `launchTemplateSource`** — an existing EC2 launch template is a
+  prerequisite for Runtime Instances.
+- **`agentcore export harness` requires an agentcore project** (`NoProjectError` otherwise;
+  `agentcore create --name x --defaults` scaffolds without deploying); no `--output` flag — output
+  lands in `app/<harnessName>Agent/` with `EXPORT_NOTES.md`.
 
 ## Verified real-API shapes (boto3 1.43.29) — where docs/console mislead
 

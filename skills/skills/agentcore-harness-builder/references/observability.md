@@ -15,6 +15,38 @@ This receives **rich OTel structured logs** — `trace_id`, `span_id`, `resource
 **This is where dashboard data actually lives.** The `otel.resource.aws.log.group.names` attribute is hardcoded to
 point here. Default retention is `None` (never expires) — set it explicitly to bound storage cost.
 
+## Unified observability (agents created on/after 2026-07-20)
+
+For **runtime-hosted agents newly created on/after 2026-07-20** in supported regions, ALL telemetry —
+traces, prompts, structured logs, stdout — flows to a **single per-agent log group**:
+
+```
+/aws/bedrock-agentcore/runtimes/<agent_id>-<endpoint_name>
+```
+
+replacing the previous split between the shared `aws/spans` log group and the resource-specific
+event log group. Scope and caveats:
+
+- **New agents only** — pre-existing agents keep writing spans to `aws/spans` unless opted in
+  (see the AgentCore observability configuration docs for the opt-in mechanism).
+- **Runtime-hosted agents only** — Gateway, built-in tool, and WorkloadIdentity spans still go
+  to `aws/spans`.
+- Prerequisites: CloudWatch **Transaction Search** enabled, the execution role allows
+  `logs:PutResourcePolicy`, and (for custom-instrumented runtimes) a recent ADOT distro (≥ 0.18.0
+  per the dev guide).
+- Existing span data is **not migrated**.
+
+After creating a fresh harness, `logs describe-log-groups --log-group-name-prefix
+/aws/bedrock-agentcore/runtimes/` shows which pattern your region/account actually produces —
+trust that over any doc, this one included.
+
+**Observed live (us-east-1, harness created 2026-08-12):** the fresh harness produced
+`/aws/bedrock-agentcore/runtimes/harness_<harnessName>-<runtimeId>-DEFAULT` — i.e. the unified
+`<agent_id>-<endpoint_name>` form where `agent_id` is the harness-managed runtime id
+(`harness_<name>-<suffix>`, visible in `GetHarness.harness.environment`) and `endpoint_name`
+is `DEFAULT`. This matches the "What you get by default" pattern above — the two descriptions
+are the same log group.
+
 ## Log delivery types
 
 Three `logType` values:
