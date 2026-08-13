@@ -68,6 +68,19 @@ Classic Bedrock Agents is now **"Agents Classic"** — maintenance mode, closed 
 Existing Agents Classic workloads keep running, but new builds (and migrations) should use the AgentCore Harness,
 which is AWS's recommended path for managed, declarative agents.
 
+## Where does retrieval (RAG) fit?
+
+Answering from a document corpus is **not** a fourth deployment model, and it is neither Skills nor Memory:
+
+| Need | Use |
+|---|---|
+| Answer from *our documents* (search a corpus at query time) | Harness + a Gateway target on the `bedrock-knowledge-bases` connector → `references/knowledge-bases.md` |
+| Give the agent *procedural instructions* it always follows | **Skills** (`references/skills.md`) — prompt-side, no retrieval |
+| Recall *what this user/session said before* | **Memory** (`references/memory.md`) — per-actor state, written automatically |
+
+Skills are read every run and cost nothing per lookup; a knowledge base is searched per call and is billed per
+retrieval. If the content is a handful of stable instructions, it belongs in a skill, not a knowledge base.
+
 ## Note
 
 Harness mode is already a Container deployment under the hood (the managed harness loader image). "Switch to Container

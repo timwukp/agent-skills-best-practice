@@ -21,7 +21,7 @@ is a complete working example using these exact shapes — start from it. When i
 
 | Field | Type | Notes |
 |---|---|---|
-| `harnessName` | string **[req]** | NOT `name`. Appears in both ARNs. (`UpdateHarness` uses `harnessId` instead.) |
+| `harnessName` | string **[req]** | NOT `name`. Pattern **`[a-zA-Z][a-zA-Z0-9_]{0,39}`** — letters/digits/underscore only, **no hyphens**, ≤40 chars, must start with a letter. Appears in both ARNs. (`UpdateHarness` uses `harnessId` instead.) |
 | `executionRoleArn` | string **[req]** | IAM role the harness assumes. |
 | `clientToken` | string | Idempotency token; **≥ 33 chars** (`secrets.token_hex(20)`). |
 | `model` | structure | `bedrockModelConfig` / `openAiModelConfig` / `geminiModelConfig` / `liteLlmModelConfig`. See `model-and-prompt.md`. |
@@ -108,7 +108,7 @@ are **nested**:
 import boto3, secrets
 c = boto3.client("bedrock-agentcore-control", region_name="us-east-1")
 resp = c.create_harness(
-    harnessName="MyHarness",
+    harnessName="MyHarness",          # or my_harness — NEVER my-harness (see the pattern above)
     executionRoleArn=role_arn,
     model={"bedrockModelConfig": {"modelId": "global.anthropic.claude-sonnet-5",
                                   "apiFormat": "converse_stream", "maxTokens": 65536}},

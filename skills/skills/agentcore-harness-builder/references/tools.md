@@ -22,7 +22,9 @@ the tool.**
 ```
 
 - `tools[].type` — one of `agentcore_browser`, `agentcore_code_interpreter`, `agentcore_gateway`, `remote_mcp`,
-  `inline_function`.
+  `inline_function`. That is the **complete** `HarnessToolType` enum (schema-verified) — in particular there is **no**
+  knowledge-base tool type. Retrieval/RAG reaches the agent as an `agentcore_gateway` whose target is the
+  `bedrock-knowledge-bases` connector (see `references/knowledge-bases.md`).
 - `tools[].name` — the configuration name (e.g. `browser`).
 - **`tools[].config` is optional for the built-ins** (`agentcore_browser`, `agentcore_code_interpreter`): omit it
   and the harness wires the AWS-owned default resource in its region. It **is required** for `agentcore_gateway`,
@@ -97,9 +99,15 @@ To expose external APIs as agent tools:
   leave AWS — and no external search provider or API key needed. Use it when the agent needs general web
   search without the full browser. Flow: create a Gateway → add a connector target
   (`targetConfiguration={"mcp": {"connector": {"source": {"connectorId": "web-search"}}}}`, build side in
-  `gateway.md` §Targets form 7) → wire the gateway here via `agentCoreGateway.gatewayArn` → allowlist
-  `@<gateway_name>/*`. Connector v1.2.0+ accepts request-level domain/date filters via the target's
-  `configurations`.
+  `gateway.md` §Targets → `mcp.connector`) → wire the gateway here via `agentCoreGateway.gatewayArn` → allowlist
+  `@<gateway_name>/*`. Request-level domain/date filters need connector **v1.2.0+**, and omitting `version` pins
+  the **default** (1.1.0) — pin it explicitly.
+- **Knowledge Bases / RAG** (console badge *New*) — a managed knowledge base is **not** a `tools[].type`; it reaches
+  the agent through the same connector path, `connectorId` `bedrock-knowledge-bases`, exposing two MCP tools
+  (`Retrieve`, `AgenticRetrieveStream`). Consumer side is identical to any gateway: `agentCoreGateway.gatewayArn` +
+  allowlist `@<gateway_name>/*`, and the agent never passes a knowledge-base id — the target configuration binds it.
+  The knowledge base itself lives on a different control plane (`bedrock-agent`); build side, IAM and pricing are in
+  `references/knowledge-bases.md`.
 
 Allowlist the resulting tool names (use `@server/tool` patterns if the server exposes many). Building a new MCP
 server itself is outside this skill's scope — if an `mcp-builder` skill is available in your environment, use it to
