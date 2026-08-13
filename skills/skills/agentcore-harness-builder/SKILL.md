@@ -1,6 +1,6 @@
 ---
 name: agentcore-harness-builder
-description: Build production-ready AWS Bedrock AgentCore Harness agents end to end — declarative model + system prompt, managed or BYO Memory, built-in Browser and Code Interpreter, Gateway/MCP tools, inline functions, Skills, versioning + endpoints (prod rollout/rollback), advanced config (truncation, limits, lifecycle, network, inbound auth), Observability (log delivery + tracing), Evaluations, Optimizations, Identity (outbound auth, Token Vault, credential providers), Policy guardrails, Payments, and the Agent Registry. Use whenever the user wants to create, configure, deploy, version, wire, harden, invoke, or troubleshoot an AgentCore Harness — or asks about AgentCore best practices, harness.json, CreateHarness/UpdateHarness/InvokeHarness, harness endpoints/qualifiers, attaching Memory, wiring browser/code-interpreter, adding skills, observability/log delivery, or A/B-testing prompts. Trigger even when the user describes a managed, declarative Bedrock agent with tools/memory/skills without saying "harness".
+description: Build production-ready AWS Bedrock AgentCore Harness agents end to end — declarative model + system prompt, managed or BYO Memory, built-in Browser and Code Interpreter, Web Search (Gateway connector), Gateway/MCP tools + rate limiting, inline functions, Skills (incl. the AWS-curated catalog), versioning + endpoints (prod rollout/rollback), advanced config (truncation, limits, lifecycle, network, inbound auth, BYO S3/EFS filesystems, BYO container), Observability (log delivery + tracing + unified log group), Evaluations, Optimizations, Identity (outbound auth, Token Vault, credential providers, BYO Secrets Manager secrets), Policy guardrails (Cedar + temporal/stateful policies), Payments, the Agent Registry, Runtime Instances (EC2-backed 14-day sessions), Step Functions integration, and export-to-Strands-code. Use whenever the user wants to create, configure, deploy, version, wire, harden, invoke, or troubleshoot an AgentCore Harness — or asks about AgentCore best practices, harness.json, CreateHarness/UpdateHarness/InvokeHarness, harness endpoints/qualifiers, attaching Memory, wiring browser/code-interpreter, adding skills, observability/log delivery, or A/B-testing prompts. Trigger even when the user describes a managed, declarative Bedrock agent with tools/memory/skills without saying "harness".
 license: Complete terms in LICENSE.txt
 ---
 
@@ -10,14 +10,15 @@ license: Complete terms in LICENSE.txt
 
 A **Harness** is AWS Bedrock AgentCore's declarative, fully-managed way to run an agent. You hand AWS a JSON
 configuration — model, system prompt, tools, memory, skills, limits — and AWS runs the agent loop (Strands under the
-hood) inside a per-session Firecracker microVM with its own filesystem and shell. No container to build, no agent loop
-to write. You change behavior by changing config, not redeploying code, and you can override model/prompt per
-invocation.
+hood) inside a per-session Firecracker microVM with its own filesystem and shell. No container to build by default
+(a custom image via `environmentArtifact` is an advanced option), no agent loop to write. You change behavior by
+changing config, not redeploying code, and you can override model/prompt per invocation.
 
 This skill builds a **complete, best-practice Harness use case** that exercises every AgentCore capability the user
-needs, wired correctly the first time. Harness is **generally available** (~16 regions; only Payments remains preview),
-but it is still fast-moving and the real API shapes often differ from the published docs — this skill encodes the
-hard-won facts so you don't rediscover them through validation errors.
+needs, wired correctly the first time. Harness is **generally available** (GA 2026-06-17, all AWS Commercial Regions
+where AgentCore is available, plus GovCloud US-West since 2026-08; only Payments remains preview), but it is still
+fast-moving and the real API shapes often differ from the published docs — this skill encodes the hard-won facts so
+you don't rediscover them through validation errors.
 
 ### The two-plane mental model (internalize this first)
 
@@ -195,17 +196,19 @@ consider each rather than silently omitting it.
 - [ ] **Model + system prompt** — provider, inference-profile model id, `converse_stream` apiFormat, inference config (Phase 2)
 - [ ] **Browser tool** — `agentcore_browser` (no config needed); allowlist by name `"browser"` or `"*"` (Phase 2)
 - [ ] **Code Interpreter tool** — `agentcore_code_interpreter` (no config needed) (Phase 2)
-- [ ] **Gateway / remote MCP tools** — external APIs as MCP tools (Phase 2; consume via `references/tools.md`, **build** via `references/gateway.md`)
+- [ ] **Gateway / remote MCP tools** — external APIs as MCP tools, incl. the managed **web-search** connector and per-user/group **rate limits** (Phase 2; consume via `references/tools.md`, **build** via `references/gateway.md`)
 - [ ] **Inline functions** — human-in-the-loop / callbacks that return control to your orchestrator (Phase 2)
-- [ ] **Skills** — domain knowledge via git/s3/path source, with valid frontmatter (Phase 2)
+- [ ] **Skills** — domain knowledge via git/s3/path/awsSkills source (incl. the AWS-curated catalog), with valid frontmatter (Phase 2)
 - [ ] **Memory** — managed (default, just pick strategies) or BYO with 3-step wiring + IAM grant (Phase 4)
 - [ ] **Advanced config** — truncation, maxIterations, maxTokens, timeout, lifecycle, network, inbound auth (Phase 2)
+- [ ] **Filesystems** — session storage and/or BYO S3 Files / EFS access-point mounts (VPC required) (`advanced-config.md` §Filesystems)
 - [ ] **Versioning + endpoints** — pin prod to a version via a named endpoint; qualifier on invoke (Phase 6b)
-- [ ] **Observability** — log delivery + X-Ray tracing + `OTEL_TRACES_SAMPLER=always_on` + dashboards (Phase 5)
+- [ ] **Observability** — log delivery + X-Ray tracing + `OTEL_TRACES_SAMPLER=always_on` + dashboards; unified per-agent log group for post-2026-07-20 agents (Phase 5)
 - [ ] **Evaluations** — online config and/or batch evaluation over traces (Phase 7)
 - [ ] **Optimizations** — recommendations + A/B test via SDK (`start_recommendation`, `create_ab_test`) (Phase 7)
-- [ ] **Identity** — outbound auth: Workload Identity, Token Vault, API-key/OAuth credential providers (`identity.md`)
-- [ ] **Policy** — agent guardrails via Policy + Policy Engine (`policy.md`)
+- [ ] **Identity** — outbound auth: Workload Identity, Token Vault, API-key/OAuth credential providers, BYO Secrets Manager secrets (`identity.md`)
+- [ ] **Policy** — agent guardrails via Policy + Policy Engine, incl. **temporal (stateful) policies** (`policy.md`)
+- [ ] **Integrations** — Step Functions `InvokeHarness` state, `toolResultMetadata` stream handling, export to Strands code (`integrations.md`)
 - [ ] **Payments** — payment connector/manager + sessions, if the agent transacts (`payments.md`)
 - [ ] **Registry** — publish for org-wide discovery (Phase 8)
 - [ ] **Tags** — applied via `TagResource` (not `UpdateHarness`); cost-center/team/env/agent-type (Phase 3)
@@ -216,7 +219,9 @@ consider each rather than silently omitting it.
 
 These cause the most failures. Keep them in mind even before opening the reference:
 
-1. **Versions gate everything.** `boto3 >= 1.43.51` and AWS CLI v2 `>= 2.34.57`, or the harness ops don't exist.
+1. **Versions gate everything.** `boto3 >= 1.43.68` and AWS CLI v2 `>= 2.36.x` for the full 2026-08 surface
+   (capacity providers, rate limits, temporal policies, `apiKeySecretSource`); the absolute floor for harness ops
+   alone is boto3 1.43.51 / CLI 2.34.57.
 2. **Harness ≠ Runtime API.** A harness has two ARNs; `UpdateAgentRuntime`/`InvokeAgentRuntime` are **rejected** for
    harness-managed resources. Use the `*Harness` family + `InvokeHarness`.
 3. **`SKILL.md` needs YAML frontmatter** (`name` + `description`) or the session fails at start. Undocumented.
@@ -246,7 +251,7 @@ Load these as needed — don't read them all upfront.
 | `references/harness-config.md` | Phase 2/3 — full field reference + update-payload rules + best-practice defaults table |
 | `references/model-and-prompt.md` | Phase 2 — provider/model ids, Converse API, inference config, prompt patterns |
 | `references/tools.md` | Phase 2 — browser, code interpreter, gateway/MCP, inline functions, allowedTools |
-| `references/gateway.md` | Phase 2 — **build** a Gateway (turn Lambda/OpenAPI/Smithy/MCP-server/API-GW/Runtime into MCP tools): `CreateGateway`/`Target`/`Rule`, inbound `authorizerType`, outbound credential providers, then wire into a harness |
+| `references/gateway.md` | Phase 2 — **build** a Gateway (8 target types: Lambda/OpenAPI/Smithy/MCP-server/API-GW/Runtime + built-in connectors like **web-search** + inference targets): `CreateGateway`/`Target`/`Rule`/`RateLimit`, inbound `authorizerType`, outbound credential providers, then wire into a harness |
 | `references/browser-auth.md` | Phase 2/6 — human-in-the-loop browser SSO login, S3-signal handoff, inline-function pause/resume, long read_timeout, retrieving session files |
 | `references/code-interpreter.md` | Phase 2 — Code Interpreter deep dive: session lifecycle, the 9 tools (executeCode/executeCommand/read·write·list·removeFiles/startCommandExecution/getTask/stopTask), file+command workflows, custom interpreters (PUBLIC/SANDBOX/VPC + certificates), the arguments-is-a-dict gotcha |
 | `references/skills.md` | Phase 2 — skills union, git/s3/path sources, mandatory frontmatter |
@@ -257,8 +262,9 @@ Load these as needed — don't read them all upfront.
 | `references/evaluations.md` | Phase 7 — online evaluation configs (control plane) + batch evaluations (data plane), both SDK-scriptable |
 | `references/optimizations.md` | Phase 7 — recommendations + A/B tests via SDK ops |
 | `references/playground.md` | Phase 6 — Console Playground / Sandbox (interactive endpoint testing; console-only, no SDK ops — the repeatable path is InvokeHarness/InvokeAgentRuntime + Evaluations) |
-| `references/identity.md` | Outbound auth — Workload Identity, Token Vault, credential providers |
-| `references/policy.md` | Agent guardrails — Policy, Policy Engine, resource policy, policy generation |
+| `references/identity.md` | Outbound auth — Workload Identity, Token Vault, credential providers (incl. BYO Secrets Manager via `apiKeySecretSource=EXTERNAL`) |
+| `references/policy.md` | Agent guardrails — Policy, Policy Engine, resource policy, policy generation, **temporal (stateful) policies** |
+| `references/integrations.md` | Consuming a harness from outside — `toolResultMetadata` stream fragments, Step Functions `InvokeHarness` state, export to Strands code |
 | `references/payments.md` | Payment connector/manager + payment sessions (if the agent transacts) |
 | `references/registry.md` | Phase 8 — publishing/discovering org resources |
 | `references/gotchas.md` | Anytime something fails unexpectedly — the consolidated hard-learned facts + verified shapes |

@@ -92,9 +92,14 @@ To expose external APIs as agent tools:
   `url` is required; `headers` is an optional string→string map for auth. Header values support **token-vault
   substitution**: a value like `"Bearer ${arn:aws:bedrock-agentcore:...:token-vault/...}"` is resolved from the
   Identity Token Vault at session start, so secrets never sit in the config (see `identity.md`).
-- **Web Search connector** — AWS also offers a managed web-search Gateway target (connectorId `web-search`,
-  currently us-east-1). Create a Gateway target with that connector and wire the Gateway as above when the agent
-  needs general web search without the full browser.
+- **Web Search connector** (GA 2026-06-16, us-east-1) — a fully managed, MCP-compliant web-search tool
+  exposed as a Gateway **built-in connector** (connectorId `web-search`). Zero data egress — queries never
+  leave AWS — and no external search provider or API key needed. Use it when the agent needs general web
+  search without the full browser. Flow: create a Gateway → add a connector target
+  (`targetConfiguration={"mcp": {"connector": {"source": {"connectorId": "web-search"}}}}`, build side in
+  `gateway.md` §Targets form 7) → wire the gateway here via `agentCoreGateway.gatewayArn` → allowlist
+  `@<gateway_name>/*`. Connector v1.2.0+ accepts request-level domain/date filters via the target's
+  `configurations`.
 
 Allowlist the resulting tool names (use `@server/tool` patterns if the server exposes many). Building a new MCP
 server itself is outside this skill's scope — if an `mcp-builder` skill is available in your environment, use it to

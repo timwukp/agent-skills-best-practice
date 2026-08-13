@@ -13,6 +13,7 @@ agent-side `bedrock-agentcore` SDK on PyPI.
 - [HTTP contract — `/invocations` and `/ping` (with the `time_of_last_update` gotcha)](#http)
 - [AG-UI and A2A protocols](#protocols)
 - [Deploying — three paths](#deploy)
+- [Runtime Instances — customer-account EC2 capacity (14-day sessions)](#instances)
 - [Wiring Memory / Identity / Observability into a Runtime](#wiring)
 - [Session storage / persistent filesystem](#session-storage)
 - [Custom container vs source-deploy tradeoffs](#container-vs-source)
@@ -235,6 +236,44 @@ Install protocol extras: `pip install "bedrock-agentcore[ag-ui]"` or `"bedrock-a
 
 `runtimeSessionId` is **≥ 33 chars** (same constraint as `InvokeHarness`).
 
+## Instances
+
+GA 2026-08-06. By default a runtime session runs in an AWS-managed **serverless microVM** with a
+**max lifetime of 8 hours**. **Runtime Instances** is a second compute type: sessions run on
+**EC2 instances in your own account** (AgentCore handles provisioning, patching, scaling, lifecycle)
+and can live **up to 14 days**. Pick it for long-running agents; the serverless default is unchanged
+and remains right for everything else.
+
+You define the compute pool with a **capacity provider**, then attach it at runtime creation
+(shape verified against boto3 1.43.69 schema; pending live verification):
+
+```python
+cp = c.create_capacity_provider(
+    name="my-capacity",
+    permissionsConfiguration={"capacityProviderOperatorRoleArn": "<role AgentCore assumes to manage EC2>"},
+    computeConfiguration={"ec2Configuration": {
+        "launchTemplateSource": {...},   # REQUIRED (verified 2026-08-13) — an existing EC2 launch template
+        "vpcConfiguration": {"subnets": [...], "securityGroups": [...]},
+        # optional: "volumes": [...], "rootVolume": {...},
+        "lifecycleConfiguration": {"idleInstanceTimeout": 300, "maxLifetime": ...},
+    }},
+)
+# then: c.create_agent_runtime(..., capacityProviderConfiguration={...})
+```
+
+`ec2Configuration` members (verified against the live service model 2026-08-13):
+`launchTemplateSource` (**required** — create an EC2 launch template first), `vpcConfiguration`,
+`volumes`, `lifecycleConfiguration`, `rootVolume`. End-to-end instance-backed execution was NOT
+live-tested by this skill (billable EC2); shapes above are schema-verified.
+
+Op family: `CreateCapacityProvider` / `Get` / `Update` / `Delete` / `ListCapacityProviders` /
+`ListAgentRuntimeVersionsByCapacityProvider`; data plane adds `DeleteCapacityProviderSession`.
+A `capacityProviderVolume` member also appears in `filesystemConfigurations` for instance-backed mounts.
+
+> **Cost warning:** unlike everything else in this file, instances run **billable EC2 in your
+> account**. Understand the lifecycle settings (`idleInstanceTimeout`, `maxLifetime`) before creating
+> one, and check `ec2 describe-instances` after experiments.
+
 ## Wiring
 
 Memory, Identity, Observability work the same way as for Harness — Memory data-plane perms attach to
@@ -247,6 +286,11 @@ runtime ARN, Identity credential providers are referenced by ARN inside the agen
 Runtime supports persisting filesystem state across session stop/resume cycles (managed session storage at
 `/mnt/...`) via `filesystemConfigurations`. Useful for coding agents with project files. The execution role
 needs S3 access if you point session storage at a custom bucket.
+
+`filesystemConfigurations` shares its union with Harness (verified against boto3 1.43.69 schema):
+`sessionStorage | s3FilesAccessPoint | efsAccessPoint | capacityProviderVolume`, each with a
+`mountPath`. BYO S3 Files / EFS access-point mounts and their constraints are documented in
+`references/harness-config.md` and `references/advanced-config.md` — the same shapes apply here.
 
 ## Container vs source
 

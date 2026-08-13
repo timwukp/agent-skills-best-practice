@@ -57,7 +57,12 @@ the unified, provider-agnostic contract for messages, tool-use, and streaming. I
 ### Multi-provider / per-invocation override
 
 A Harness can switch providers (Bedrock → OpenAI → Gemini → LiteLLM) by using a different `*ModelConfig`, and can be
-overridden per invocation without redeploying — a core reason to choose Harness over Runtime.
+overridden per invocation without redeploying — a core reason to choose Harness over Runtime. Per the GA release
+notes (2026-06), LiteLLM and **Bedrock Mantle** are the expansion paths for additional providers — Mantle unlocks
+OpenAI models (GPT-5.5 / GPT-5.4 and others) served *on Bedrock* via the `responses` / `chat_completions` apiFormats
+(model availability not yet live-verified by this skill — check `ListFoundationModels` in your region). Note:
+switching config between sessions/invocations is supported; do not expect provider switching *mid-session with
+context carry-over* — that claim is not in the official docs.
 
 ### Inference configuration
 

@@ -27,6 +27,10 @@ built-in `skills` tool; the harness loads the `SKILL.md` (and its bundled files)
 {"awsSkills": {"paths": ["<catalog-path>", ...]}}
 ```
 
+The `awsSkills` source pulls from the **AWS-curated skills catalog** introduced with harness GA
+(2026-06) — pre-built, AWS-maintained skills you enable by catalog path (the console exposes this as a
+one-toggle setup). Browse the catalog in the console or the Agent Registry to find valid paths.
+
 Note `path` is a bare string (not `{"path": {...}}`), and `s3` takes a single `uri` (not separate bucket/prefix).
 
 ## git source — critical limitations

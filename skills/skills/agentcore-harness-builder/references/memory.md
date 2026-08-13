@@ -36,12 +36,27 @@ The simple path: pick strategies and AWS creates and owns the Memory resource wi
 - `eventExpiryDuration` (days) and `encryptionKeyArn` are optional.
 - `retrievalConfig` is **auto-derived** (`topK=10`, `relevanceScore=0.2`) — you don't set it.
 - No `CreateMemory` call, no strategy-id bookkeeping — but the **execution role still needs memory data-plane
-  permissions** (`CreateEvent/DeleteEvent/GetEvent/ListEvents/RetrieveMemoryRecords` on
-  `arn:...:memory/harness_*` — the auto-created Memory is named `harness_<name>_<suffix>`). Without it,
-  `InvokeHarness` fails at runtime with `AccessDeniedException ... ListEvents` (**verified live**). The
-  `ManagedMemoryEvents` statement in `assets/iam_execution_role.json` covers this.
+  permissions** (`CreateEvent/DeleteEvent/GetEvent/ListEvents/RetrieveMemoryRecords` on the auto-created
+  Memory's ARN). Without it, `InvokeHarness` fails at runtime with `AccessDeniedException ... ListEvents`
+  (**verified live**). **Naming caution (re-verified 2026-08-12):** the auto-created Memory id was observed
+  as **`<harnessName>-<suffix>`** (e.g. `skilltestHarness-QY2jlE2ahh`); older harnesses used
+  `harness_<name>_<suffix>`. An IAM pattern scoped only to `memory/harness_*` misses the newer form — scope
+  to both (`memory/harness_*` AND `memory/<yourHarnessName>-*`), or check `GetHarness.harness.memory.
+  managedMemoryConfiguration.arn` after create and scope to that. The `ManagedMemoryEvents` statement in
+  `assets/iam_execution_role.json` covers this.
 
 To opt out of memory entirely: `"memory": {"disabled": {}}`.
+
+> **Built-in memory by default — VERIFIED LIVE 2026-08-12:** a `CreateHarness` with **no `memory`
+> field at all** came back with `memory.managedMemoryConfiguration.arn` pointing at an auto-created
+> Memory. Facts observed:
+> - The auto-created Memory id is **`<harnessName>-<suffix>`** (e.g. `skilltestHarness-QY2jlE2ahh`)
+>   — for IAM scoping this means `memory/<harnessName>-*` (a `memory/harness_*` pattern does NOT
+>   match it; only the harness's underlying *runtime* is named `harness_<name>-*`).
+> - The Memory carries `managedByResourceArn = <harness arn>` and **cannot be deleted directly**
+>   (`ValidationException: Memory is managed and cannot be deleted directly...`); it
+>   **cascade-deletes** with the harness (asynchronously, a few minutes after `DeleteHarness`).
+> - Still pass `disabled: {}` explicitly for stateless agents — silence gets you a memory.
 
 Everything below is the **BYO advanced path** (`agentCoreMemoryConfiguration`) — a separate Memory resource you
 create and wire yourself. Attaching it correctly is a **3-step** process; the step most people miss is the IAM grant.

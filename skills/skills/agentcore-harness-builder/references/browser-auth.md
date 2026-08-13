@@ -107,7 +107,9 @@ agent and a fresh browser session — the previous turn's logged-in cookies/page
 ## Retrieve-files
 
 Files the agent writes to the **session filesystem** (e.g. `/mnt/reports/report.json`) live in the ephemeral microVM
-and vanish when the session ends — there is no API to read the harness filesystem from outside. To get them out:
+and vanish when the session ends — there is no API to read the *default* harness filesystem from outside. Two ways out:
+
+**Option A (zero-config): S3 upload from inside the session** — works on any harness:
 
 1. Grant the **execution role `s3:PutObject`** on a results bucket/prefix (extend `assets/iam_execution_role.json`).
 2. Have the agent **upload** its output via the `shell` tool at end of run
@@ -116,3 +118,8 @@ and vanish when the session ends — there is no API to read the harness filesys
 
 Bake the upload step into the system prompt / test-plan ("when finished, upload `/mnt/reports/*` to `s3://…`") so it
 happens deterministically rather than relying on the agent to remember.
+
+**Option B (VPC harnesses): a BYO S3 Files access-point mount** — since 2026-05 a harness can mount an
+S3 Files access point into every session via `filesystemConfigurations` (see `advanced-config.md`
+§Filesystems). Anything the agent writes under that `mountPath` IS in S3 — externally readable with no
+upload step. Requires VPC network mode, so Option A remains the default for PUBLIC harnesses.

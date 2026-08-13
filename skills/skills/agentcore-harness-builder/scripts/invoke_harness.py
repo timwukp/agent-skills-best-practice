@@ -58,6 +58,10 @@ def main() -> int:
 
     print(f"session: {session_id}\n--- streamed response ---")
     got_text = False
+    # MCP tool-result metadata arrives as ORDERED fragments on a dedicated delta channel;
+    # they must be concatenated in order and parsed as one JSON document (see
+    # references/integrations.md). Built-in tools don't emit this channel.
+    meta_fragments = []
     try:
         for event in resp["stream"]:
             if "contentBlockDelta" in event:
@@ -66,10 +70,20 @@ def main() -> int:
                     sys.stdout.write(delta["text"])
                     sys.stdout.flush()
                     got_text = True
+                elif "toolResultMetadata" in delta:
+                    meta_fragments.append(delta["toolResultMetadata"].get("metadata", ""))
     except Exception as e:  # noqa: BLE001
         print(f"\nFAIL  error while streaming: {e}")
         return 1
     print("\n--- end ---")
+    if meta_fragments:
+        import json
+        joined = "".join(meta_fragments)
+        try:
+            print(f"toolResultMetadata ({len(meta_fragments)} fragment(s)):")
+            print(json.dumps(json.loads(joined), indent=2)[:2000])
+        except ValueError:
+            print(f"WARN  toolResultMetadata fragments did not parse as JSON; raw head: {joined[:200]}")
     if not got_text:
         print("WARN  no text deltas received; inspect the raw event stream / observability logs.")
         return 1

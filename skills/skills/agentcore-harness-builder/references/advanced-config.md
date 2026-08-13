@@ -75,6 +75,29 @@ Tune down to control cost (sessions hold a microVM); up for genuinely long-runni
   reach private resources; `requireServiceS3Endpoint` controls S3 endpoint routing. Use VPC only when you need private
   connectivity — it can block public sites the browser needs.
 
+## Filesystems
+
+Where a session's disk comes from, nested at `environment.agentCoreRuntimeEnvironment.filesystemConfigurations[]`.
+Each entry is exactly one union member (verified against boto3 1.43.69 schema):
+
+```json
+{"sessionStorage":     {"mountPath": "/mnt/session"}}
+{"s3FilesAccessPoint": {"accessPointArn": "arn:aws:s3files:<region>:<acct>:file-system/fs-<hex>/access-point/fsap-<hex>", "mountPath": "/mnt/shared"}}
+{"efsAccessPoint":     {"accessPointArn": "<efs-access-point-arn>", "mountPath": "/mnt/efs"}}
+{"capacityProviderVolume": { ... }}
+```
+
+- **Session storage** persists the session's own filesystem across stop/resume
+  (verified live 2026-08-12: accepted on a PUBLIC harness and echoed back on GetHarness).
+- **`s3FilesAccessPoint` is the S3 *Files* service** (`s3files:` ARNs with `file-system/fs-*` +
+  `access-point/fsap-*`), NOT a regular S3 access point — a plain S3 access-point ARN fails
+  CreateHarness validation (regex captured live; see `harness-config.md` §Nesting).
+- **BYO S3 Files / EFS access points** (added 2026-05) mount shared storage into **every** session at your
+  `mountPath` — share data across sessions and harnesses with S3 durability/history. Externally readable
+  (an S3 Files mount is just S3), which makes it the cleanest way to get files OUT of harness sessions.
+- Limits (dev guide): up to **5 mounts** per harness (≤2 EFS + ≤2 S3 Files + session storage);
+  access-point mounts require **VPC network mode**, and the execution role needs access-point permissions.
+
 ## Inbound auth
 
 Who is allowed to call `InvokeHarness`, via the top-level `authorizerConfiguration` structure. Verified: the union has
@@ -97,6 +120,8 @@ On `UpdateHarness`, `authorizerConfiguration` is one of the three fields that DO
 
 - **`environmentVariables`** — a top-level string→string map injected into the session.
 - **`environmentArtifact`** — a custom container image
-  (`{"containerConfiguration": {"containerUri": "<ecr-uri>"}}`; wrap in `optionalValue` on update). Only with a strong
+  (`{"containerConfiguration": {"containerUri": "<ecr-uri>"}}`; wrap in `optionalValue` on update). This is the
+  harness **bring-your-own-container** path for environments needing extra system dependencies. Only with a strong
   reason: a custom image must implement the harness protocol (HTTP server contract, OTel emission, the `agentcore_*`
   tool primitives). The default managed loader image already provides all built-in tools — you almost never need this.
+  For container build guidance see `references/runtime.md` §Container vs source.

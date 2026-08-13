@@ -7,10 +7,12 @@ Pick the deployment model before building. The wrong choice means rework, so con
 ```
 Need a per-session filesystem + shell (run scripts, install packages)?  ── yes ─→ HARNESS
         │ no
-Need to switch model/provider per-invocation or mid-session?            ── yes ─→ HARNESS
+Need to switch model/provider per-invocation (no redeploy)?             ── yes ─→ HARNESS
         │ no
 Want declarative config iteration (no redeploy to change behavior)?     ── yes ─→ HARNESS
         │ no
+Sessions longer than 8 hours (up to 14 days)?                           ── yes ─→ RUNTIME on Instances
+        │ no                                                                       (see runtime.md §Instances)
 Need custom orchestration (multi-agent, custom retry/fallback loops)?   ── yes ─→ RUNTIME
         │ no
 Embedding the agent inside an existing app/HTTP server?                 ── yes ─→ RUNTIME
@@ -30,7 +32,7 @@ customers as of 2026-07-30. The AgentCore Harness is AWS's recommended path for 
 | You write | a JSON config | Python (`main.py`: agent loop, tool wiring, memory integration) |
 | Orchestration | AWS (Strands under the hood) | you (Strands / LangGraph / custom) |
 | Change model | edit config or override per-invoke — no redeploy | change code + redeploy |
-| Multi-provider | built-in (Bedrock + OpenAI + Gemini), switch mid-session | integrate yourself |
+| Multi-provider | built-in (Bedrock + OpenAI + Gemini + LiteLLM/Mantle), switch per-invocation | integrate yourself |
 | Shell / filesystem | per-session microVM with fs + bash | your own container |
 | Tool connection | declarative: list browser / code-interpreter / Gateway ARNs / MCP URLs | write code to wire tools |
 | Memory | attach Memory ARN, auto save/retrieve per invoke | integrate manually via SDK |
