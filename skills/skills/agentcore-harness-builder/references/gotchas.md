@@ -11,7 +11,9 @@ something fails unexpectedly, scan this file first.
 - [SKILL.md frontmatter requirement](#skillmd-frontmatter)
 - [Memory: 3-step wiring + IAM](#memory-wiring)
 - [Tools wiring](#tools-wiring)
+- [Connector targets and knowledge bases](#connectors-and-kb)
 - [Observability / log delivery](#observability)
+- [Known AWS documentation errors — do not propagate](#doc-errors)
 - [Authoritative references](#authoritative-references)
 
 ---
@@ -20,19 +22,20 @@ something fails unexpectedly, scan this file first.
 
 Harness is **GA** (2026-06-17, all AWS Commercial Regions where AgentCore is available; GovCloud
 US-West added 2026-08), but AgentCore still adds operations frequently — the 2026-06→08 wave added
-web-search connector targets, gateway rate limits, temporal policies, capacity providers, and
-`apiKeySecretSource`. Use the latest SDK/CLI unless you have a reason not to.
+web-search connector targets, gateway rate limits, temporal policies, capacity providers,
+`apiKeySecretSource`, managed **knowledge bases** (`bedrock-agent`, `KnowledgeBaseType=MANAGED`), and a
+**relaunched Agent Registry on its own namespace**. Use the latest SDK/CLI unless you have a reason not to.
 
 | Tool | Minimum | Why it matters |
 |---|---|---|
-| `boto3` / `botocore` | **≥ 1.43.68** | ≥1.43.51 for harness ops; ≥1.43.68 additionally carries capacity providers, gateway rate limits, connector/inference targets, `enforcementMode`, `apiKeySecretSource`, `toolResultMetadata` (verified by schema introspection). |
+| `boto3` / `botocore` | **≥ 1.43.66** | ≥**1.43.51** harness ops; **≥1.43.66** for the whole 2026-08 wave. **Bisected 2026-08-13 by installing 1.43.64 / .65 / .66 / .68 into throwaway venvs and introspecting each** — both the rate-limit ops and the `agent-registry*` namespaces land at *the same* release, 1.43.66, so one floor covers the wave. `bedrock-agentcore-control` jumps **153 → 165 ops** at exactly this version, and the 12 added ops are precisely the 6 `*GatewayRateLimit*` ops (`Create`/`Get`/`List`/`Update`/`Delete` + `BatchPutGatewayRateLimits`) and the 6 capacity-provider ops (`Create`/`Get`/`List`/`Update`/`Delete` + `ListAgentRuntimeVersionsByCapacityProvider`); nothing is removed. 1.43.66 is also the first release carrying the **`agent-registry-control`/`agent-registry`** clients at all (1.43.65 raises `UnknownServiceError`). All 11 gateway target leaves — including `mcp.connector`, `http.passthrough`, `http.connector` and `inference.*` — are **already present at 1.43.55**, so a target shape working on an older SDK tells you nothing about rate-limit support. |
 | AWS CLI v2 | **≥ 2.36.x** (2.34.57 floor for harness) | 2.31.x lacks ALL harness/policy/capacity ops (verified: 57 ops, zero matches); 2.36.21 verified to carry the full new op families. |
 | `@aws/agentcore` (npm) | latest | The official CLI (the Python `bedrock-agentcore-starter-toolkit` is **deprecated**). Pre-1.0: command coverage varies by version — inventory with `--help` before scripting. |
 | Region | any Harness GA region (e.g. `us-east-1`, `us-west-2`, `eu-central-1`, `ap-southeast-2`) | Some features are narrower: Web Search us-east-1 only; temporal policies 16 regions; Identity EXTERNAL secrets 14 regions. |
 
 ```bash
 pip3 install --upgrade boto3 botocore
-python3 -c "import boto3; print(boto3.__version__)"   # expect >= 1.43.51
+python3 -c "import boto3; print(boto3.__version__)"   # expect >= 1.43.66 (1.43.51 covers harness ops only)
 aws --version                                          # expect >= 2.34.57
 ```
 
@@ -190,6 +193,51 @@ Four gotchas that silently leave tools invisible to the agent:
 
 ---
 
+## Connectors and KB
+
+AWS-managed built-in tools (web search, knowledge bases, memory-as-a-tool) all arrive through **Gateway connector
+targets**, which behave differently from the other target leaves:
+
+1. **There is no knowledge-base tool type.** `HarnessToolType` is exactly `agentcore_browser`,
+   `agentcore_code_interpreter`, `agentcore_gateway`, `remote_mcp`, `inline_function` — RAG is an
+   `agentcore_gateway` whose target is the `bedrock-knowledge-bases` connector. See
+   `references/knowledge-bases.md`.
+2. **A knowledge base is built on a different control plane** (`bedrock-agent`) and queried on a fourth
+   (`bedrock-agent-runtime`), with `bedrock:*` IAM actions. `preflight.py --service bedrock-agent` introspects it.
+3. **KB permissions belong to the *gateway* role, not the harness execution role.** Adding `bedrock:Retrieve` to
+   `assets/iam_execution_role.json` does nothing — the gateway is the caller. And
+   `bedrock:AgenticRetrieveStream` **cannot be resource-scoped**; it must be granted on `*`, which a resource-level
+   permission boundary will silently strip.
+4. **Connector target creation is asynchronous.** A bad `connectorId`, a nonexistent `knowledgeBaseId` or a missing
+   permission does not raise on `CreateGatewayTarget` — it surfaces ~30 s later as `FAILED` + `statusReasons` from
+   `GetGatewayTarget`. And a `FAILED` target still blocks `DeleteGateway`.
+5. **Connector targets accept only `GATEWAY_IAM_ROLE`** as a credential provider type, and `configurations` must be
+   non-empty with one entry per exposed tool (the entry `name` *is* the tool name).
+6. **Omitting a connector `version` pins that connector's DEFAULT version, not the newest** (`web-search` defaults to
+   1.1.0 though 1.2.0 shipped 2026-07-20); on update, omitting it is *sticky*. Read the resolved version back from
+   `GetGatewayTarget`. An invalid version's `ValidationException` lists the available ones — that error is the only
+   version-discovery mechanism, since `ConnectorId` is a free-form string with no enum and there is no
+   `ListConnectors`.
+7. **Tool names are target-qualified** (`<targetName>___<ToolName>`, three underscores — confirmed on the wire) — read
+   them from an MCP `tools/list` rather than guessing. But the two consumers of that name want **different forms**:
+   - `allowedTools` wants the **prefixed** form `@<harness-tool-name>/*`. The bare wire name
+     (`allowedTools=["kb___Retrieve"]`) filters the tool out **silently** — same trap as `browser_*` above, and the
+     symptom is an agent that appears to hallucinate rather than an error.
+   - rate-limit `toolName` dimensions want the **bare** wire name — and validate it against nothing, so a typo yields a
+     cap that never fires (`references/gateway.md` §Rate limits).
+8. **`tools/list` shows only `READY` targets.** A `FAILED` target is silently *absent*, not reported, so an agent's
+   inventory shrinks without warning when one target breaks. Validate allowlists against a live `tools/list`, never
+   against the configuration you intended.
+9. **A connector target reaching `READY` says nothing about its `parameterValues`.** A half-configured
+   `AgenticRetrieveStream` entry (only `retrievers`, no `agenticRetrieveConfiguration`) reaches `READY` and then returns
+   HTTP 200 with `isError=True` at invoke time. Validate connector config by **calling the tool**.
+10. **`inference.connector` lists models at create time using the gateway role**, under its own session name
+    `inference-iam-auth-session`. Missing the connector's list-models action is the difference between `READY` and
+    `FAILED` — and the AWS-native `bedrock-mantle` is the id most likely to surface this, while `openai`/`anthropic`
+    reach `READY` with no credential at all.
+
+---
+
 ## Observability
 
 - Three `logType` values: `APPLICATION_LOGS` (→ CloudWatch log group), `TRACES` (→ **X-Ray**, not a log group),
@@ -284,9 +332,37 @@ Confirmed by introspection; these differ from intuition or the console labels:
   and friends. See `references/optimizations.md`.
 - **Other services present:** Gateway (full CRUD + rules/targets), Identity (WorkloadIdentity, Token Vault, API-key/
   OAuth/Payment credential providers), Policy (Policy + PolicyEngine + ResourcePolicy + PolicyGeneration), Payments
-  (Connector/Manager/CredentialProvider + data-plane PaymentSession), Registry (registry + records + SearchRegistryRecords).
+  (Connector/Manager/CredentialProvider + data-plane PaymentSession).
+- **Registry has MOVED OFF this client.** The 11 legacy `*Registry*` ops on `bedrock-agentcore-control` (and
+  `SearchRegistryRecords` on `bedrock-agentcore`) are the **pre-2026-08-06** API and are scheduled to stop working
+  **2026-09-17**. Registry now lives on its own `agent-registry-control` / `agent-registry` clients with different
+  field names — see `references/registry.md` §Migration.
 
 The lesson stands: **introspect, don't trust labels.** `scripts/preflight.py --show-shape <Op>` is the truth source.
+
+---
+
+## Doc errors
+
+Places where AWS's own material is wrong or self-contradictory. **Do not propagate these into configs or into this
+skill** — the right-hand column is what the service actually accepts (each established by introspection or a live
+call).
+
+| Where | What it says | What is true |
+|---|---|---|
+| Rate-limit release note (2026-08-06) | op names such as "PutGatewayRateLimit" | `CreateGatewayRateLimit` / `Get` / `Update` / `Delete` / `List` + `BatchPutGatewayRateLimits` |
+| Rate-limit docs | dimension key `iam.sourceIdentity` | **`$.context.iam.sourceIdentity`** — the validation regex requires the `$.context.` prefix |
+| `CreateGatewayTarget` dev guide | `name` is required | required is only `gatewayIdentifier` + `targetConfiguration` |
+| Connector docs vs service model | an omitted `version` means "latest" (model) / "default" (dev guide) | **default**, which for `web-search` is 1.1.0, not the newest 1.2.0 — read it back from `GetGatewayTarget` |
+| `ConnectorParameterOverride.path` | shown as JSON Pointer (`/a/b`) in one place, JSONPath (`$.a.b`) in another | **JSONPath**. The JSON Pointer form is rejected: `parameterOverride path '/...'` fails connector-target validation |
+| Built-in-tools nav | links to a `knowledge-base.html` page that 404s | use the KB connector + `bedrock-agent` API reference below |
+| KB connector page | lists `bedrock-agentcore:InvokeGateway` among the **gateway execution role's** permissions | the gateway role does **not** need it — a full retrieval round trip succeeded without it. `InvokeGateway` is a **caller** permission |
+| Registry docs | inconsistent about GA vs Preview after the 2026-08-06 relaunch | console badges **Preview** — do not assert GA (`references/registry.md`) |
+| Registry docs / `AgentRegistryFullAccess` | neither mentions a service-linked-role prerequisite | the **first** `CreateRegistry` in an account needs `iam:CreateServiceLinkedRole` for `agent-registry.amazonaws.com`, and fails `AccessDeniedException` without it |
+| Pre-MANAGED KB examples | `retrievalConfiguration.vectorSearchConfiguration`, `dataSourceConfiguration.type=S3` | on a **MANAGED** KB both are rejected — `managedSearchConfiguration` and `MANAGED_KNOWLEDGE_BASE_CONNECTOR` (`references/knowledge-bases.md`) |
+
+Also still true from earlier waves: the policy layer's enum is `ACTIVE|LOG_ONLY` while a gateway's
+`policyEngineConfiguration.mode` is `ENFORCE|LOG_ONLY` — the two are not interchangeable.
 
 ---
 
@@ -298,6 +374,9 @@ Look here in priority order when you need ground truth:
 |---|---|
 | AWS Bedrock AgentCore Developer Guide — https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/ | concepts, tutorials |
 | Control Plane API Reference — https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/Welcome.html | exact request/response JSON |
+| AgentRegistry **Control** Plane API Reference — https://docs.aws.amazon.com/agent-registry-control/latest/APIReference/Welcome.html | the post-2026-08-06 registry namespace: create/update/approve records |
+| AgentRegistry **Data** Plane API Reference — https://docs.aws.amazon.com/agent-registry/latest/APIReference/Welcome.html | the three `*Discoverable*` discovery ops |
+| Bedrock Agents API Reference — https://docs.aws.amazon.com/bedrock/latest/APIReference/API_Operations_Agents_for_Amazon_Bedrock.html | `CreateKnowledgeBase` / `CreateDataSource` / `Retrieve` / `AgenticRetrieveStream` |
 | `aws/bedrock-agentcore-sdk-python` | agent-side SDK source |
 | `awslabs/amazon-bedrock-agentcore-samples` | working examples |
 | CloudFormation `AWS::BedrockAgentCore::*` | schema-as-truth for resource fields |

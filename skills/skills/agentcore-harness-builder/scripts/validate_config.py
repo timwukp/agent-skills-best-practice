@@ -91,6 +91,12 @@ def validate_tools(cfg: dict) -> None:
         name = t.get("name", f"<tool[{i}]>")
         if ttype not in TOOL_CONFIG_KEY:
             warn(f"tools[{i}] '{name}': unrecognized type '{ttype}'. Known: {sorted(TOOL_CONFIG_KEY)}.")
+            # A knowledge base is NOT a tool type — it reaches the agent as a gateway target on the
+            # bedrock-knowledge-bases connector. Point that out rather than leaving the author guessing.
+            if isinstance(ttype, str) and any(k in ttype.lower() for k in ("knowledge", "_kb", "kb_", "rag")):
+                warn(f"tools[{i}] '{name}': there is no knowledge-base tool type. Expose retrieval as "
+                     "'agentcore_gateway' with a target on the 'bedrock-knowledge-bases' connector "
+                     "(see references/knowledge-bases.md).")
             continue
         if "config" not in t or not t["config"]:
             # Built-ins (browser / code interpreter) need NO config — they wire the AWS-owned

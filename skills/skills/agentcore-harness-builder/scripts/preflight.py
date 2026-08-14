@@ -14,6 +14,9 @@ AgentCore regions page for the full list.
 Usage:
     python preflight.py --region us-east-1
     python preflight.py --region us-east-1 --show-shape UpdateHarness
+    # introspect a neighbouring plane (registry, knowledge bases):
+    python preflight.py --service agent-registry-control --show-shape CreateRegistryRecord
+    python preflight.py --service bedrock-agent --show-shape CreateKnowledgeBase
 
 Exit code 0 = good to go; non-zero = a blocker was found.
 """
@@ -21,6 +24,11 @@ import argparse
 import sys
 
 MIN_BOTO3 = (1, 43, 51)
+CONTROL_PLANE = "bedrock-agentcore-control"
+# Other planes an AgentCore build touches. --service only affects --show-shape; the harness-op
+# check below is always run against the control plane.
+KNOWN_SERVICES = (CONTROL_PLANE, "bedrock-agentcore", "agent-registry-control", "agent-registry",
+                  "bedrock-agent", "bedrock-agent-runtime")
 EXAMPLE_REGIONS = {"us-east-1", "us-west-2", "eu-central-1", "ap-southeast-2"}
 HARNESS_OPS = {"CreateHarness", "UpdateHarness", "GetHarness", "ListHarnesses", "DeleteHarness",
                "CreateHarnessEndpoint", "UpdateHarnessEndpoint", "GetHarnessEndpoint",
@@ -82,16 +90,25 @@ def check_credentials_region(region: str) -> bool:
     return ok
 
 
-def show_shape(region: str, op: str) -> None:
+def show_shape(region: str, op: str, service: str = CONTROL_PLANE) -> None:
     import boto3
-    client = boto3.client("bedrock-agentcore-control", region_name=region)
+    try:
+        client = boto3.client(service, region_name=region)
+    except Exception as e:  # noqa: BLE001
+        print(f"      could not create {service} client: {e}")
+        print(f"      (an UnknownServiceError means your botocore predates {service})")
+        return
     try:
         shape = client.meta.service_model.operation_model(op).input_shape
     except Exception as e:  # noqa: BLE001
         print(f"      could not introspect {op}: {e}")
         return
+    if shape is None:
+        print(f"      {op} takes no input")
+        return
     req = getattr(shape, "required_members", set())
-    print(f"\n=== {op} input shape (LIVE — trust this over docs) ===")
+    label = op if service == CONTROL_PLANE else f"{service} {op}"
+    print(f"\n=== {label} input shape (LIVE — trust this over docs) ===")
     for name, member in shape.members.items():
         tag = " [required]" if name in req else ""
         print(f"  {name}: {member.type_name}{tag}")
@@ -102,6 +119,10 @@ def main() -> int:
     ap.add_argument("--region", default="us-east-1")
     ap.add_argument("--show-shape", action="append", default=[],
                     help="Operation to introspect (repeatable). Default: CreateHarness, UpdateHarness")
+    ap.add_argument("--service", default=CONTROL_PLANE,
+                    help=f"Service to introspect with --show-shape (default {CONTROL_PLANE}). "
+                         f"Other planes an AgentCore build touches: {', '.join(KNOWN_SERVICES[1:])}. "
+                         "The harness-operation check always uses the control plane.")
     args = ap.parse_args()
 
     print("AgentCore Harness — preflight\n" + "-" * 32)
@@ -110,7 +131,7 @@ def main() -> int:
         results.append(check_harness_ops(args.region))
         results.append(check_credentials_region(args.region))
         for op in (args.show_shape or ["CreateHarness", "UpdateHarness"]):
-            show_shape(args.region, op)
+            show_shape(args.region, op, args.service)
 
     print("\n" + "-" * 32)
     if all(results):

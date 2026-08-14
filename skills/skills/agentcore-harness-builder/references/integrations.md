@@ -21,10 +21,16 @@ extended-thinking config on Claude models.)
 ### The `toolResultMetadata` delta channel (added 2026-07)
 
 **MCP** tool-result **metadata** streams on its own dedicated delta channel — built-in tools
-(code interpreter, browser) don't emit it; expect it only from Gateway/MCP tool results that carry
-metadata (not observed in this skill's live runs, which used built-ins). Large metadata is
-automatically split into **ordered fragments** — concatenate the fragments in the order received,
-then parse the combined string as JSON:
+(code interpreter, browser) don't emit it.
+
+**Treat the channel as optional even for Gateway tools.** Measured 2026-08-13 against a real Gateway/MCP tool (the
+`bedrock-knowledge-bases` connector): **zero `toolResultMetadata` deltas** were emitted, and the retrieval payload
+arrived as ordinary `toolResult` content. The channel is opt-in per MCP server, so "expect it from Gateway tools" is too
+strong — **code that reads it must tolerate its absence**, and the accumulator below is correct precisely because it
+no-ops when `frags` stays empty.
+
+When metadata *is* emitted, large payloads are automatically split into **ordered fragments** — concatenate the
+fragments in the order received, then parse the combined string as JSON:
 
 ```python
 frags = []

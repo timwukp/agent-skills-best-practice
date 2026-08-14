@@ -3,6 +3,12 @@
 Memory gives the agent short-term context (recent messages) and long-term knowledge (extracted records) that persist
 across sessions. The harness `memory` field is a **union of three members** (live-verified):
 
+> **Memory ≠ Knowledge Base.** Memory is *per-actor conversational state* the harness writes automatically, on
+> `bedrock-agentcore`, configured by this `memory` field. A **knowledge base** is a *shared, read-only document
+> corpus* on `bedrock-agent`, reached as a Gateway tool, that you ingest yourself — see
+> `references/knowledge-bases.md`. "Remember what this user told me" is Memory; "answer from our documentation" is a
+> knowledge base. They compose: most RAG agents want both.
+
 | Union member | What it is | When |
 |---|---|---|
 | `managedMemoryConfiguration` | **DEFAULT** — AWS creates and owns the Memory resource; zero wiring | almost always start here |

@@ -1,6 +1,6 @@
 ---
 name: agentcore-harness-builder
-description: Build production-ready AWS Bedrock AgentCore Harness agents end to end — declarative model + prompt, managed/BYO Memory, built-in Browser, Code Interpreter and Web Search, Gateway/MCP tools + rate limits, inline functions, Skills (incl. AWS catalog), versioning + endpoints, advanced config (truncation, limits, lifecycle, network, inbound auth, BYO S3 Files/EFS mounts or container), Observability (unified log group), Evaluations, Optimizations, Identity (outbound auth, Token Vault, BYO secrets), Policy (Cedar + temporal), Payments, Registry, Runtime Instances (14-day EC2 sessions), Step Functions, export to Strands code. Use whenever the user wants to create, configure, deploy, version, wire, harden, invoke, or troubleshoot an AgentCore Harness — or asks about AgentCore best practices, harness.json, CreateHarness/UpdateHarness/InvokeHarness, endpoints/qualifiers, Memory, browser/code-interpreter, skills, or observability. Trigger even for a managed declarative Bedrock agent with no "harness" mention.
+description: Build production-ready AWS Bedrock AgentCore Harness agents end to end — declarative model + prompt, managed/BYO Memory, built-in Browser, Code Interpreter, Web Search and Knowledge Bases (RAG), Gateway/MCP tools + rate limits, inline functions, Skills (incl. AWS catalog), versioning + endpoints, advanced config (truncation, limits, lifecycle, network, inbound auth, BYO S3 Files/EFS mounts or container), Observability (log delivery), Evaluations, Optimizations, Identity (outbound auth, Token Vault, BYO secrets), Policy (Cedar + temporal), Payments, Registry, Runtime Instances (14-day EC2 sessions), Step Functions, export to Strands code. Use whenever the user wants to create, configure, deploy, version, wire, harden, invoke, or troubleshoot an AgentCore Harness — or asks about AgentCore best practices, harness.json, CreateHarness/UpdateHarness/InvokeHarness, endpoints/qualifiers, Memory, knowledge bases/RAG, or observability. Trigger even for a managed declarative Bedrock agent with no "harness" mention.
 license: Complete terms in LICENSE.txt
 ---
 
@@ -90,6 +90,7 @@ Fill in the config section by section. Read the matching reference as you go:
 |---|---|---|
 | Model + system prompt + inference config | `references/model-and-prompt.md` | Pick an inference-profile model id (`global.*`/`us.*`, default `global.anthropic.claude-sonnet-5`); `apiFormat: "converse_stream"`; keep the prompt declarative and rule-based |
 | Tools: Browser, Code Interpreter, Gateway/MCP, inline functions | `references/tools.md` | Built-ins need **no** `config` (gateway/MCP/inline do); `allowedTools` has **no** `browser_*` glob — use `["*"]` or match by name (`"browser"`). For browser SSO behind interactive login (human-in-the-loop), see `references/browser-auth.md` |
+| Knowledge bases / RAG | `references/knowledge-bases.md` | A knowledge base is **not** a `tools[].type` — it is a Gateway target on the `bedrock-knowledge-bases` connector, built on the `bedrock-agent` control plane, and its IAM belongs to the **gateway** role |
 | Skills | `references/skills.md` | Every `SKILL.md` **must** start with YAML frontmatter (`name` + `description`) or session start fails; git source has **no branch field** |
 | Advanced config: truncation, invocation limits, lifecycle, network, inbound auth | `references/advanced-config.md` | Set explicit limits (maxIterations/maxTokens/timeout) and lifecycle (idle/max lifetime); choose network + inbound auth deliberately |
 
@@ -181,7 +182,9 @@ without it evaluations sit forever at zero scores with zero errors.
 
 If the agent needs **guardrails** beyond IAM (constraining what actions/tools/data it may use), set up a Policy Engine
 and policies — see `references/policy.md`. If the org uses the **Agent Registry** to discover and manage agents, MCP
-servers, tools, and skills, register the finished harness and its skills there — see `references/registry.md`. For
+servers, tools, and skills, register the finished harness and its skills there — see `references/registry.md`, and note
+that Registry moved to its own `agent-registry` namespace on 2026-08-06 (the old `bedrock-agentcore-control` registry
+operations stop working **2026-09-17**). For
 agents that authenticate to external services (outbound) or transact, see `references/identity.md` and
 `references/payments.md`.
 
@@ -197,6 +200,7 @@ consider each rather than silently omitting it.
 - [ ] **Browser tool** — `agentcore_browser` (no config needed); allowlist by name `"browser"` or `"*"` (Phase 2)
 - [ ] **Code Interpreter tool** — `agentcore_code_interpreter` (no config needed) (Phase 2)
 - [ ] **Gateway / remote MCP tools** — external APIs as MCP tools, incl. the managed **web-search** connector and per-user/group **rate limits** (Phase 2; consume via `references/tools.md`, **build** via `references/gateway.md`)
+- [ ] **Knowledge Bases (RAG)** — answer from your documents: managed KB on `bedrock-agent` + the `bedrock-knowledge-bases` gateway connector (`Retrieve` / `AgenticRetrieveStream`); not a tool type (Phase 2; `references/knowledge-bases.md`)
 - [ ] **Inline functions** — human-in-the-loop / callbacks that return control to your orchestrator (Phase 2)
 - [ ] **Skills** — domain knowledge via git/s3/path/awsSkills source (incl. the AWS-curated catalog), with valid frontmatter (Phase 2)
 - [ ] **Memory** — managed (default, just pick strategies) or BYO with 3-step wiring + IAM grant (Phase 4)
@@ -210,7 +214,7 @@ consider each rather than silently omitting it.
 - [ ] **Policy** — agent guardrails via Policy + Policy Engine, incl. **temporal (stateful) policies** (`policy.md`)
 - [ ] **Integrations** — Step Functions `InvokeHarness` state, `toolResultMetadata` stream handling, export to Strands code (`integrations.md`)
 - [ ] **Payments** — payment connector/manager + sessions, if the agent transacts (`payments.md`)
-- [ ] **Registry** — publish for org-wide discovery (Phase 8)
+- [ ] **Registry** — publish for org-wide discovery, on the new `agent-registry` namespace (Phase 8)
 - [ ] **Tags** — applied via `TagResource` (not `UpdateHarness`); cost-center/team/env/agent-type (Phase 3)
 
 ---
@@ -219,9 +223,10 @@ consider each rather than silently omitting it.
 
 These cause the most failures. Keep them in mind even before opening the reference:
 
-1. **Versions gate everything.** `boto3 >= 1.43.68` and AWS CLI v2 `>= 2.36.x` for the full 2026-08 surface
-   (capacity providers, rate limits, temporal policies, `apiKeySecretSource`); the absolute floor for harness ops
-   alone is boto3 1.43.51 / CLI 2.34.57.
+1. **Versions gate everything.** `boto3 >= 1.43.66` and AWS CLI v2 `>= 2.36.x` for the full 2026-08 surface —
+   1.43.66 is where `bedrock-agentcore-control` jumps 153 → 165 operations (gateway rate limits + capacity
+   providers) and the first release carrying the `agent-registry*` clients at all (wheel-diff verified); the absolute
+   floor for harness ops alone is boto3 1.43.51 / CLI 2.34.57.
 2. **Harness ≠ Runtime API.** A harness has two ARNs; `UpdateAgentRuntime`/`InvokeAgentRuntime` are **rejected** for
    harness-managed resources. Use the `*Harness` family + `InvokeHarness`.
 3. **`SKILL.md` needs YAML frontmatter** (`name` + `description`) or the session fails at start. Undocumented.
@@ -251,7 +256,8 @@ Load these as needed — don't read them all upfront.
 | `references/harness-config.md` | Phase 2/3 — full field reference + update-payload rules + best-practice defaults table |
 | `references/model-and-prompt.md` | Phase 2 — provider/model ids, Converse API, inference config, prompt patterns |
 | `references/tools.md` | Phase 2 — browser, code interpreter, gateway/MCP, inline functions, allowedTools |
-| `references/gateway.md` | Phase 2 — **build** a Gateway (8 target types: Lambda/OpenAPI/Smithy/MCP-server/API-GW/Runtime + built-in connectors like **web-search** + inference targets): `CreateGateway`/`Target`/`Rule`/`RateLimit`, inbound `authorizerType`, outbound credential providers, then wire into a harness |
+| `references/gateway.md` | Phase 2 — **build** a Gateway: `CreateGateway`/`Target`/`Rule`/`RateLimit`, inbound `authorizerType`, outbound credential providers, then wire into a harness. Targets are a union cited by path — `mcp.{lambda, openApiSchema, smithyModel, mcpServer, apiGateway, connector}`, `http.{agentcoreRuntime, passthrough, connector}`, `inference.{provider, connector}` — including the built-in **web-search** and **knowledge-base** connectors |
+| `references/knowledge-bases.md` | Phase 2 — managed **Knowledge Bases (RAG)**: `bedrock-agent` `CreateKnowledgeBase(type=MANAGED)` → data source → ingestion job, exposed via the `bedrock-knowledge-bases` gateway connector (`Retrieve` / `AgenticRetrieveStream`), gateway-role IAM, `parameterOverrides`, pricing |
 | `references/browser-auth.md` | Phase 2/6 — human-in-the-loop browser SSO login, S3-signal handoff, inline-function pause/resume, long read_timeout, retrieving session files |
 | `references/code-interpreter.md` | Phase 2 — Code Interpreter deep dive: session lifecycle, the 9 tools (executeCode/executeCommand/read·write·list·removeFiles/startCommandExecution/getTask/stopTask), file+command workflows, custom interpreters (PUBLIC/SANDBOX/VPC + certificates), the arguments-is-a-dict gotcha |
 | `references/skills.md` | Phase 2 — skills union, git/s3/path sources, mandatory frontmatter |
@@ -266,7 +272,7 @@ Load these as needed — don't read them all upfront.
 | `references/policy.md` | Agent guardrails — Policy, Policy Engine, resource policy, policy generation, **temporal (stateful) policies** |
 | `references/integrations.md` | Consuming a harness from outside — `toolResultMetadata` stream fragments, Step Functions `InvokeHarness` state, export to Strands code |
 | `references/payments.md` | Payment connector/manager + payment sessions (if the agent transacts) |
-| `references/registry.md` | Phase 8 — publishing/discovering org resources |
+| `references/registry.md` | Phase 8 — publishing/discovering org resources on the `agent-registry` namespace (relaunched 2026-08-06; legacy ops end 2026-09-17 — includes the migration table) |
 | `references/gotchas.md` | Anytime something fails unexpectedly — the consolidated hard-learned facts + verified shapes |
 
 ## Assets
