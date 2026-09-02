@@ -1,0 +1,148 @@
+# Publishes verifiable release artifacts for the ai-native-sdlc gate.
+#
+# WHY this exists: sdlc_ci_gate.py is granted authority over whether a pull request may
+# merge. A consumer who cannot verify the script they received has no basis for trusting
+# the control it implements — a tampered gate still shows a green check.
+#
+# Produces, for each release:
+#   1. a tarball of the gate scripts
+#   2. a CycloneDX SBOM
+#   3. a Sigstore keyless signature bundle (cosign sign-blob)
+#   4. GitHub-native SLSA build provenance (actions/attest-build-provenance)
+#
+# HONEST LIMITS, so nobody over-reads this:
+#   * GitHub artifact attestations alone are SLSA v1.0 Build **Level 2**, not Level 3.
+#     Level 3 additionally requires the build to run in a vetted reusable workflow and
+#     the consumer to verify with `--signer-workflow`.
+#   * Keyless signing means no stored key to leak, but the signing job still holds an
+#     OIDC token; a compromised workflow can sign malicious content legitimately.
+#   * Nothing here has been independently audited.
+#
+# Consumers verify with scripts/verify_gate_integrity.sh.
+
+name: Release gate artifacts
+
+on:
+  push:
+    tags:
+      - 'sdlc-gate-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag name to build for a dry run (no release is published)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # attach assets to the release
+      id-token: write        # OIDC for Sigstore keyless signing + attestations
+      attestations: write    # actions/attest-build-provenance
+    env:
+      SKILL_DIR: skills/skills/ai-native-sdlc
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run the test suites before releasing anything
+        # A signed artifact that fails its own tests is worse than an unsigned one: the
+        # signature lends authority to something unverified.
+        run: |
+          set -euo pipefail
+          cd "$SKILL_DIR/scripts"
+          for t in test_gate test_pretooluse_hook test_ci_gate test_hook_config test_hardening; do
+            echo "== $t"
+            python3 "$t.py"
+          done
+          echo "== mutation proof"
+          python3 mutation_proof.py
+
+      - name: Build the artifact
+        id: build
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          NAME="ai-native-sdlc-gate-${TAG}.tar.gz"
+          # --sort=name and a fixed mtime make the tarball byte-reproducible, so two
+          # builds of the same commit produce the same digest.
+          tar --sort=name \
+              --mtime='UTC 2020-01-01' \
+              --owner=0 --group=0 --numeric-owner \
+              -czf "dist/$NAME" \
+              -C "$SKILL_DIR" scripts templates SKILL.md COMPATIBILITY.md references
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "path=dist/$NAME" >> "$GITHUB_OUTPUT"
+          echo "digest=$(sha256sum "dist/$NAME" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          sha256sum "dist/$NAME" | tee "dist/$NAME.sha256"
+
+      - name: Generate a CycloneDX SBOM
+        # The gate is stdlib-only, so the SBOM's value is not a dependency list — it is an
+        # inventory of the FILES that carry the policy logic, each with its own hash.
+        run: |
+          set -euo pipefail
+          python3 "$SKILL_DIR/scripts/make_sbom.py" \
+            --root "$SKILL_DIR" \
+            --name ai-native-sdlc-gate \
+            --version "${TAG}" \
+            --output "dist/${{ steps.build.outputs.name }}.cdx.json"
+          python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print('SBOM components:', len(d['components']))" \
+            "dist/${{ steps.build.outputs.name }}.cdx.json"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign the artifact and the SBOM (keyless)
+        run: |
+          set -euo pipefail
+          for f in "dist/${{ steps.build.outputs.name }}" \
+                   "dist/${{ steps.build.outputs.name }}.cdx.json"; do
+            cosign sign-blob --yes "$f" --bundle "$f.sigstore.json"
+            echo "signed: $f"
+          done
+
+      - name: Attest build provenance (SLSA)
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/${{ steps.build.outputs.name }}
+
+      - name: Attest the SBOM
+        uses: actions/attest-sbom@v2
+        with:
+          subject-path: dist/${{ steps.build.outputs.name }}
+          sbom-path: dist/${{ steps.build.outputs.name }}.cdx.json
+
+      - name: Verify our own signature before publishing
+        # Verifying what we just produced catches a broken pipeline before consumers do.
+        # The identity is this workflow's own ref; the issuer is GitHub's OIDC provider.
+        run: |
+          set -euo pipefail
+          f="dist/${{ steps.build.outputs.name }}"
+          cosign verify-blob "$f" \
+            --bundle "$f.sigstore.json" \
+            --certificate-identity-regexp "^https://github\.com/${{ github.repository }}/\.github/workflows/release-attest\.yml@" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          echo "self-verification passed"
+
+      - name: Publish release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # A heredoc body must not start at column 1 here: it would break out of this
+          # YAML block scalar. Use --notes with an explicit string instead.
+          NOTES="Verify these assets before use with scripts/verify_gate_integrity.sh."
+          NOTES="$NOTES See COMPATIBILITY.md for what this version guarantees and"
+          NOTES="$NOTES references/limitations.md for what it does not."
+          gh release create "$TAG" --title "$TAG" --notes "$NOTES" || true
+          gh release upload "$TAG" dist/* --clobber

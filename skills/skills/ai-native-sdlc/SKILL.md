@@ -166,9 +166,18 @@ check in branch protection.
 ```
 ai-native-sdlc/
   SKILL.md
+  COMPATIBILITY.md             versioning promise, breaking-change rules, support matrix
   evals/                       task evals + trigger evals
   scripts/                     sdlc_gate.py, the hook, the CI gate, their tests, mutation_proof.py
+                               make_sbom.py, build_review_prompt.py, verify_gate_integrity.sh
   templates/                   intent/spec/plan/REVIEW/bands + the hook config + the workflow
   references/enforcement.md    how to make it binding; runtime traps; what neither gate catches
   references/playbook-mapping.md   stage -> artifact -> enforcement mapping
+  references/limitations.md    READ FIRST: the eleven known gaps and the eight things an
+                               enterprise needs that this does not have
+  references/threat-model.md   STRIDE for the two surfaces this skill introduces
 ```
+
+Before adopting this as a control rather than a habit, read `references/limitations.md`.
+It states plainly what a green gate does and does not mean — in particular that the gate
+cannot judge whether an eval is meaningful, and that an administrator can still bypass it.
