@@ -68,12 +68,35 @@ fixed so the failure is on the record. Subsequent breaking changes follow the ru
 
 Only the first block is *tested*. The rest is expectation, and expectation is not evidence.
 
+The block below is the **single source of truth**, and `scripts/test_support_matrix.py`
+asserts three things about it: the prose table agrees with it, nothing is listed as both
+verified and untested, and **CI actually runs everything it claims is verified**. A claim
+here that CI does not cover is a build failure, not a documentation nit — this file used to
+say "Python 3.12 (CI)" while the workflow pinned 3.11, and only a test can stop that
+recurring.
+
+```json support-matrix
+{
+  "ci_verified": {
+    "os": ["ubuntu-latest", "macos-latest", "windows-latest"],
+    "python": ["3.9", "3.10", "3.11", "3.12", "3.13"]
+  },
+  "documented_untested": {
+    "os": [],
+    "python": [],
+    "repo_shapes": ["monorepo", "polyglot", "multi-intent-pr", "concurrent-pr", "fork-pr"],
+    "forges": ["gitlab", "bitbucket"],
+    "surfaces": ["kiro-web"]
+  }
+}
+```
+
 ### Verified
 
 | Dimension | Coverage |
 |---|---|
-| Python | 3.12 (CI), 3.9+ expected — stdlib only, no dependencies |
-| OS | Linux (`ubuntu-latest`, Amazon Linux 2023) |
+| Python | 3.9, 3.10, 3.11, 3.12, 3.13 — stdlib only, no dependencies |
+| OS | `ubuntu-latest`, `macos-latest`, `windows-latest` (also run on Amazon Linux 2023) |
 | Repo shape | Single-package repo; one static single-page site; one Python feature branch |
 | Forge | GitHub — Actions and branch protection |
 | Surfaces | Kiro IDE and CLI (`PreToolUse`); official Kiro and KiroCrew hook runtimes |
@@ -82,7 +105,6 @@ Only the first block is *tested*. The rest is expectation, and expectation is no
 
 | Dimension | Status |
 |---|---|
-| Windows / macOS | **Untested.** The slug regex is conservative but path semantics are unverified. |
 | Monorepo, multi-intent PRs | **Untested.** One PR touching several intents is unmodelled. |
 | Polyglot repos | **Untested.** Source-file detection is extension-based. |
 | Concurrent PRs | **Untested.** Racing on one `.sdlc/active` value is unmodelled. |
