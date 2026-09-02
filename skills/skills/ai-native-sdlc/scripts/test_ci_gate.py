@@ -33,7 +33,14 @@ def mk(root: pathlib.Path, slug: str, **statuses: str) -> pathlib.Path:
     d = root / "intent" / slug
     d.mkdir(parents=True, exist_ok=True)
     for name, st in statuses.items():
-        (d / f"{name}.md").write_text(f"# {name}\n\n- **Status:** {st}\n", encoding="utf-8")
+        # Author / Accepted-by are required on any artifact claiming approval
+        # (separation of duties). Distinct names here so these cases exercise what
+        # they are actually about rather than tripping the duties check.
+        (d / f"{name}.md").write_text(
+            f"# {name}\n\n- **Author:** alice\n- **Accepted-by:** bob\n"
+            f"- **Status:** {st}\n",
+            encoding="utf-8",
+        )
     return d
 
 

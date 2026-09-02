@@ -39,6 +39,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -157,6 +158,16 @@ def main() -> None:
             )
 
         slug = active_file.read_text(encoding="utf-8").strip().splitlines()[0].strip()
+        # A slug names a directory under intent/. Reject anything that could escape
+        # the repo: `root/intent/..` resolves back to root and would look like a
+        # valid intent dir, and pathlib lets an absolute part ("/etc") discard the
+        # prefix entirely. Both were real traversals.
+        if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", slug) or slug in (".", ".."):
+            block(
+                f"SDLC GATE: blocked write to '{rel}'.\n"
+                f".sdlc/active contains {slug!r}, which is not a plain directory name.\n"
+                "Use letters, digits, dot, underscore or hyphen — no '/', '\\' or '..'."
+            )
         intent_dir = root / "intent" / slug
         if not intent_dir.is_dir():
             block(

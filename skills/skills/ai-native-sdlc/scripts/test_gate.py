@@ -107,6 +107,34 @@ def main():
             if run(d, "design") != 2:
                 fails.append(f"status '{bad}' must NOT open the gate")
 
+        # 14. An EMPTY status value must close the gate. Historically the value
+        #     pattern used \s*, which matches newlines, so an empty value made the
+        #     parser capture the NEXT line's text and read it as the status.
+        #     Note the gate would close either way (an empty string satisfies no
+        #     status), so closing alone proves nothing — assert the DIAGNOSTIC, which
+        #     is the guard's actual job: telling the operator the field is blank
+        #     rather than reporting a confusing empty value.
+        (d / "intent.md").write_text("# t\n\n- **Status:** \n", encoding="utf-8")
+        r = subprocess.run([sys.executable, str(GATE), str(d), "design"],
+                           capture_output=True, text=True)
+        if r.returncode != 2:
+            fails.append("an EMPTY Status value must CLOSE the design gate")
+        if "empty-status" not in (r.stdout + r.stderr):
+            fails.append(
+                "an empty Status must be reported as '<empty-status>', not as a blank "
+                f"value: {(r.stdout + r.stderr).strip()[:120]}"
+            )
+        # The same shape, but with a following line that looks like an acceptance:
+        # this is the exact case the old cross-line regex misread.
+        (d / "intent.md").write_text(
+            "# t\n\n- **Status:** \n- **Note:** accepted by nobody\n", encoding="utf-8")
+        r = subprocess.run([sys.executable, str(GATE), str(d), "design"],
+                           capture_output=True, text=True)
+        if r.returncode != 2:
+            fails.append("an empty Status must not absorb the following line as its value")
+        if "accepted by nobody" in (r.stdout + r.stderr):
+            fails.append("the parser captured the FOLLOWING line as the status value")
+
     if fails:
         print("FAIL:")
         for f in fails:

@@ -1,9 +1,15 @@
 # Plan: <short title>
 
 - **Spec:** ./spec.md
+- **Author:** <who wrote this>
+- **Accepted-by:** <who accepted it — MUST NOT be the Author>
 - **Status:** draft | accepted
 
 ## Files changed (in order of work)
+
+Every source file this change touches MUST be listed here. The CI gate refuses a
+diff that touches a file this plan does not name.
+
 1. `path/to/file` — what changes and why
 2. ...
 

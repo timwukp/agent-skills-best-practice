@@ -113,12 +113,26 @@ contract, and why an infrastructure failure must exit 0 rather than block every 
 
 - **A stage may not advance until its gate passes and its artifact is committed.** If the
   prior artifact is missing, stop and produce it — do not proceed and backfill.
+- **Every source file the change touches must be named in `plan.md`.** The CI gate refuses a
+  diff that touches a file the active plan does not mention. This is what ties a change to
+  the intent that authorised it; without it, one historical acceptance would launder every
+  later change.
+- **`Author` and `Accepted-by` must differ.** Both fields are required on any artifact
+  claiming approval, and the gate refuses them being the same person. This is an attested,
+  committed, blameable claim — not cryptographic proof, but not an honour-system sentence
+  either.
+- **`.sdlc/active` must be a plain directory name.** A slug containing `/`, `\` or `..` is
+  refused: `intent/..` resolves back to the repo root and an absolute slug escapes the repo
+  entirely. Both were real path traversals.
+- **`.sdlc/version` declares the artifact schema.** A gate older than the repo refuses
+  outright rather than misreading newer artifacts.
 - **Do not write the eval to match the code.** Assert the property the requirement actually
   demands. An eval checking "the identifier exists" when the requirement is "the element is
   reachable" passes while the work is wrong.
 - **Prove a test can fail.** Mutate the implementation and confirm the suite goes red
-  (`scripts/mutation_proof.py` does this for this skill's own gates). A surviving mutation is
-  an untested behaviour, not a pass.
+  (`scripts/mutation_proof.py` does this for this skill's own gates — 27 mutations, all
+  killed). A surviving mutation is an untested behaviour, not a pass. Beware the subtler
+  case: a test that blocks for the *wrong reason* still looks green.
 - **Do not self-approve.** Never set `accepted` or `signed-off` on an artifact you wrote.
 - **Brownfield:** name one source of truth per artifact, then start the loop at the *first*
   change. Do not retrofit artifacts for past work.

@@ -132,3 +132,59 @@ requirement was that the element be reachable — passes both gates while provin
 nothing. That failure has happened twice in this skill's own history, and it is
 still a human review responsibility. `REVIEW.md` is where you write down the traps
 so the next reviewer looks for them.
+
+---
+
+## Hardening (artifact schema 1)
+
+Four defects were found by auditing the gates rather than by using them. Each is now
+a rule the gate enforces and a test the mutation harness proves can fail.
+
+**Coverage names the file.** The old rule asked only whether *some* accepted chain
+existed anywhere in the repo, so one historical acceptance permanently satisfied it —
+any later change passed. The gate now resolves `.sdlc/active`, requires *that*
+intent's chain to be complete, and requires its `plan.md` to **name every changed
+source file**. A repo with no `.sdlc/` directory still gets the old coarse rule, but
+the output now says `coarse check only` instead of implying precision.
+
+**Separation of duties is attested.** `Author` and `Accepted-by` are required on any
+artifact claiming approval, and must differ (case- and whitespace-insensitive). This
+is not cryptographic proof — someone can type two names — but the claim is committed,
+reviewable and attributable, where before there was nothing but a sentence in a doc.
+
+**The slug cannot escape the repo.** `.sdlc/active` is validated against
+`^[A-Za-z0-9][A-Za-z0-9._-]*$`. Two real traversals were possible: `..` made
+`root/intent/..` resolve back to the repo root — which *is* a directory, so it looked
+valid — and an absolute slug like `/etc` made pathlib discard the prefix entirely.
+
+**The schema is versioned.** `.sdlc/version` holds an integer; the gate refuses
+outright when the repo declares a version newer than the gate understands, rather
+than emitting findings derived from artifacts it may misparse.
+
+### Two bugs found along the way
+
+The value pattern used `\s*` around the captured group, and **`\s` matches
+newlines** — so an artifact with an *empty* field value captured the **next line's**
+text as its value. Confirmed in practice: an empty `Accepted-by:` returned
+`- **Status:** accepted`. Both gates now use `[ \t]*` so a value cannot cross a line.
+
+Separately, a missing `import re` made the hook raise `NameError`, which its
+fail-open handler converted into a **silent allow** — every traversal slug passed.
+Fail-open is deliberate (a buggy gate must not stop you editing files) but it turns a
+crash into a permission, which is exactly why CI must fail *closed*.
+
+### Mutation coverage caveat
+
+The first mutation run after this work had four survivors, and none was a code bug —
+each was an assertion too weak to distinguish the mutant. The instructive one: with
+the traversal guard removed, a slug of `..` still *blocked*, because the repo root has
+no artifacts in it. The test passed while the guard was gone. Asserting the exit code
+was not enough; the test now asserts the **reason** in the message.
+
+### Upgrading an existing repo
+
+This is a **breaking change** for artifacts written before it. An accepted artifact
+with no `Author` / `Accepted-by` is now a violation, so a repo that adopted the gate
+earlier will go red until those fields are added. Add them to every artifact whose
+status is `accepted` or `signed-off`, and make sure each plan lists the files its
+change touched.
