@@ -10,7 +10,7 @@ This repo is designed for **AWS SAs and developers** learning to build skills wi
 
 ## Flagship Skills
 
-Two battle-tested skills, each validated end-to-end against real AWS infrastructure:
+Three skills with evidence behind them. The first two were validated end-to-end against real AWS infrastructure; the third is the only skill here that ships **its own enforcement** — a gate that can refuse a merge — together with the tests, signed releases, and documented limits that a control like that has to earn.
 
 ### 🏗️ [agentcore-harness-builder](skills/skills/agentcore-harness-builder/) — build AWS Bedrock AgentCore Harness agents
 
@@ -19,6 +19,24 @@ Builds production-ready **AWS Bedrock AgentCore Harness** agents end to end: dec
 ### 🦊 [gitlab-ci-kiro-pipeline](skills/skills/gitlab-ci-kiro-pipeline/) — AI-powered GitLab CI/CD with Kiro CLI headless + MCP
 
 Builds GitLab CI/CD pipelines (`.gitlab-ci.yml`) that run **Kiro CLI in headless mode** as an AI reviewer on every merge request: AI code review, config-drift detection, duplication-sync **merge gating** via machine-readable verdict lines, change-impact analysis — 12 job recipes with tested prompts and a complete pipeline template. Includes **MCP server integration in CI** (SonarQube SAST, AWS Knowledge, any customer MCP server): `--require-mcp-startup` fail-fast, `@server` tool trusting, and a no-infrastructure smoke test validated live in real MR pipelines. Complements the generic [cicd-pipeline](skills/skills/cicd-pipeline/) skill.
+
+### ⚖️ [ai-native-sdlc](skills/skills/ai-native-sdlc/) — an SDLC loop that is *enforced*, not merely advised
+
+Most process skills tell an agent what good practice looks like and hope. This one runs a change as a loop of committed, machine-readable artifacts — `intent.md → spec.md → plan.md → diff+tests → PR + REVIEW.md → bands.yaml → new intent.md` — where each stage's output is the next stage's input, and then **makes the ordering enforceable** in two layers:
+
+- a **`PreToolUse` hook** at write time, which **fails open** (a buggy gate must never stop you editing files), and
+- a **CI gate** at merge time, which **fails closed**.
+
+That asymmetry is deliberate and load-bearing: the local layer is a fast warning, the CI layer is the actual control. The gate refuses a skipped stage, an unfilled template placeholder, a source change no accepted plan names, and an artifact claiming approval without a distinct author and approver.
+
+What makes it flagship is that the enforcement is held to the standard it imposes:
+
+- **Mutation-proven tests** — 6 suites plus `mutation_proof.py`, which breaks the gate 36 different ways and requires a test to go red for each. This is not a coverage number: it caught a substring match that let `not-accepted` pass as accepted, and a cross-line regex that read the *next* line when a field was empty. A green suite nobody has watched fail is not evidence.
+- **Verifiable releases** — the gate is a script granted authority over merges, so releases ship a CycloneDX SBOM, Sigstore keyless signatures and SLSA build provenance, and [`verify_gate_integrity.sh`](skills/skills/ai-native-sdlc/scripts/verify_gate_integrity.sh) pins the expected signer to this repository's release workflow.
+- **A threat model for its own attack surfaces** — [`references/threat-model.md`](skills/skills/ai-native-sdlc/references/threat-model.md) covers the two it introduces: an LLM reading an attacker-controlled PR diff in CI, and a hook that runs on every write. Prompt injection is treated as contained by least privilege, not solved.
+- **Honest limits, up front** — [`references/limitations.md`](skills/skills/ai-native-sdlc/references/limitations.md) states plainly what a green gate does *not* mean. Read it before adopting this as a compliance control: an administrator can still bypass the gate without an org-level ruleset, and **no gate can judge whether an eval is any good**. That one is a permanent limitation, not a roadmap item.
+
+Also see [`COMPATIBILITY.md`](skills/skills/ai-native-sdlc/COMPATIBILITY.md) — because a tool whose output is a policy decision can start failing builds that were fine yesterday, breaking changes follow a warning-first release, a migration note, and a six-month support window.
 
 ## Quickstart
 
@@ -43,6 +61,7 @@ To install skills from this repo into Kiro in one step:
 - **AI Adoption Skills**: code-standards-adopter (make AI-written code match your team's style) and legacy-code-testing (characterization tests before refactoring)
 - **AWS AI Agent Infrastructure**: agentcore-harness-builder — see [Flagship Skills](#flagship-skills) above
 - **Agentic CI/CD**: gitlab-ci-kiro-pipeline — GitLab pipelines with Kiro CLI headless AI review jobs and MCP server integration; see [Flagship Skills](#flagship-skills) above
+- **Enforceable SDLC**: ai-native-sdlc — the artifact loop plus a write-time hook and a merge-time CI gate that actually refuse out-of-order work, with mutation-proven tests, signed releases, and a published limitations file; see [Flagship Skills](#flagship-skills) above
 
 > **Looking for the document skills (docx, pdf, pptx, xlsx)?** Those are Anthropic's source-available (not open source) production skills. They were removed from this repo to keep all content under open-source licenses — find them in the official [anthropics/skills](https://github.com/anthropics/skills) repository.
 
