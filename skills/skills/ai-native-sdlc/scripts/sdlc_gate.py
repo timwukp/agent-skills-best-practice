@@ -26,10 +26,14 @@ def status_of(path: pathlib.Path) -> str:
     if not path.exists():
         return "<missing>"
     text = path.read_text(encoding="utf-8", errors="replace")
-    m = re.search(r"(?im)^\s*[-*]?\s*\*\*Status:\*\*\s*(.+?)\s*$", text)
+    # [ \t]* not \s* around the value: \s matches newlines, so with an EMPTY value
+    # the pattern would consume the line break and capture the NEXT line's text.
+    m = re.search(r"(?im)^[ \t]*[-*]?[ \t]*\*\*Status:\*\*[ \t]*(.*?)[ \t]*$", text)
     if not m:
         return "<no-status>"
     raw = m.group(1).strip()
+    if not raw:
+        return "<empty-status>"
     # A pipe-separated line (e.g. "draft | accepted | rejected") is the unfilled
     # template placeholder, not a real status — a real status is a single token.
     if "|" in raw:

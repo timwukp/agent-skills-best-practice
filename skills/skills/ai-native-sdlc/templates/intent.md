@@ -1,7 +1,8 @@
 # Intent: <short title>
 
 - **Slug:** <kebab-case-id>
-- **Author:** <who>
+- **Author:** <who wrote this>
+- **Accepted-by:** <who approved it — MUST NOT be the Author>
 - **Date:** <YYYY-MM-DD>
 - **Status:** draft | accepted | rejected
 

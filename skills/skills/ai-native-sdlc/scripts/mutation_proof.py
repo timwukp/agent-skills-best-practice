@@ -122,8 +122,8 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
     (
         "ci: source change with no accepted chain is allowed",
         "sdlc_ci_gate.py", "test_ci_gate.py",
-        "if source_changed and not plan_accepted:",
-        "if False:",
+        "                if not plan_accepted:",
+        "                if False:",
     ),
     (
         "ci: missing intent.md is not reported",
@@ -136,6 +136,61 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "sdlc_ci_gate.py", "test_ci_gate.py",
         'if st == "<unset-template>":',
         "if False:",
+    ),
+    # --- batch-1 hardening --------------------------------------------------
+    (
+        "ci: coverage back to 'any accepted chain anywhere'",
+        "sdlc_ci_gate.py", "test_hardening.py",
+        "uncovered = [c for c in source_changed if not plan_covers(plan, c)]",
+        "uncovered = []",
+    ),
+    (
+        "ci: active slug need not have an accepted chain",
+        "sdlc_ci_gate.py", "test_hardening.py",
+        "elif active_slug not in plan_accepted:",
+        "elif False:",
+    ),
+    (
+        "ci: newer artifact schema silently accepted",
+        "sdlc_ci_gate.py", "test_hardening.py",
+        "if repo_schema > SUPPORTED_SCHEMA:",
+        "if False:",
+    ),
+    (
+        "ci: unparsable schema version ignored",
+        "sdlc_ci_gate.py", "test_hardening.py",
+        "        except ValueError:",
+        "        except ValueError:\n            repo_schema = SUPPORTED_SCHEMA\n        except SystemError:",
+    ),
+    (
+        "ci: author may approve their own artifact",
+        "sdlc_ci_gate.py", "test_hardening.py",
+        "if author.casefold().strip() == approver.casefold().strip():",
+        "if False:",
+    ),
+    (
+        "ci: a missing approver is tolerated",
+        "sdlc_ci_gate.py", "test_hardening.py",
+        "if not approver:",
+        "if False:",
+    ),
+    (
+        "ci: slug traversal not validated",
+        "sdlc_ci_gate.py", "test_hardening.py",
+        "            bad = slug_problem(active_slug)",
+        "            bad = None",
+    ),
+    (
+        "hook: slug traversal not validated",
+        "sdlc_pretooluse_hook.py", "test_hardening.py",
+        'if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", slug) or slug in (".", ".."):',
+        "if False:",
+    ),
+    (
+        "gate: empty status treated as a real status",
+        "sdlc_gate.py", "test_gate.py",
+        'if not raw:\n        return "<empty-status>"',
+        'if False:\n        return "<empty-status>"',
     ),
 ]
 

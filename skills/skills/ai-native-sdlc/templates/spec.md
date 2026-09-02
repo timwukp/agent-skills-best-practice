@@ -1,6 +1,8 @@
 # Spec: <short title>
 
 - **Intent:** ./intent.md
+- **Author:** <who wrote this>
+- **Accepted-by:** <who signed it off — MUST NOT be the Author>
 - **Status:** draft | signed-off
 
 ## Requirements
