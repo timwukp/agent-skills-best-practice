@@ -10,7 +10,7 @@
 
 ## 旗舰 Skills
 
-两个经过实战验证的 Skills，均已在真实 AWS 基础设施上完成端到端验证：
+三个有真实证据支撑的 Skills。前两个已在真实 AWS 基础设施上完成端到端验证；第三个是本仓库唯一**自带强制执行能力**的 Skill——一道可以拒绝合并的门禁，并配套了这类控制手段必须具备的测试、可验证发布产物与公开的能力边界说明。
 
 ### 🏗️ [agentcore-harness-builder](skills/skills/agentcore-harness-builder/) — 构建 AWS Bedrock AgentCore Harness Agent
 
@@ -19,6 +19,24 @@
 ### 🦊 [gitlab-ci-kiro-pipeline](skills/skills/gitlab-ci-kiro-pipeline/) — AI 驱动的 GitLab CI/CD（Kiro CLI 无头模式 + MCP）
 
 构建让 **Kiro CLI 以无头模式**在每个合并请求上充当 AI 审查者的 GitLab CI/CD 流水线（`.gitlab-ci.yml`）：AI 代码审查、配置漂移检测、通过机器可读判定行实现的重复代码同步**合并门禁**、变更影响分析——12 个带已验证提示词的作业配方和一套完整流水线模板。包含 **CI 中的 MCP 服务器集成**（SonarQube SAST、AWS Knowledge、任意客户 MCP 服务器）：`--require-mcp-startup` 快速失败、`@server` 工具信任，以及经真实 MR 流水线验证的零基础设施冒烟测试。与通用型 [cicd-pipeline](skills/skills/cicd-pipeline/) Skill 互补。
+
+### ⚖️ [ai-native-sdlc](skills/skills/ai-native-sdlc/) — 被**强制执行**而非仅被建议的 SDLC 循环
+
+多数流程类 Skill 只是告诉 Agent 什么是好实践，然后祈祷它照做。这个 Skill 把一次变更运行为一串已提交的机器可读产物构成的循环——`intent.md → spec.md → plan.md → diff+tests → PR + REVIEW.md → bands.yaml → 新的 intent.md`——每一阶段的产出即下一阶段的输入，并通过两层机制**让阶段顺序真正可强制**：
+
+- 写入时的 **`PreToolUse` hook**，采用**失败放行**（一个有 bug 的门禁绝不该阻止你编辑文件）；
+- 合并时的 **CI 门禁**，采用**失败拦截**。
+
+这种不对称是刻意设计且承担实际作用的：本地那层是快速警告，CI 那层才是真正的控制点。门禁会拒绝：跳过的阶段、未填写的模板占位符、任何已接受计划都未列出的源码变更，以及声称已获批准却没有互不相同的作者与批准人的产物。
+
+它之所以是旗舰，在于这套强制机制本身也接受了它所要求的标准：
+
+- **经变异测试验证** — 6 个测试套件外加 `mutation_proof.py`，它用 36 种方式破坏门禁，并要求每一种都至少让一个测试变红。这不是覆盖率数字：它抓出了一处子串匹配缺陷（`not-accepted` 竟被当作 accepted 通过），以及一处跨行正则缺陷（字段为空时会读到*下一行*的内容）。一个从未被人见过失败的绿色测试套件，不构成任何证据。
+- **可验证的发布产物** — 门禁是一个被授予合并决定权的脚本，因此发布物附带 CycloneDX SBOM、Sigstore 无密钥签名与 SLSA 构建溯源，并由 [`verify_gate_integrity.sh`](skills/skills/ai-native-sdlc/scripts/verify_gate_integrity.sh) 将预期签名者锁定到本仓库的发布工作流。
+- **针对自身攻击面的威胁模型** — [`references/threat-model.md`](skills/skills/ai-native-sdlc/references/threat-model.md) 覆盖它引入的两个面：CI 中读取攻击者可控 PR diff 的 LLM，以及每次写入都会执行的本地 hook。提示词注入被视为**通过最小权限加以约束**，而非已被解决。
+- **能力边界，开门见山** — [`references/limitations.md`](skills/skills/ai-native-sdlc/references/limitations.md) 明确说明门禁变绿**不**代表什么。把它当作合规控制手段之前请先读这份文件：在没有组织级 ruleset 的情况下，管理员依然可以绕过门禁；而且**任何门禁都无法判断一个 eval 本身是否有意义**。后者是永久性限制，不是待办事项。
+
+另见 [`COMPATIBILITY.md`](skills/skills/ai-native-sdlc/COMPATIBILITY.md)——因为一个产出即策略判定的工具，可能让昨天还正常的构建突然失败，所以破坏性变更须遵循「先以警告发布、提供迁移说明、并保留六个月支持窗口」的规则。
 
 ## 快速入门
 
@@ -43,6 +61,7 @@
 - **AI 落地 Skills**: code-standards-adopter（让 AI 生成的代码匹配团队风格）和 legacy-code-testing（重构前的特征测试）
 - **AWS AI Agent 基础设施**: agentcore-harness-builder — 见上方[旗舰 Skills](#旗舰-skills)
 - **Agentic CI/CD**: gitlab-ci-kiro-pipeline — 带 Kiro CLI 无头 AI 审查作业和 MCP 服务器集成的 GitLab 流水线；见上方[旗舰 Skills](#旗舰-skills)
+- **可强制执行的 SDLC**: ai-native-sdlc — 产物循环，外加写入时 hook 与合并时 CI 门禁，真正拒绝乱序推进的工作；配套变异测试验证、可验证签名发布物与公开的能力边界文件；见上方[旗舰 Skills](#旗舰-skills)
 - **Skills 目录**: 完整的分类目录请参见 [skills/CATALOG.md](skills/CATALOG.md)
 
 > **在找文档类 Skills（docx、pdf、pptx、xlsx）？** 它们是 Anthropic 的 source-available（非开源）生产级 Skills。为保持本仓库内容全部使用开源许可，已将其移除——请到官方 [anthropics/skills](https://github.com/anthropics/skills) 仓库获取。

@@ -1,0 +1,124 @@
+# Reusable SDLC gate. A consuming repo does NOT vendor the gate script; it calls this
+# workflow by ref, so one place holds the logic and `@v1` / `@<sha>` pins the version.
+#
+# This is the fix for per-repo drift: vendoring meant N repos held N independently
+# ageing copies of sdlc_ci_gate.py with no update path.
+#
+# Caller (in the consuming repo, .github/workflows/sdlc-gate.yml):
+#
+#   name: SDLC Gate
+#   on:
+#     pull_request:
+#       branches: [main]
+#   jobs:
+#     sdlc-gate:
+#       uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@main
+#       with:
+#         require-active: true
+#
+# Pin to a tag or SHA rather than @main for anything you actually rely on: @main means an
+# upstream change silently changes YOUR merge criteria.
+#
+# The job NAME the caller sees is the caller's job id ("sdlc-gate" above), and that is what
+# goes in branch protection as the required check — not the name of the job in this file.
+
+name: SDLC Gate (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      require-active:
+        description: >-
+          Require .sdlc/active to name an existing intent. Leave false while a repo is still
+          adopting the convention; turn it on once every change declares its slug.
+        type: boolean
+        default: false
+      python-version:
+        description: Python used to run the gate. Stdlib only, so any supported 3.x works.
+        type: string
+        default: '3.12'
+      run-evals:
+        description: >-
+          Run every evals/check_*.py. This is what makes "write the eval first, watch it
+          fail, then implement" enforceable rather than a habit.
+        type: boolean
+        default: true
+      gate-ref:
+        description: >-
+          Ref of THIS repository to take the gate script from. Defaults to the ref the
+          reusable workflow itself was resolved at, so the logic and the script cannot
+          disagree.
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: sdlc-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the caller's repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out the gate script from the skill repository
+        uses: actions/checkout@v4
+        with:
+          repository: timwukp/agent-skills-best-practice
+          ref: ${{ inputs.gate-ref || github.workflow_sha }}
+          path: .sdlc-gate-upstream
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Record which gate version is deciding this PR
+        # Without this, a failure gives no way to tell WHICH gate version refused, which is
+        # the whole problem vendoring caused.
+        run: |
+          set -euo pipefail
+          cd .sdlc-gate-upstream
+          echo "gate repo:   timwukp/agent-skills-best-practice"
+          echo "gate ref:    ${{ inputs.gate-ref || github.workflow_sha }}"
+          echo "gate commit: $(git rev-parse HEAD)"
+          echo "gate sha256: $(sha256sum skills/skills/ai-native-sdlc/scripts/sdlc_ci_gate.py | cut -d' ' -f1)"
+
+      - name: List files changed in this PR
+        run: |
+          set -euo pipefail
+          base="origin/${{ github.base_ref }}"
+          git fetch --no-tags origin "${{ github.base_ref }}" 2>/dev/null || true
+          # Three-dot diff = what this branch introduces, excluding what landed on the base
+          # since the branch was cut.
+          git diff --name-only "$base"...HEAD > changed-files.txt \
+            || git diff --name-only HEAD~1..HEAD > changed-files.txt
+          echo "--- changed files ---"
+          cat changed-files.txt
+
+      - name: Validate the SDLC artifact chain
+        run: |
+          set -euo pipefail
+          ARGS=(--repo . --changed-files-from changed-files.txt)
+          if [ "${{ inputs.require-active }}" = "true" ]; then
+            ARGS+=(--require-active)
+          fi
+          python3 .sdlc-gate-upstream/skills/skills/ai-native-sdlc/scripts/sdlc_ci_gate.py "${ARGS[@]}"
+
+      - name: Run SDLC evals
+        if: ${{ inputs.run-evals }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          found=0
+          for f in evals/check_*.py; do
+            found=1
+            echo "== $f"
+            python3 "$f"
+          done
+          if [ "$found" = "0" ]; then
+            echo "no evals/check_*.py found — nothing to run"
+          fi

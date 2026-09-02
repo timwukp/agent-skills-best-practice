@@ -192,6 +192,66 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         'if not raw:\n        return "<empty-status>"',
         'if False:\n        return "<empty-status>"',
     ),
+    # --- make_sbom.py -------------------------------------------------------
+    (
+        "sbom: __pycache__ not excluded (inventories build junk as policy files)",
+        "make_sbom.py", "test_supply_chain.py",
+        "if any(part in SKIP_DIRS for part in p.parts):\n            continue",
+        "if False:\n            continue",
+    ),
+    (
+        "sbom: hashes with MD5 while still declaring SHA-256",
+        "make_sbom.py", "test_supply_chain.py",
+        "h = hashlib.sha256()",
+        "h = hashlib.md5()",
+    ),
+    (
+        "sbom: emits an empty SBOM instead of refusing empty input",
+        "make_sbom.py", "test_supply_chain.py",
+        'raise SystemExit(f"make_sbom: no candidate files under {root}")',
+        "pass",
+    ),
+    (
+        "sbom: unsorted traversal (SBOM order varies between builds)",
+        "make_sbom.py", "test_supply_chain.py",
+        "for p in sorted(root.rglob(\"*\")):",
+        "for p in sorted(root.rglob(\"*\"), key=lambda _: __import__('random').random()):",
+    ),
+    # --- build_review_prompt.py --------------------------------------------
+    (
+        # The explicit INVISIBLE set and the Cc/Cf category check OVERLAP on current
+        # Unicode, so disabling either one alone is an equivalent mutant -- the other still
+        # strips the characters. To test that sanitisation happens at all, this mutation
+        # makes sanitize() a no-op, removing both guards at once.
+        "review: sanitize() is a no-op (invisible injection reaches the model)",
+        "build_review_prompt.py", "test_supply_chain.py",
+        '    out = []\n    for ch in text:',
+        '    return text\n    out = []\n    for ch in text:',
+    ),
+    (
+        "review: explicit invisible-codepoint set emptied (loses Unicode-drift cover)",
+        "build_review_prompt.py", "test_supply_chain.py",
+        "INVISIBLE = {\n    0x00AD,",
+        "INVISIBLE = set()\n_UNUSED_INVISIBLE = {\n    0x00AD,",
+    ),
+    (
+        "review: fixed delimiter the attacker can guess and close",
+        "build_review_prompt.py", "test_supply_chain.py",
+        'token = f"{label}-{secrets.token_hex(8)}"',
+        'token = f"{label}-FIXED"',
+    ),
+    (
+        "review: oversize diff not truncated (trailing instructions pushed out)",
+        "build_review_prompt.py", "test_supply_chain.py",
+        "if len(raw.encode()) > cap:",
+        "if False:",
+    ),
+    (
+        "review: empty diff accepted (reviews nothing, reports success)",
+        "build_review_prompt.py", "test_supply_chain.py",
+        "if not diff.strip():",
+        "if False:",
+    ),
 ]
 
 

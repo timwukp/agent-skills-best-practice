@@ -124,33 +124,42 @@ jobs:
           git diff "origin/${{ github.base_ref }}...HEAD" > /tmp/pr-diff.txt
           echo "Diff size: $(wc -l < /tmp/pr-diff.txt) lines"
 
+      - name: Build the review prompt with the diff fenced as untrusted data
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          # SECURITY: the diff is attacker-controlled -- anyone who can open a PR writes
+          # it -- and it is about to reach a model that is also receiving instructions.
+          # Do NOT interpolate it into the prompt directly. build_review_prompt.py wraps
+          # it in a per-run random delimiter, brackets it with trusted instructions before
+          # AND after, and strips zero-width / bidi-override codepoints that would hide
+          # injected text from a human reading the same diff.
+          #
+          # This MITIGATES prompt injection; it does not solve it. The real containment is
+          # --trust-tools=read,grep below, this job not being a required check, and a human
+          # merging. See references/threat-model.md.
+          cat intent/*/spec.md intent/*/plan.md > /tmp/specs.txt 2>/dev/null || true
+          python3 .sdlc/scripts/build_review_prompt.py \
+            --diff /tmp/pr-diff.txt \
+            --review REVIEW.md \
+            --specs /tmp/specs.txt \
+            --max-bytes 40000 \
+            > /tmp/review-prompt.txt
+          echo "Prompt built: $(wc -c < /tmp/review-prompt.txt) bytes"
+
       - name: Review against REVIEW.md and the committed spec/plan
         if: steps.guard.outputs.run == 'true'
         env:
           KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
         run: |
-          # The diff is piped INTO the prompt rather than left for the agent to
-          # find, so the review cannot silently skip it. Capped to bound tokens.
-          DIFF=$(head -500 /tmp/pr-diff.txt)
-          REVIEW_MD=$( [ -f REVIEW.md ] && cat REVIEW.md || echo "(no REVIEW.md at repo root)" )
-          SPECS=$(cat intent/*/spec.md intent/*/plan.md 2>/dev/null | head -300 || true)
-          # --trust-tools=read,grep is least privilege: a reviewer reads, never writes.
-          # '|| true' keeps this advisory — a review problem must not fail the build.
+          # --trust-tools=read,grep is least privilege: the reviewer reads, never writes,
+          # never runs a shell. '|| true' keeps this advisory -- a review problem must not
+          # fail the build, and must never be able to approve one either.
+          #
+          # Do NOT switch this job to pull_request_target. That hands a write-scoped token
+          # to a workflow processing an untrusted fork's diff and turns every injection
+          # finding in the threat model into repository compromise.
           kiro-cli chat --no-interactive --trust-tools=read,grep \
-            "You are reviewing a pull request against this repository's own review
-             policy. THE POLICY (REVIEW.md):
-             $REVIEW_MD
-
-             THE COMMITTED SPEC AND PLAN for the change:
-             $SPECS
-
-             THE DIFF:
-             $DIFF
-
-             Run the policy's passes in order. Report Important findings first,
-             then at most 5 Nits. Call out any place the diff does something the
-             spec or plan does not describe, and any place it silently drops
-             something they require. Be concise; only real issues." \
+            "$(cat /tmp/review-prompt.txt)" \
             > /tmp/sdlc-review.md 2>&1 || true
           cat /tmp/sdlc-review.md
 

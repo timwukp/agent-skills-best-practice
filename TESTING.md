@@ -110,3 +110,33 @@ Used the skill to build a Quick POC web-UI test agent and ran it end-to-end agai
 
 - **Result:** PARTIAL — 12 PASS / 1 FAIL / 8 PARTIAL across 21 steps, 11 cookbook corrections captured, 21 screenshots, schema-valid JSON report.
 - **Surfaced gotcha:** Live View "Take control"/"Release" tears down the harness automation context; workaround = interact in Live View *without* clicking Take control + agent must reconnect (re-read the page, do not reuse the pre-login handle). Filed as upstream issue [aws/bedrock-agentcore-sdk-python#518](https://github.com/aws/bedrock-agentcore-sdk-python/issues/518); mitigation documented in `skills/skills/agentcore-harness-builder/references/browser-auth.md`.
+
+## Recorded Results — Batch 4 (ai-native-sdlc)
+
+This skill is tested differently from the others, because it is not advice an agent follows — it is a **gate that can refuse a merge**. So the question is not "does the model behave well when it reads this" but "does the enforcement actually refuse the things it claims to refuse". Layers 2 and 3 below are therefore the load-bearing ones.
+
+### Layer 1: Static validation
+Passes skill-creator `quick_validate` ("Skill is valid!"). All 38 skills in the repo still validate.
+
+### Layer 2: Self-tests
+6 suites — `test_gate.py`, `test_pretooluse_hook.py`, `test_ci_gate.py`, `test_hook_config.py`, `test_hardening.py`, `test_supply_chain.py`. All green. `test_ci_gate.py` includes a consistency table asserting the local gate and the vendored CI gate agree on 14 status strings, so the two copies cannot drift apart silently.
+
+### Layer 3: Mutation testing — the primary evidence
+`mutation_proof.py` breaks the implementation **36** different ways and requires a suite to go red for each. **36 killed / 0 survived**, confirmed stable over 5 consecutive sweeps.
+
+This exists because most of the enforcement code was written **code-first, not test-first** — the skill mandates TDD and its own gates did not follow it. Mutation testing is the compensating control: a test written after the code inherits the code's assumptions and can pass while the code is broken. It has repeatedly earned its place:
+
+- A **substring** status match meant `not-accepted`, `unaccepted` and `preaccepted` all read as *accepted* — an explicit rejection opened the gate.
+- A `\s*` field regex **matched newlines**, so an empty field captured the *following line's* content. Latent until a field that could be empty was added.
+- A missing `import re` raised `NameError`, which the hook's fail-open handler converted into a **silent allow** — every path-traversal slug passed.
+
+Two survivors were *not* code bugs and are recorded because the distinction matters: one **equivalent mutant** (two overlapping guards each sufficient alone, so disabling either changed no behaviour) and one **flaky mutant** killed only ~50% of runs, where the assertion was correct but the fixture was too small — a randomised order of two items is already sorted half the time. Both were resolved by strengthening the test, not the code.
+
+### Layer 4: Real-repository verification
+Run end-to-end against a real brownfield repo (`timwukp/Kiro-Crew-Training`): the loop drove a change from intent through eval-first implementation to a merged PR, with `sdlc-gate` configured as a required status check. The workflow's first real run was confirmed by **reading the runner log** rather than trusting a green tick — diff detection, `SDLC CI GATE PASSED`, and eval `PASS` all present.
+
+- **Gate blocking verified live:** a deliberate stage-skip PR was correctly reported `sdlc-gate: fail` with `mergeable_state=blocked`.
+- **Bypass also verified live, and it is a real limitation:** with `enforce_admins=false`, an administrator merged that red PR anyway. The gate is **binding for non-admins, advisory for administrators** until an org-level ruleset is in place. Documented in `references/limitations.md`.
+
+### Not tested — stated rather than implied
+No Layer 2 blind trigger-routing round has been run for this skill (its `trigger_evals.json` ships 22 queries including 10 near-miss negatives, but they have not been executed by independent judges). Untested: Windows and macOS, monorepos, multi-intent PRs, polyglot repos, concurrent PRs, and fork-based contributions. Every test was written by the implementation's author, which is the weakest form of assurance; there has been no independent review and no penetration test. See `skills/skills/ai-native-sdlc/COMPATIBILITY.md` for the full support matrix separating verified from expected.
