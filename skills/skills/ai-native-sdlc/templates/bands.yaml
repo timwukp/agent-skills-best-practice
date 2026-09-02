@@ -1,0 +1,19 @@
+# bands.yaml — control-band config for the Maintain stage.
+# Version-controlled and unit-tested. The DETECTION script (deterministic) reads this;
+# the model is never in the detection path. On a breach it invokes the agent per tier.
+
+metric: <name>                 # e.g. checkout_error_rate
+baseline: rolling_30d          # how the expected value is computed
+rules: western_electric        # which run-rules flag a breach
+
+tiers:
+  - sigma: 1
+    action: log                # record only
+  - sigma: 2
+    action: diagnose           # invoke agent READ-ONLY
+    tools: [Read, Grep, "Bash(gh run view *)"]
+  - sigma: 3
+    action: propose            # agent may act ONLY via these gated paths
+    allow: [pull_request, "runbook:rollback-deploy"]
+
+# On diagnose/propose, the agent writes its finding as a NEW intent.md that re-enters Stage 1.

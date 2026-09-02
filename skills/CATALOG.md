@@ -61,6 +61,7 @@ All available skills organized by category. Each skill lives in `skills/skills/<
 
 | Skill | Description |
 |-------|-------------|
+| [ai-native-sdlc](skills/ai-native-sdlc/) | Runs a change as a loop of committed, machine-readable artifacts (intent.md → spec.md → plan.md → diff+tests → PR → bands.yaml → new intent.md), and makes the stage order *enforceable* rather than advisory via a PreToolUse hook (write-time, fails open) and a CI gate (merge-time, fails closed). Includes mutation-verified tests for its own gates. |
 | [code-standards-adopter](skills/code-standards-adopter/) | Infers a codebase's implicit coding conventions and makes them explicit: evidence-based lint configs, a conventions document, and agent steering rules so AI-written code matches team style. |
 | [legacy-code-testing](skills/legacy-code-testing/) | Adds tests to untested legacy code safely: characterization tests that pin current behavior, seam identification for untestable dependencies, and risk-ranked coverage strategy. |
 | [code-review-assistant](skills/code-review-assistant/) | Performs code reviews analyzing security, performance, and maintainability. Applies SOLID principles and checks for anti-patterns with structured feedback. |

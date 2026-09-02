@@ -1,0 +1,67 @@
+{
+  "skill_name": "ai-native-sdlc",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We keep losing track of why features were built. Start work on adding rate limiting to our upload endpoint.",
+      "expected_output": "An intent/<slug>/intent.md is created from the template, filled in with the problem, desired outcome, affected users and systems, constraints, success criteria and open questions. No spec, no plan and no source code are produced, and the assistant explicitly leaves acceptance to the product owner instead of setting Status itself.",
+      "expectations": [
+        "A file matching intent/*/intent.md is created",
+        "The file contains a Status field",
+        "The Status is NOT set to accepted by the assistant",
+        "No spec.md is created in the same turn",
+        "No plan.md is created in the same turn",
+        "No application source file is modified",
+        "The response states that the product owner must accept the intent before design starts"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "intent/checkout-retry/intent.md is accepted and intent/checkout-retry/spec.md is signed off. Implement it.",
+      "expected_output": "The assistant produces intent/checkout-retry/plan.md first — naming the files that change, the order of work, the risks and the tests that prove it — and does not edit any source file until that plan is accepted. It reports that the build gate is open only because both prior artifacts carry the required Status.",
+      "expectations": [
+        "intent/checkout-retry/plan.md is created before any source file is edited",
+        "The plan names specific files that will change",
+        "The plan names the tests that will prove the change",
+        "The plan records at least one risk or rejected alternative",
+        "No source file is modified in the same turn as the plan is written",
+        "The assistant does not set the plan's Status to accepted itself"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Fix the bug where an empty cart returns a 500 instead of a 200 with an empty list. plan.md for this change is already accepted.",
+      "expected_output": "A failing test is written and run FIRST, its failure is shown, and only then is the implementation changed until the test passes. The test itself is not edited to accommodate the code.",
+      "expectations": [
+        "A test is created or modified before the implementation is changed",
+        "The test is executed and its failure is reported before the fix",
+        "The implementation is then changed so the test passes",
+        "The test's assertions are not weakened or deleted to make it pass",
+        "The final state shows the verification command exiting zero"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Add stage gates to this repository so the SDLC order cannot be skipped.",
+      "expected_output": "Both enforcement layers are installed — the PreToolUse hook config plus the vendored gate scripts, and the CI workflow — and the assistant states clearly that the check is not binding until it is marked required in branch protection, which only a repository admin can do.",
+      "expectations": [
+        ".kiro/hooks/sdlc-gate.json is created",
+        "A gate script is vendored into the repository rather than referenced from a home directory",
+        "A workflow file is created under .github/workflows/",
+        "The response states that the check must be marked required in branch protection to be binding",
+        "The response does not claim the process is enforced merely because the files exist"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Our checkout error rate crossed three standard deviations last night. Close the loop on it.",
+      "expected_output": "The breach is treated as Stage 6: the diagnosis is written as a NEW intent.md that re-enters Stage 1, rather than being fixed directly in main. The response notes that at the 3-sigma tier the agent may only open a PR or run a pre-approved runbook, and that detection itself stays deterministic.",
+      "expectations": [
+        "A new intent.md is created describing the incident",
+        "The change is routed through the normal artifact chain rather than committed straight to the default branch",
+        "The response distinguishes the response tiers by deviation",
+        "The response states that the model is not in the detection path"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "skill_name": "ai-native-sdlc",
+  "queries": [
+    { "query": "Run this change through the SDLC", "should_trigger": true },
+    { "query": "Let's start a new feature properly this time", "should_trigger": true },
+    { "query": "Capture what we just discussed as intent", "should_trigger": true },
+    { "query": "Turn this idea into a spec before we build anything", "should_trigger": true },
+    { "query": "Write a plan first, I don't want you touching code yet", "should_trigger": true },
+    { "query": "We keep skipping design and it bites us — enforce the process", "should_trigger": true },
+    { "query": "Add stage gates to CI so nobody can merge without a spec", "should_trigger": true },
+    { "query": "Onboard this legacy repo to a governed change process", "should_trigger": true },
+    { "query": "Last night's incident should become backlog work, close the loop", "should_trigger": true },
+    { "query": "How do I stop the agent editing files before the plan is approved?", "should_trigger": true },
+    { "query": "I want an audit trail showing who asked for what and who approved it", "should_trigger": true },
+    { "query": "Set up control bands so a metric breach opens a PR automatically", "should_trigger": true },
+
+    { "query": "Create a CI/CD pipeline that builds and deploys this service to ECS", "should_trigger": false },
+    { "query": "Review this pull request for security issues", "should_trigger": false },
+    { "query": "Write unit tests for the auth module", "should_trigger": false },
+    { "query": "Set up a git branching strategy for the team", "should_trigger": false },
+    { "query": "Do a threat model for our payments flow", "should_trigger": false },
+    { "query": "Write user stories for the next sprint", "should_trigger": false },
+    { "query": "Generate a Terraform module for an S3 bucket", "should_trigger": false },
+    { "query": "Fix this failing test", "should_trigger": false },
+    { "query": "Explain what this function does", "should_trigger": false },
+    { "query": "Run the linter and fix the warnings", "should_trigger": false }
+  ]
+}

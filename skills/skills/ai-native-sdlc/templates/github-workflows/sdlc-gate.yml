@@ -1,0 +1,179 @@
+name: SDLC Gate
+
+# Merge-time backstop for the AI-Native SDLC artifact chain. Unlike the local
+# PreToolUse hook (one session, fails OPEN), this runs for every PR regardless of
+# who or what produced the change, and fails CLOSED.
+#
+# Make it binding: Settings -> Branches -> branch protection rule for your default
+# branch -> "Require status checks to pass" -> select "sdlc-gate". Without that the
+# check is only advisory and a red X can still be merged.
+
+on:
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sdlc-gate:
+    name: sdlc-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the PR head
+        uses: actions/checkout@v4
+        with:
+          # Need the base commit too, to diff against it.
+          fetch-depth: 0
+
+      # The gate is stdlib-only on purpose: no install step, nothing to pin.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: List files changed in this PR
+        run: |
+          set -euo pipefail
+          base="origin/${{ github.base_ref }}"
+          git fetch --no-tags --depth=0 origin "${{ github.base_ref }}" || true
+          # Three-dot diff = changes introduced by this branch, excluding whatever
+          # landed on the base since it was cut.
+          git diff --name-only "$base"...HEAD > changed-files.txt || \
+            git diff --name-only HEAD~1..HEAD > changed-files.txt
+          echo "--- changed files ---"
+          cat changed-files.txt
+
+      - name: Validate the SDLC artifact chain
+        run: |
+          python3 .sdlc/scripts/sdlc_ci_gate.py \
+            --repo . \
+            --changed-files-from changed-files.txt
+
+      - name: Run SDLC evals
+        # Every eval under evals/ must pass. This is where the "write the eval
+        # first, watch it fail, then implement" discipline becomes enforceable:
+        # a merge cannot happen with a red eval.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          found=0
+          for f in evals/check_*.py; do
+            found=1
+            echo "== $f"
+            python3 "$f"
+          done
+          if [ "$found" = "0" ]; then
+            echo "no evals/check_*.py found — nothing to run"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # OPTIONAL: Stage 5 of the playbook — "AI in the PR review loop".
+  # Runs REVIEW.md's passes over the diff with Kiro CLI in headless mode.
+  #
+  # Deliberately a SEPARATE job and NOT a required check:
+  #   - it needs a KIRO_API_KEY secret (Pro/Pro+/Pro Max/Power only), and a repo
+  #     without one must not see every PR fail, so the step self-skips instead
+  #   - review findings inform a human; they do not approve or block. The agent
+  #     that wrote the code must not be the thing that passes it.
+  # Add it to branch protection ONLY if you accept an LLM in the merge path.
+  # ---------------------------------------------------------------------------
+  sdlc-review:
+    name: sdlc-review (advisory)
+    runs-on: ubuntu-latest
+    needs: sdlc-gate
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Skip when no API key is configured
+        id: guard
+        env:
+          KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
+        run: |
+          if [ -z "${KIRO_API_KEY:-}" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No KIRO_API_KEY secret — skipping the agentic review pass."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Kiro CLI
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          curl -fsSL https://cli.kiro.dev/install | bash
+          # The installer drops the binary in ~/.local/bin, which is NOT on PATH
+          # in a fresh runner. Without this line every later step fails with
+          # "kiro-cli: command not found".
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Kiro CLI
+        if: steps.guard.outputs.run == 'true'
+        env:
+          KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
+        run: kiro-cli --version
+
+      - name: Get PR diff
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          git diff "origin/${{ github.base_ref }}...HEAD" > /tmp/pr-diff.txt
+          echo "Diff size: $(wc -l < /tmp/pr-diff.txt) lines"
+
+      - name: Review against REVIEW.md and the committed spec/plan
+        if: steps.guard.outputs.run == 'true'
+        env:
+          KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
+        run: |
+          # The diff is piped INTO the prompt rather than left for the agent to
+          # find, so the review cannot silently skip it. Capped to bound tokens.
+          DIFF=$(head -500 /tmp/pr-diff.txt)
+          REVIEW_MD=$( [ -f REVIEW.md ] && cat REVIEW.md || echo "(no REVIEW.md at repo root)" )
+          SPECS=$(cat intent/*/spec.md intent/*/plan.md 2>/dev/null | head -300 || true)
+          # --trust-tools=read,grep is least privilege: a reviewer reads, never writes.
+          # '|| true' keeps this advisory — a review problem must not fail the build.
+          kiro-cli chat --no-interactive --trust-tools=read,grep \
+            "You are reviewing a pull request against this repository's own review
+             policy. THE POLICY (REVIEW.md):
+             $REVIEW_MD
+
+             THE COMMITTED SPEC AND PLAN for the change:
+             $SPECS
+
+             THE DIFF:
+             $DIFF
+
+             Run the policy's passes in order. Report Important findings first,
+             then at most 5 Nits. Call out any place the diff does something the
+             spec or plan does not describe, and any place it silently drops
+             something they require. Be concise; only real issues." \
+            > /tmp/sdlc-review.md 2>&1 || true
+          cat /tmp/sdlc-review.md
+
+      - name: Post the review as a PR comment
+        if: steps.guard.outputs.run == 'true' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let review = 'Review not available.';
+            try { review = fs.readFileSync('/tmp/sdlc-review.md', 'utf8'); } catch (e) {}
+            const body = [
+              '## 🤖 AI-Native SDLC review (advisory)',
+              '',
+              review,
+              '',
+              '---',
+              '_Findings inform the human approver; they do not approve or block._',
+              '_Passes are defined in `REVIEW.md`. Powered by Kiro CLI headless mode._',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });

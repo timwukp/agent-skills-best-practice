@@ -35,6 +35,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/ai-native-sdlc",
         "./skills/api-design",
         "./skills/aws-well-architected-review",
         "./skills/cicd-pipeline",
