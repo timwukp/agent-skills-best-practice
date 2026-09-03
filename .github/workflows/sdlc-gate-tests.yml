@@ -91,3 +91,31 @@ jobs:
           bash -n skills/skills/ai-native-sdlc/scripts/verify_gate_integrity.sh
           bash -n skills/skills/ai-native-sdlc/scripts/install_enforcement.sh 2>/dev/null || true
           echo "shell syntax OK"
+
+  gate-tests-green:
+    # ONE stable check that summarises the whole matrix, so branch protection can require
+    # this single name instead of 15 volatile cell names. Renaming or adding a matrix cell
+    # would otherwise silently break protection, or leave a required check that no longer
+    # exists and blocks every PR forever.
+    #
+    # if: always() is essential -- without it this job is SKIPPED when a dependency fails,
+    # and GitHub treats a skipped required check as PASSING. That would invert the whole
+    # point and make the gate advisory. So it always runs and inspects results explicitly.
+    name: gate tests green
+    runs-on: ubuntu-latest
+    needs: [suites, shell-scripts]
+    if: always()
+    steps:
+      - name: Require every matrix cell to have succeeded
+        run: |
+          set -euo pipefail
+          echo "suites:        ${{ needs.suites.result }}"
+          echo "shell-scripts: ${{ needs.shell-scripts.result }}"
+          # A matrix job's result is 'success' only when EVERY cell succeeded.
+          # Treat anything else -- failure, cancelled, skipped -- as not green.
+          if [ "${{ needs.suites.result }}" != "success" ] \
+             || [ "${{ needs.shell-scripts.result }}" != "success" ]; then
+            echo "::error::gate tests are not green — see the individual cells above"
+            exit 1
+          fi
+          echo "all gate test cells green"
