@@ -277,6 +277,21 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "if len(slug_lines) > 1:",
         "if False:",
     ),
+    # --- polyglot / deprecation window --------------------------------------
+    (
+        "ci: pending-language files produce no deprecation warning (silent hole returns)",
+        "sdlc_ci_gate.py", "test_polyglot.py",
+        "if pending_changed:",
+        "if False:",
+    ),
+    (
+        # Promoting a suffix early is the breaking change the policy exists to prevent, so
+        # the suite must notice if the pending list stops being distinct from the enforced one.
+        "ci: pending list emptied (languages silently ungoverned again)",
+        "sdlc_ci_gate.py", "test_polyglot.py",
+        'PENDING_SOURCE_SUFFIXES = (\n    ".c", ".cc", ".cpp",',
+        'PENDING_SOURCE_SUFFIXES = (\n    ".zzz1", ".zzz2", ".zzz3",',
+    ),
 ]
 
 

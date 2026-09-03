@@ -158,8 +158,39 @@ This was found by the matrix rather than by reasoning: the Windows cells raised
 `FileNotFoundError (WinError 2)` on `/bin/sh`. The hook-config suite now skips its
 execution cases on non-POSIX hosts and says so out loud.
 
-### Not tested — do not assume
+## ANNOUNCED DEPRECATION — more languages become enforced in `sdlc-gate-v2`
 
+**This is the announcement required before a breaking change.** Read it if your repository
+contains any language below.
+
+Coverage enforcement is extension-based, and the enforced list originally held only 13
+suffixes. A repository written in an unlisted language was therefore **ungoverned without
+knowing it**: a `.cpp` or `.kt` change produced `note: no product source files changed` and the
+gate reported `PASSED`. That is a silent hole precisely where the tool claims to be strict.
+
+These suffixes are now **detected and warned about**, and will be **enforced in
+`sdlc-gate-v2`**:
+
+`.c` `.cc` `.cpp` `.cxx` `.h` `.hpp` `.cs` `.kt` `.kts` `.swift` `.php` `.scala` `.m` `.mm`
+`.dart` `.ex` `.exs` `.lua` `.pl` `.vue` `.svelte` `.scss` `.sass` `.less` `.tf`
+
+**What happens now (this version).** A changed file in one of these languages that is *not*
+named in the active intent's `plan.md` produces a `DEPRECATION` note listing the files. The
+build still **passes**.
+
+**What happens in `sdlc-gate-v2`.** The same situation **fails** the gate, exactly as an
+unlisted `.py` file does today.
+
+**How to prepare.** Name those files in your active intent's `plan.md`, which is what the
+enforced languages already require. The warning lists every affected path, so the remediation
+is mechanical.
+
+**Why it is not enforced immediately.** Promoting a suffix turns a previously-green repository
+red without it changing a line of its own code — a MAJOR change under the rules above. The
+policy requires a warning release first, and this is the project honouring its own policy
+rather than repeating the separation-of-duties mistake recorded below.
+
+### Not tested — do not assume
 | Dimension | Status |
 |---|---|
 | Polyglot repos | **Untested.** Source-file detection is extension-based. |
