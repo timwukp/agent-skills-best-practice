@@ -35,6 +35,16 @@ def check(name: str, cond: bool, detail: str = "") -> None:
         FAILURES.append(name)
 
 
+def _is_uuid(value: str) -> bool:
+    import uuid as _uuid
+
+    try:
+        _uuid.UUID(value)
+        return True
+    except (ValueError, AttributeError, TypeError):
+        return False
+
+
 # ---------------------------------------------------------------- make_sbom
 def test_sbom() -> None:
     print("make_sbom.py")
@@ -90,6 +100,38 @@ def test_sbom() -> None:
         check("declares CycloneDX", doc["bomFormat"] == "CycloneDX")
         check("declares a spec version", doc["specVersion"] == "1.5")
         check("top component carries the version", doc["metadata"]["component"]["version"] == "v9")
+
+        # serialNumber is REQUIRED by real consumers, not merely nice to have.
+        # actions/attest-sbom rejects a document outright unless bomFormat, specVersion AND
+        # serialNumber are all present -- its checkIsCycloneDX() returns false otherwise and
+        # the action fails with "Unsupported SBOM format". That is exactly what broke the
+        # first real release run: the SBOM looked valid by this suite's own standards and
+        # was refused by the consumer that mattered.
+        #
+        # Lesson encoded here: validate against a CONSUMER's contract, not against our own
+        # idea of the format.
+        check("declares a serialNumber", "serialNumber" in doc,
+              "actions/attest-sbom rejects CycloneDX without it")
+        serial = doc.get("serialNumber", "")
+        check("serialNumber is a urn:uuid", serial.startswith("urn:uuid:"), f"got {serial!r}")
+        check(
+            "serialNumber is a well-formed UUID",
+            _is_uuid(serial.replace("urn:uuid:", "")),
+            f"got {serial!r}",
+        )
+        # Deterministic, not random: the same content must produce the same SBOM bytes, or
+        # two builds of one commit differ and "reproducible" is not true of the SBOM.
+        check(
+            "serialNumber is derived from content, not random",
+            sbom_mod.build(root, "test-gate", "v9")["serialNumber"] == serial,
+        )
+        # ...but it must still distinguish different content.
+        (root / "scripts" / "extra.py").write_bytes(b"print('b')\n")
+        check(
+            "serialNumber changes when content changes",
+            sbom_mod.build(root, "test-gate", "v9")["serialNumber"] != serial,
+        )
+        (root / "scripts" / "extra.py").unlink()
 
         # Stable ordering: an SBOM that reorders between runs produces noisy diffs and
         # defeats comparison of two builds. Asserting "two runs agree" is too weak -- with
