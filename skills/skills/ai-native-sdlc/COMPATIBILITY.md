@@ -79,15 +79,19 @@ recurring.
 {
   "ci_verified": {
     "os": ["ubuntu-latest", "macos-latest", "windows-latest"],
-    "python": ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    "python": ["3.9", "3.10", "3.11", "3.12", "3.13"],
+    "repo_shapes": ["monorepo-single-intent", "multi-intent-pr-refused", "concurrent-pr-independent"]
   },
   "posix_only": [
     "the local PreToolUse hook command in templates/kiro-hooks/sdlc-gate.json"
   ],
+  "known_hazards": [
+    "concurrent-pr lost update: .sdlc/active is a single shared value; needs strict status checks"
+  ],
   "documented_untested": {
     "os": [],
     "python": [],
-    "repo_shapes": ["monorepo", "polyglot", "multi-intent-pr", "concurrent-pr", "fork-pr"],
+    "repo_shapes": ["polyglot", "fork-pr"],
     "forges": ["gitlab", "bitbucket"],
     "surfaces": ["kiro-web"]
   }
@@ -100,9 +104,44 @@ recurring.
 |---|---|
 | Python | 3.9, 3.10, 3.11, 3.12, 3.13 — stdlib only, no dependencies |
 | OS | `ubuntu-latest`, `macos-latest`, `windows-latest` (also run on Amazon Linux 2023) |
-| Repo shape | Single-package repo; one static single-page site; one Python feature branch |
+| Repo shape | Single-package repo; static single-page site; **monorepo** with a single active intent; a **multi-intent PR is refused** with a diagnostic naming the intent that owns each file |
+| Concurrency | Concurrent PRs each declaring their own intent validate **independently** — but see the hazard below |
 | Forge | GitHub — Actions and branch protection |
 | Surfaces | Kiro IDE and CLI (`PreToolUse`); official Kiro and KiroCrew hook runtimes |
+
+### Monorepo: one intent per change, by design
+
+A monorepo works, with a rule: **exactly one intent may be active per change.** The coverage
+check asks "does *this* intent's plan describe *this* change", and that question has no answer
+when several intents are active at once.
+
+All three behaviours below are tested in `scripts/test_scale.py`:
+
+- A single-intent change inside a monorepo passes normally.
+- A PR spanning two intents is **refused**, and the diagnostic names the intent whose plan
+  *does* cover each stray file, then says to split the PR — rather than nudging you to widen
+  the active plan to cover work it does not describe.
+- `.sdlc/active` listing more than one slug is **refused by both gates**. It previously read
+  only the first line and silently discarded the rest, so a change was attributed to an intent
+  the author had not chosen, with no diagnostic at all.
+
+### Concurrency hazard: `.sdlc/active` is a shared mutable value
+
+Each pull request is validated against its own merge commit, so two PRs each declaring their
+own intent are individually correct. That part is tested.
+
+**What is not solved:** `.sdlc/active` is one file. A branch cut before someone else's merge
+still carries the old pointer and overwrites theirs on merge, so that intent's attribution
+silently disappears from `main`. No per-PR check can detect it — each PR genuinely is valid on
+its own.
+
+Two things narrow it, and neither is a fix:
+
+1. The gate emits a **note whenever a change rewrites `.sdlc/active`**, so a pointer handover
+   is visible at review time instead of being folklore.
+2. The real mitigation is in branch protection: **require branches to be up to date** (strict
+   status checks) when several intents are in flight. That forces a rebase, which is what
+   makes the lost update impossible.
 
 ### Windows: the CI gate works, the local hook does not
 
@@ -123,9 +162,7 @@ execution cases on non-POSIX hosts and says so out loud.
 
 | Dimension | Status |
 |---|---|
-| Monorepo, multi-intent PRs | **Untested.** One PR touching several intents is unmodelled. |
 | Polyglot repos | **Untested.** Source-file detection is extension-based. |
-| Concurrent PRs | **Untested.** Racing on one `.sdlc/active` value is unmodelled. |
 | Fork-based contributions | **Untested.** |
 | GitLab / Bitbucket | **Unsupported.** The gate logic is portable; the workflow is not. |
 | Kiro Web surface | **Unsupported** — `PreToolUse` does not exist there; CI is the only control. |

@@ -79,8 +79,8 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
     (
         "hook: do not strip the active slug",
         "sdlc_pretooluse_hook.py", "test_pretooluse_hook.py",
-        'slug = active_file.read_text(encoding="utf-8").strip().splitlines()[0].strip()',
-        'slug = active_file.read_text(encoding="utf-8").splitlines()[0]',
+        'ln.strip()\n            for ln in active_file.read_text(encoding="utf-8").splitlines()\n            if ln.strip() and not ln.strip().startswith("#")',
+        'ln\n            for ln in active_file.read_text(encoding="utf-8").splitlines()\n            if ln.strip() and not ln.strip().startswith("#")',
     ),
     (
         "hook: block instead of allowing when the event is unparsable (fail closed)",
@@ -250,6 +250,31 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "review: empty diff accepted (reviews nothing, reports success)",
         "build_review_prompt.py", "test_supply_chain.py",
         "if not diff.strip():",
+        "if False:",
+    ),
+    # --- scale / monorepo / concurrency -------------------------------------
+    (
+        "ci: multi-intent .sdlc/active silently truncated to the first line",
+        "sdlc_ci_gate.py", "test_scale.py",
+        "if len(declared) > 1:",
+        "if False:",
+    ),
+    (
+        "ci: uncovered file no longer points at the intent that owns it",
+        "sdlc_ci_gate.py", "test_scale.py",
+        "if c not in owned_elsewhere and plan_covers(other_plan, c):",
+        "if False:",
+    ),
+    (
+        "ci: pointer handover not flagged as a concurrency hazard",
+        "sdlc_ci_gate.py", "test_scale.py",
+        'if any(c.replace("\\\\", "/") == ".sdlc/active" for c in changed):',
+        "if False:",
+    ),
+    (
+        "hook: multi-intent .sdlc/active allowed (drifts from the CI gate)",
+        "sdlc_pretooluse_hook.py", "test_scale.py",
+        "if len(slug_lines) > 1:",
         "if False:",
     ),
 ]
