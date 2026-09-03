@@ -13,13 +13,23 @@ name: SDLC Gate Tests
 on:
   push:
     branches: [main]
+    # Filtering pushes is fine: required status checks only apply to pull requests, so a
+    # skipped push run cannot block anything.
     paths:
       - 'skills/skills/ai-native-sdlc/**'
       - '.github/workflows/sdlc-gate-tests.yml'
   pull_request:
-    paths:
-      - 'skills/skills/ai-native-sdlc/**'
-      - '.github/workflows/sdlc-gate-tests.yml'
+    # DO NOT add a paths filter here. `gate tests green` is a REQUIRED status check, and a
+    # required check whose workflow is path-filtered simply never reports on a PR that
+    # touches other files -- GitHub then blocks that PR forever, waiting on a check that
+    # can never arrive. Waiting does not help; only removing the filter or the requirement
+    # does.
+    #
+    # This is not hypothetical: PR #48 changed only .github/workflows/release-attest.yml,
+    # the filter excluded it, and the PR was permanently BLOCKED with 1/2 required checks
+    # reported. The cost of always running is 15 matrix cells on every PR, including
+    # doc-only ones. That is the price of a required check that can actually report, and it
+    # is the right trade.
   workflow_dispatch:
 
 permissions:
