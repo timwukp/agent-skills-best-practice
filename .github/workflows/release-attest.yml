@@ -83,7 +83,14 @@ jobs:
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "path=dist/$NAME" >> "$GITHUB_OUTPUT"
           echo "digest=$(sha256sum "dist/$NAME" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          sha256sum "dist/$NAME" | tee "dist/$NAME.sha256"
+          # Write the checksum with the BARE FILENAME, not "dist/<name>".
+          # A consumer downloads the release assets into a flat directory and runs
+          # `sha256sum -c <file>.sha256` there. A recorded "dist/" prefix makes that fail
+          # with "No such file or directory" -- which reads like tampering when it is only a
+          # path artefact of how we happened to build. Found by actually downloading the
+          # first published release and verifying it as a consumer would.
+          ( cd dist && sha256sum "$NAME" > "$NAME.sha256" )
+          cat "dist/$NAME.sha256"
 
       - name: Generate a CycloneDX SBOM
         # The gate is stdlib-only, so the SBOM's value is not a dependency list — it is an
