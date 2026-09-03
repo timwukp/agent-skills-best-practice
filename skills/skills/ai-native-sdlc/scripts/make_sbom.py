@@ -21,6 +21,7 @@ import hashlib
 import json
 import pathlib
 import sys
+import uuid
 
 # Files whose contents constitute the enforcement logic. Anything outside this list is
 # documentation and does not change a merge decision.
@@ -73,9 +74,26 @@ def build(root: pathlib.Path, name: str, version: str) -> dict:
     # does not affect the reproducibility of the artifact itself.
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
 
+    # serialNumber is MANDATORY for real consumers, not decorative: actions/attest-sbom's
+    # checkIsCycloneDX() requires bomFormat AND specVersion AND serialNumber, and rejects
+    # the document with "Unsupported SBOM format" if any is missing. Omitting it broke the
+    # first real release run.
+    #
+    # Derived from the component digests rather than random (uuid4). The CycloneDX spec
+    # intends serialNumber to identify a BOM instance, and a fresh random value would be
+    # spec-legal -- but it would make two SBOMs of IDENTICAL content differ, which
+    # contradicts the reproducibility this pipeline claims. uuid5 over the sorted
+    # name+digest pairs gives a value that is stable for the same content and different for
+    # different content, which is what a consumer comparing two builds actually needs.
+    fingerprint = "\n".join(
+        f"{c['name']}:{c['hashes'][0]['content']}" for c in components
+    )
+    serial = uuid.uuid5(uuid.NAMESPACE_URL, "ai-native-sdlc-sbom:" + fingerprint)
+
     return {
         "bomFormat": "CycloneDX",
         "specVersion": "1.5",
+        "serialNumber": f"urn:uuid:{serial}",
         "version": 1,
         "metadata": {
             "timestamp": now,
