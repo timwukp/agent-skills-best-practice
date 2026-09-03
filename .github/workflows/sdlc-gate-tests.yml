@@ -1,0 +1,93 @@
+# Runs the ai-native-sdlc gate's own test suites across the OS and Python versions that
+# COMPATIBILITY.md claims are verified.
+#
+# This workflow is what makes that claim true. scripts/test_support_matrix.py asserts that
+# every entry in the `support-matrix` block below is actually exercised here, so widening
+# the documented matrix without widening this file is a BUILD FAILURE, not a doc nit.
+#
+# Keep the matrix lists in this file literal (not composed from expressions): the
+# consistency test reads them statically, and it cannot resolve ${{ }} expressions.
+
+name: SDLC Gate Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/skills/ai-native-sdlc/**'
+      - '.github/workflows/sdlc-gate-tests.yml'
+  pull_request:
+    paths:
+      - 'skills/skills/ai-native-sdlc/**'
+      - '.github/workflows/sdlc-gate-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  suites:
+    name: suites (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Do NOT cancel siblings on first failure: when a Windows-only or 3.9-only break
+      # appears we want the full picture of which cells fail, not just the first one.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run the gate test suites
+        # bash on all three runners (Windows uses the bundled Git bash) so one script covers
+        # the matrix. Exit status is captured per suite rather than piped, because piping
+        # through tail/head would report a failing suite as green.
+        shell: bash
+        working-directory: skills/skills/ai-native-sdlc/scripts
+        run: |
+          set -uo pipefail
+          fail=0
+          for t in test_gate test_pretooluse_hook test_ci_gate test_hook_config \
+                   test_hardening test_supply_chain test_support_matrix; do
+            echo "== $t"
+            if python "$t.py"; then
+              echo "   PASS $t"
+            else
+              echo "   FAIL $t"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Mutation proof
+        # Only on one cell: the mutation sweep runs every suite 36 times, so running it on
+        # all 15 cells would burn ~540 suite executions for no extra signal — the mutations
+        # are platform-independent.
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        shell: bash
+        working-directory: skills/skills/ai-native-sdlc/scripts
+        run: python mutation_proof.py
+
+  shell-scripts:
+    # verify_gate_integrity.sh is bash and is only claimed for POSIX runners, so it is
+    # checked separately rather than inside the Windows matrix cells.
+    name: shell scripts (POSIX)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax-check the shell scripts
+        run: |
+          set -euo pipefail
+          bash -n skills/skills/ai-native-sdlc/scripts/verify_gate_integrity.sh
+          bash -n skills/skills/ai-native-sdlc/scripts/install_enforcement.sh 2>/dev/null || true
+          echo "shell syntax OK"

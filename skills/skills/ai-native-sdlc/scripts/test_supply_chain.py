@@ -43,8 +43,17 @@ def test_sbom() -> None:
     with tempfile.TemporaryDirectory() as td:
         root = pathlib.Path(td)
         (root / "scripts").mkdir()
-        (root / "scripts" / "gate.py").write_text("print('a')\n", encoding="utf-8")
-        (root / "notes.md").write_text("hello\n", encoding="utf-8")
+        # write_BYTES, not write_text: on Windows text mode translates "\n" to "\r\n", so
+        # the file on disk would not match the literal hash asserted below and the whole
+        # Windows matrix cell failed on it. (Path.write_text only gained a `newline`
+        # parameter in 3.10, and this project claims 3.9, so bytes is the portable fix.)
+        #
+        # The underlying issue is real beyond the test: SBOM component hashes are
+        # line-ending sensitive, so the same content checked out with CRLF hashes
+        # differently. .gitattributes now pins LF for the skill so a release built on any
+        # platform inventories the same bytes.
+        (root / "scripts" / "gate.py").write_bytes(b"print('a')\n")
+        (root / "notes.md").write_bytes(b"hello\n")
         (root / "image.png").write_bytes(b"\x89PNG")
         (root / "__pycache__").mkdir()
         (root / "__pycache__" / "junk.py").write_text("x\n", encoding="utf-8")
