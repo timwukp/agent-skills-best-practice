@@ -272,8 +272,31 @@ def main() -> int:
     active_slug = ""
     active_file = root / ".sdlc" / "active"
     if active_file.is_file():
-        lines = active_file.read_text(encoding="utf-8", errors="replace").strip().splitlines()
-        active_slug = lines[0].strip() if lines else ""
+        raw_lines = active_file.read_text(encoding="utf-8", errors="replace").splitlines()
+        # Blank lines and # comments are ignored; anything else counts as a declaration.
+        declared = [
+            ln.strip() for ln in raw_lines
+            if ln.strip() and not ln.strip().startswith("#")
+        ]
+        if len(declared) > 1:
+            # Previously this read lines[0] and SILENTLY discarded the rest, so a monorepo
+            # user who listed two intents got one of them quietly ignored -- the change was
+            # attributed to an intent the author did not choose, with no diagnostic.
+            #
+            # One active intent per change is the model, deliberately: the coverage rule
+            # asks "does THIS intent's plan describe THIS change", and that question has no
+            # answer if several intents are active at once. A PR spanning two intents should
+            # be split, which is also what makes it reviewable.
+            problems.append(
+                ".sdlc/active declares "
+                + str(len(declared))
+                + " intents ("
+                + ", ".join(declared[:5])
+                + ") but exactly one is allowed — a change must be attributable to a single "
+                "intent. Split the change into one pull request per intent."
+            )
+        elif declared:
+            active_slug = declared[0]
         if active_slug:
             bad = slug_problem(active_slug)
             if bad:
@@ -305,6 +328,21 @@ def main() -> int:
             source_changed = [
                 c for c in changed if c.endswith(SOURCE_SUFFIXES) and not is_meta(c)
             ]
+            # A PR that rewrites .sdlc/active is performing a POINTER HANDOVER, and that is
+            # the one operation that can lose another intent's attribution: the pointer is a
+            # single mutable file, so a branch cut before someone else's merge still carries
+            # the old value and overwrites theirs on merge. Nothing here can prevent that --
+            # each PR is individually valid and the fix is branch protection's "require
+            # branches to be up to date" (strict=true). What the gate can do is make the
+            # hazard visible at review time rather than leaving it as folklore.
+            if any(c.replace("\\", "/") == ".sdlc/active" for c in changed):
+                notes.append(
+                    "this change rewrites .sdlc/active — concurrency hazard: the active "
+                    "pointer is a single shared value, so a branch cut before another "
+                    "intent's merge will overwrite it and silently drop that attribution. "
+                    "Require branches to be up to date (strict status checks) if several "
+                    "intents are in flight at once."
+                )
             if not source_changed:
                 notes.append("no product source files changed")
             elif not (root / ".sdlc").is_dir():
@@ -341,11 +379,42 @@ def main() -> int:
                 plan = root / "intent" / active_slug / "plan.md"
                 uncovered = [c for c in source_changed if not plan_covers(plan, c)]
                 if uncovered:
-                    problems.append(
+                    # In a monorepo the useful question is not merely "is this file in the
+                    # active plan" but "which intent DOES own it". Without that, the message
+                    # sends the reader to edit the active plan, which is usually the wrong
+                    # fix -- the right fix is normally to split the pull request.
+                    owned_elsewhere: dict[str, str] = {}
+                    intent_root = root / "intent"
+                    if intent_root.is_dir():
+                        for other in sorted(p.name for p in intent_root.iterdir() if p.is_dir()):
+                            if other == active_slug:
+                                continue
+                            other_plan = intent_root / other / "plan.md"
+                            if not other_plan.is_file():
+                                continue
+                            for c in uncovered:
+                                if c not in owned_elsewhere and plan_covers(other_plan, c):
+                                    owned_elsewhere[c] = other
+
+                    msg = (
                         f"these changed source files are not named in "
                         f"intent/{active_slug}/plan.md, so the plan does not describe the "
                         f"change being made:\n    " + "\n    ".join(uncovered[:20])
                     )
+                    if owned_elsewhere:
+                        others = sorted(set(owned_elsewhere.values()))
+                        msg += (
+                            "\n\n  These files ARE named by another intent's plan, so this "
+                            "looks like a pull request spanning several intents:\n    "
+                            + "\n    ".join(
+                                f"{c} -> intent/{owned_elsewhere[c]}/plan.md"
+                                for c in sorted(owned_elsewhere)[:20]
+                            )
+                            + f"\n\n  Split this into one pull request per intent "
+                            f"({', '.join([active_slug] + others)}), rather than widening "
+                            f"intent/{active_slug}/plan.md to cover work it does not describe."
+                        )
+                    problems.append(msg)
                 else:
                     notes.append(
                         f"{len(source_changed)} source file(s) changed, all named in "

@@ -157,7 +157,23 @@ def main() -> None:
                 "intent slug, and produce intent/<slug>/intent.md before writing source files."
             )
 
-        slug = active_file.read_text(encoding="utf-8").strip().splitlines()[0].strip()
+        slug_lines = [
+            ln.strip()
+            for ln in active_file.read_text(encoding="utf-8").splitlines()
+            if ln.strip() and not ln.strip().startswith("#")
+        ]
+        # Must agree with sdlc_ci_gate.py, which refuses more than one declared intent.
+        # This copy is vendored per repo, so a divergence here means the write-time hook
+        # allows what the merge-time gate later refuses -- the worst kind of drift, because
+        # the developer only finds out in CI.
+        if len(slug_lines) > 1:
+            return block(
+                f".sdlc/active declares {len(slug_lines)} intents "
+                f"({', '.join(slug_lines[:5])}) but exactly one is allowed.\n"
+                f"A change must be attributable to a single intent — split the work into\n"
+                f"one change per intent."
+            )
+        slug = slug_lines[0] if slug_lines else ""
         # A slug names a directory under intent/. Reject anything that could escape
         # the repo: `root/intent/..` resolves back to root and would look like a
         # valid intent dir, and pathlib lets an absolute part ("/etc") discard the
