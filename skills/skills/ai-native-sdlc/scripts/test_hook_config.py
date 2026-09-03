@@ -57,7 +57,16 @@ def mkrepo(tmp: pathlib.Path, spec_status: str | None) -> pathlib.Path:
     return tmp
 
 
-def run(cmd: str, repo: pathlib.Path, env: dict | None = None) -> int:
+def run(cmd: str, repo: pathlib.Path, env: dict | None = None,
+        cwd: pathlib.Path | None = None) -> int:
+    """Run the hook command.
+
+    `cwd` is the PROCESS working directory and is distinct from the `cwd` field inside the
+    JSON payload. That distinction is load-bearing: the command's resolution chain starts
+    with the RELATIVE path ".sdlc/scripts/sdlc_pretooluse_hook.py", which resolves against
+    the process CWD, while the payload's cwd is only what the hook reads to locate the repo.
+    Kiro runs the hook from the workspace root, so tests pass cwd=repo to match production.
+    """
     payload = json.dumps({
         "hook_event_name": "preToolUse",
         "cwd": str(repo),
@@ -69,8 +78,29 @@ def run(cmd: str, repo: pathlib.Path, env: dict | None = None) -> int:
     if env:
         e.update(env)
     p = subprocess.run(["/bin/sh", "-c", cmd], input=payload, capture_output=True,
-                       text=True, env=e)
+                       text=True, env=e, cwd=str(cwd) if cwd else None)
     return p.returncode
+
+
+def plant_gate(home: pathlib.Path) -> pathlib.Path:
+    """Install the gate under a FAKE $HOME at one of the command's resolution paths.
+
+    This is what makes the test hermetic. Previously cases 1 and 2 inherited the real
+    $HOME, so they only exercised the gate when the developer happened to have the skill
+    installed at ~/.kiro/skills/. On a clean machine (and in CI) the resolution chain found
+    nothing, the command took its deliberate self-disable path, and:
+
+      * "draft must BLOCK" FAILED  — the visible symptom, and
+      * "accepted must ALLOW" PASSED FOR THE WRONG REASON — it got 0 from the self-disable,
+        not from an accepted chain. A false pass is the worse of the two.
+
+    The hook execs its sibling sdlc_gate.py, so both files must be planted.
+    """
+    dest = home / ".kiro" / "skills" / "ai-native-sdlc" / "scripts"
+    dest.mkdir(parents=True, exist_ok=True)
+    for name in ("sdlc_pretooluse_hook.py", "sdlc_gate.py"):
+        shutil.copy2(HERE / name, dest / name)
+    return dest
 
 
 def main() -> int:
@@ -82,36 +112,63 @@ def main() -> int:
     if "~/" in cmd:
         fails.append("command uses '~' — use \"$HOME\" so it survives a non-shell exec")
 
+    # --- gate PRESENT: the decision must come from the artifact chain ----------------
     with tempfile.TemporaryDirectory() as t:
-        repo = mkrepo(pathlib.Path(t), "draft")
-        code = run(cmd, repo)
+        home = pathlib.Path(t) / "home"
+        plant_gate(home)
+        repo = mkrepo(pathlib.Path(t) / "r1", "draft")
+        code = run(cmd, repo, env={"HOME": str(home)}, cwd=repo)
         if code < BLOCK_MIN:
             fails.append(f"draft spec should BLOCK (non-zero), got {code}")
 
     with tempfile.TemporaryDirectory() as t:
-        repo = mkrepo(pathlib.Path(t), "signed-off")
+        home = pathlib.Path(t) / "home"
+        plant_gate(home)
+        repo = mkrepo(pathlib.Path(t) / "r2", "signed-off")
         (repo / "intent" / "feat" / "plan.md").write_text(
             "# p\n\n- **Status:** accepted\n", encoding="utf-8")
-        code = run(cmd, repo)
+        code = run(cmd, repo, env={"HOME": str(home)}, cwd=repo)
         if code != ALLOW:
             fails.append(f"accepted chain should ALLOW (0), got {code}")
 
-    # Infrastructure failures must NOT block. A PATH with a shell but no python3.
+    # --- resolution ORDER: a repo-local copy must win over $HOME --------------------
+    # Documented behaviour that nothing asserted. A repo pinning its own vendored gate
+    # must not be silently overridden by whatever the developer has installed.
     with tempfile.TemporaryDirectory() as t:
-        repo = mkrepo(pathlib.Path(t), "draft")
+        home = pathlib.Path(t) / "home"
+        plant_gate(home)
+        repo = mkrepo(pathlib.Path(t) / "r3", "draft")
+        local = repo / ".sdlc" / "scripts"
+        local.mkdir(parents=True, exist_ok=True)
+        # A repo-local stub with a distinctive exit code: if it runs, we see 3, which is
+        # neither the gate's block (2) nor its allow (0).
+        (local / "sdlc_pretooluse_hook.py").write_text(
+            "import sys\nsys.exit(3)\n", encoding="utf-8")
+        code = run(cmd, repo, env={"HOME": str(home)}, cwd=repo)
+        if code != 3:
+            fails.append(
+                f"repo-local .sdlc/scripts gate must take precedence over $HOME, got {code}")
+
+    # --- infrastructure failures must NOT block ------------------------------------
+    # Each case plants the gate first, so exit 0 can ONLY be attributable to the
+    # infrastructure condition under test and not to a missing gate.
+    with tempfile.TemporaryDirectory() as t:
+        home = pathlib.Path(t) / "home"
+        plant_gate(home)
+        repo = mkrepo(pathlib.Path(t) / "r4", "draft")
         shonly = pathlib.Path(t) / "shonly"
         shonly.mkdir()
         sh = shutil.which("sh") or "/bin/sh"
         os.symlink(sh, shonly / "sh")
-        code = run(cmd, repo, env={"PATH": str(shonly)})
+        code = run(cmd, repo, env={"PATH": str(shonly), "HOME": str(home)}, cwd=repo)
         if code != ALLOW:
             fails.append(
                 f"missing python3 must SELF-DISABLE (0) not block, got {code}")
 
     # Missing gate script must not block either.
     with tempfile.TemporaryDirectory() as t:
-        repo = mkrepo(pathlib.Path(t), "draft")
-        code = run(cmd, repo, env={"HOME": str(pathlib.Path(t) / "nohome")})
+        repo = mkrepo(pathlib.Path(t) / "r5", "draft")
+        code = run(cmd, repo, env={"HOME": str(pathlib.Path(t) / "nohome")}, cwd=repo)
         if code != ALLOW:
             fails.append(f"missing gate script must SELF-DISABLE (0), got {code}")
 
