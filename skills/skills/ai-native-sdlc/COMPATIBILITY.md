@@ -81,6 +81,9 @@ recurring.
     "os": ["ubuntu-latest", "macos-latest", "windows-latest"],
     "python": ["3.9", "3.10", "3.11", "3.12", "3.13"]
   },
+  "posix_only": [
+    "the local PreToolUse hook command in templates/kiro-hooks/sdlc-gate.json"
+  ],
   "documented_untested": {
     "os": [],
     "python": [],
@@ -100,6 +103,21 @@ recurring.
 | Repo shape | Single-package repo; one static single-page site; one Python feature branch |
 | Forge | GitHub — Actions and branch protection |
 | Surfaces | Kiro IDE and CLI (`PreToolUse`); official Kiro and KiroCrew hook runtimes |
+
+### Windows: the CI gate works, the local hook does not
+
+Stated separately because "Windows verified" on its own would be misleading.
+
+The gate **scripts** are pure stdlib Python and are exercised on Windows by the test
+matrix, so the **CI gate is verified there**. But **the local PreToolUse hook command in
+`templates/kiro-hooks/sdlc-gate.json` is POSIX-only**: it is an `sh -c '...'` string using
+`[ -f ]`, `command -v` and `exec`, and Windows has no `/bin/sh`. On Windows the hook
+command simply will not run, so a Windows developer gets the merge-time control and **not**
+the write-time one.
+
+This was found by the matrix rather than by reasoning: the Windows cells raised
+`FileNotFoundError (WinError 2)` on `/bin/sh`. The hook-config suite now skips its
+execution cases on non-POSIX hosts and says so out loud.
 
 ### Not tested — do not assume
 

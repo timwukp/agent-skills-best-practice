@@ -112,6 +112,28 @@ def main() -> int:
     if "~/" in cmd:
         fails.append("command uses '~' — use \"$HOME\" so it survives a non-shell exec")
 
+    # The shipped hook `command` is a POSIX `sh -c '...'` string: it uses [ -f ],
+    # command -v and exec. Windows has no /bin/sh, so the EXECUTION cases below cannot
+    # run there -- previously they raised FileNotFoundError (WinError 2) and failed the
+    # whole matrix cell.
+    #
+    # This is a genuine scope limit, not a test shortcut: the local hook template is
+    # POSIX-only and COMPATIBILITY.md records it as such. The gate SCRIPTS are pure
+    # Python and are exercised on Windows by the other suites, so Windows loses only the
+    # write-time hook, not the CI gate. The skip is printed loudly rather than silently
+    # returning success.
+    if os.name == "nt" or not pathlib.Path("/bin/sh").exists():
+        print("  SKIP hook-command execution cases — no POSIX /bin/sh on this platform.")
+        print("       The shipped hook command is POSIX-only (see COMPATIBILITY.md).")
+        print("       Config-shape assertions above still ran.")
+        if fails:
+            print(f"FAIL ({len(fails)}):")
+            for f in fails:
+                print("  -", f)
+            return 1
+        print("all hook-config tests passed (execution cases skipped: non-POSIX host)")
+        return 0
+
     # --- gate PRESENT: the decision must come from the artifact chain ----------------
     with tempfile.TemporaryDirectory() as t:
         home = pathlib.Path(t) / "home"

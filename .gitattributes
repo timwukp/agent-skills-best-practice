@@ -1,0 +1,37 @@
+# Line-ending policy.
+#
+# WHY THIS MATTERS HERE, beyond tidiness: the ai-native-sdlc release pipeline publishes a
+# CycloneDX SBOM in which every file carries its own SHA-256, plus a tarball that is meant
+# to be byte-reproducible. A checkout that converts LF to CRLF changes those bytes, so the
+# SAME content would inventory under a DIFFERENT hash depending on the machine that built
+# it. That silently undermines both the "reproducible" claim and any consumer trying to
+# verify a hash they were given.
+#
+# Discovered concretely: the Windows CI cells failed because a test fixture written in text
+# mode became CRLF on disk, and its SHA-256 no longer matched the literal the test asserted.
+# The test was fixed to write bytes, but the underlying exposure was the repository having
+# no line-ending policy at all.
+
+# Normalise text files to LF in the repository, and check them out as LF everywhere.
+* text=auto eol=lf
+
+# Scripts whose bytes are hashed, signed, or executed. CRLF here would also break a
+# shebang on POSIX, so these are pinned explicitly rather than left to detection.
+*.py    text eol=lf
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+
+# Binary types: never translate, never diff as text.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary

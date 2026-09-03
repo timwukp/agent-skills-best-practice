@@ -138,6 +138,26 @@ def main() -> int:
     overlap_py = set(verified["python"]) & set(untested.get("python", []))
     check("no Python is both verified and untested", not overlap_py, f"overlap: {overlap_py}")
 
+    # Platform caveats must be spelled out in prose, not merely encoded. "windows-latest is
+    # verified" is true of the CI gate and false of the local hook, and a reader who only
+    # sees the OS row would draw the wrong conclusion.
+    posix_only = block.get("posix_only", [])
+    check(
+        "posix_only caveats are declared",
+        bool(posix_only),
+        "the shipped hook command is a POSIX sh string; that limit must be recorded",
+    )
+    for item in posix_only:
+        # Match on a distinctive fragment rather than the whole sentence, so prose can be
+        # reworded without breaking the test, while still requiring the subject be named.
+        key = "templates/kiro-hooks" if "kiro-hooks" in item else item
+        check(f"prose explains the POSIX-only limit for '{key}'", key in text)
+    if posix_only:
+        check(
+            "prose says Windows lacks the write-time hook",
+            "POSIX-only" in text and "Windows" in text,
+        )
+
     # --- CI must actually cover every verified claim -------------------------------
     root = find_repo_root()
     if root is None:
