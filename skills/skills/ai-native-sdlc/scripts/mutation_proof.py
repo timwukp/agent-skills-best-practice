@@ -292,6 +292,27 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         'PENDING_SOURCE_SUFFIXES = (\n    ".c", ".cc", ".cpp",',
         'PENDING_SOURCE_SUFFIXES = (\n    ".zzz1", ".zzz2", ".zzz3",',
     ),
+    # --- fork-PR safety ------------------------------------------------------
+    # These target SHIPPED DATA (the workflow template) rather than a script, which is why
+    # the harness above mirrors templates/ into the work tree.
+    (
+        "template: advisory review job can fail the build again",
+        "templates/github-workflows/sdlc-gate.yml", "test_fork_safety.py",
+        "    continue-on-error: true",
+        "    # continue-on-error deliberately removed by mutation",
+    ),
+    (
+        "template: createComment unguarded (a read-only fork token would fail the job)",
+        "templates/github-workflows/sdlc-gate.yml", "test_fork_safety.py",
+        "            } catch (e) {",
+        "            } if (false) { // catch removed by mutation",
+    ),
+    (
+        "compat: fork read-only/no-secrets limitation undocumented",
+        "COMPATIBILITY.md", "test_fork_safety.py",
+        "receives **no secrets** and a **read-only** workflow token",
+        "receives a workflow token",
+    ),
 ]
 
 
@@ -299,24 +320,39 @@ def main() -> int:
     killed, survived, broken = 0, [], []
 
     for label, impl, suite, find, repl in MUTATIONS:
-        src_impl = HERE / impl
+        # Some suites assert against SHIPPED DATA (a workflow template, COMPATIBILITY.md)
+        # rather than against a script. Those paths are relative to the SKILL root, not to
+        # scripts/. Without this the mutation would be reported BROKEN, and -- worse -- the
+        # suite would fail because the file was simply absent from the work tree, which is a
+        # FALSE KILL: green-to-red for the wrong reason proves nothing.
+        skill_relative = impl.startswith(("templates/", "references/")) or "/" not in impl and impl.endswith(".md")
+        src_impl = (SKILL / impl) if skill_relative else (HERE / impl)
         src_suite = HERE / suite
         if not src_impl.is_file() or not src_suite.is_file():
             broken.append(f"{label}: missing {impl} or {suite}")
             continue
 
         with tempfile.TemporaryDirectory() as t:
-            work = pathlib.Path(t) / "scripts"
+            root = pathlib.Path(t) / "skill"
+            work = root / "scripts"
             work.mkdir(parents=True)
             # Copy every script so imports and sibling lookups still resolve.
             for f in HERE.glob("*.py"):
                 shutil.copy2(f, work / f.name)
+            # Mirror the shipped data a suite may assert against, so the suite under
+            # mutation reads the MUTATED copy and not the real repository file.
+            for sub in ("templates", "references"):
+                if (SKILL / sub).is_dir():
+                    shutil.copytree(SKILL / sub, root / sub, dirs_exist_ok=True)
+            for doc in SKILL.glob("*.md"):
+                shutil.copy2(doc, root / doc.name)
 
-            text = (work / impl).read_text(encoding="utf-8")
+            target = (root / impl) if skill_relative else (work / impl)
+            text = target.read_text(encoding="utf-8")
             if find not in text:
                 broken.append(f"{label}: anchor not found in {impl} (mutation is stale)")
                 continue
-            (work / impl).write_text(text.replace(find, repl, 1), encoding="utf-8")
+            target.write_text(text.replace(find, repl, 1), encoding="utf-8")
 
             r = subprocess.run(
                 [sys.executable, str(work / suite)],
