@@ -67,6 +67,23 @@ SOURCE_SUFFIXES = (
     ".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".java", ".rb",
     ".html", ".css", ".sh", ".sql",
 )
+
+# Languages a polyglot repository will really contain that the list above misses. Until they
+# were added here the gate was BLIND to them: a C++ or Kotlin change produced
+# "no product source files changed" and the gate reported PASSED, so a repo written in an
+# unlisted language got no coverage enforcement at all and no hint that this was the case.
+#
+# These are PENDING, not enforced, on purpose. Promoting a suffix is a BREAKING change under
+# COMPATIBILITY.md: a .cpp file that needed no plan coverage yesterday needs it today, so a
+# repository turns red without changing a line of its own. The policy requires such a change
+# to ship as a WARNING first, name its remediation, and only then be enforced -- so that is
+# what this does. They move into SOURCE_SUFFIXES in the version named below.
+PENDING_SOURCE_SUFFIXES = (
+    ".c", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".cs", ".kt", ".kts",
+    ".swift", ".php", ".scala", ".m", ".mm", ".dart", ".ex", ".exs",
+    ".lua", ".pl", ".vue", ".svelte", ".scss", ".sass", ".less", ".tf",
+)
+PENDING_ENFORCED_IN = "sdlc-gate-v2"
 # Paths that are process/meta, not the product; they never need plan coverage.
 META_DIRS = (".sdlc", "intent", "evals", ".github", "docs")
 META_FILES = ("REVIEW.md", "bands.yaml", "CLAUDE.md", "README.md")
@@ -343,6 +360,39 @@ def main() -> int:
                     "Require branches to be up to date (strict status checks) if several "
                     "intents are in flight at once."
                 )
+
+            # DEPRECATION WINDOW (see PENDING_SOURCE_SUFFIXES). These files are not enforced
+            # yet, so they must not fail the build -- but staying silent is what let a whole
+            # language go ungoverned, so an uncovered one is reported as a warning that names
+            # the enforcing version and the fix. Deliberately computed OUTSIDE the
+            # source_changed branch: a PR containing only pending-language files has an EMPTY
+            # source_changed, which is precisely the case that used to print
+            # "no product source files changed" and pass.
+            pending_changed = [
+                c for c in changed
+                if c.endswith(PENDING_SOURCE_SUFFIXES) and not is_meta(c)
+            ]
+            if pending_changed:
+                plan_for_pending = (
+                    root / "intent" / active_slug / "plan.md" if active_slug else None
+                )
+                pending_uncovered = [
+                    c for c in pending_changed
+                    if plan_for_pending is None
+                    or not plan_covers(plan_for_pending, c)
+                ]
+                if pending_uncovered:
+                    where = (
+                        f"intent/{active_slug}/plan.md" if active_slug
+                        else "the active intent's plan.md"
+                    )
+                    notes.append(
+                        "DEPRECATION — these files are in languages that will be enforced "
+                        f"in {PENDING_ENFORCED_IN}, and are NOT named in {where}:\n    "
+                        + "\n    ".join(pending_uncovered[:20])
+                        + f"\n  They pass today. From {PENDING_ENFORCED_IN} they will FAIL. "
+                        f"Add them to {where} now to avoid a surprise break."
+                    )
             if not source_changed:
                 notes.append("no product source files changed")
             elif not (root / ".sdlc").is_dir():

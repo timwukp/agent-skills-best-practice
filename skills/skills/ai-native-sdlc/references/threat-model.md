@@ -86,12 +86,57 @@ control silently — the repository still shows a green check.
 
 ---
 
+## S4 — the governance mechanism as its own failure domain
+
+The surfaces above ask "can an attacker subvert the control". This one asks the question that
+actually bit us: **what happens when the control itself malfunctions?** Every entry here is an
+observed incident, not a hypothesis.
+
+A governance tool has an unusual property: its failures are *availability* failures for the
+whole team, and several of them present as **silent success** rather than an error. Both
+directions matter — a gate that wrongly blocks stops all work, and a gate that wrongly passes
+is worse, because nobody looks.
+
+| STRIDE | Threat | Observed as | Status |
+|---|---|---|---|
+| **DoS** | A required status check whose workflow cannot run blocks every PR permanently | `paths:` filter excluded the changed file, so `gate tests green` never reported and the PR sat `BLOCKED` forever | **Fixed** — no `paths:` filter on `pull_request` |
+| **DoS** | A required check name that no longer exists | Anticipated, not yet observed | Mitigated by requiring one aggregation check, not 15 cell names |
+| **Tampering** | Silent misattribution: a change recorded against an intent nobody chose | `.sdlc/active` read `lines[0]` and discarded the rest without comment, then reported `PASSED` | **Fixed** — both gates refuse >1 declared intent |
+| **Tampering** | Lost update on the shared pointer | `.sdlc/active` is one mutable file; a stale branch overwrites another intent's pointer on merge | **Not fixable in the gate** — needs strict status checks; a note now flags any handover |
+| **Repudiation** | A whole language ungoverned with no signal | `.cpp`/`.kt` changes printed `no product source files changed` and passed | **Warned now**, enforced in `sdlc-gate-v2` |
+| **Spoofing** | A skipped required check counted as passing | GitHub treats `skipped` as success, so a red matrix would have satisfied protection | **Fixed** — aggregation job uses `if: always()` and treats skipped as not-green |
+| **Tampering** | A test that passes because of state outside the repo | `test_hook_config` passed only where the skill happened to be installed under the real `$HOME` | **Fixed** — hermetic fixture plants its own gate |
+| **Tampering** | Verification that verifies nothing | The shipped `.sha256` recorded a `dist/` prefix, so `sha256sum -c` failed on a *valid* artifact | **Fixed** — a false alarm trains users to ignore real ones |
+
+### The pattern worth naming
+
+Six of the eight were **silent**: the gate said `PASSED`, or a check never reported, or a
+signature "failed" on an intact file. None was discoverable by reading the code — each needed
+the mechanism to be *exercised*: the CI matrix across three platforms, an actual release
+downloaded and verified as a consumer, a mutation run, a test written for an unmodelled repo
+shape.
+
+That is the practical argument for the enforcement layers being tested like product code
+rather than trusted as configuration. It is also why `references/limitations.md` treats "we
+have never run this" as a real gap rather than a formality.
+
+### Not modelled here
+
+- Malicious insider with repository admin rights — that is gap 2 in `limitations.md` and needs
+  an org-level ruleset, not a threat-model entry.
+- Compromise of the GitHub Actions platform, Sigstore, or the actions this workflow calls.
+- Denial of service against the runners themselves.
+
+---
+
 ## Known-unmodelled
 
 Deliberately listed rather than quietly omitted:
 
-- Concurrent pull requests racing on the same `.sdlc/active` value.
-- Monorepos where one PR touches several intents at once.
-- Windows path semantics in the slug validator (regex is conservative, but untested there).
+- Polyglot detection is extension-based, so a language outside both the enforced and pending
+  lists is still invisible. The lists are an allow-list and will always lag reality.
+- Windows path semantics in the slug validator (the regex is conservative, but the local hook
+  is POSIX-only anyway — see `COMPATIBILITY.md`).
 - Submodules and symlinks inside `.sdlc/`.
 - Supply-chain risk of the *actions themselves* (`actions/checkout` and friends).
+- Fork-based pull requests.
