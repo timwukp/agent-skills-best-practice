@@ -190,6 +190,33 @@ red without it changing a line of its own code — a MAJOR change under the rule
 policy requires a warning release first, and this is the project honouring its own policy
 rather than repeating the separation-of-duties mistake recorded below.
 
+### Fork-based pull requests: the CI gate runs, the review pass does not
+
+A pull request from a fork receives **no secrets** and a **read-only** workflow token —
+GitHub enforces both regardless of the `permissions:` block a workflow requests.
+
+What that means in practice:
+
+- **The `sdlc-gate` job works normally.** It only reads the repository, needs no secret, and
+  refuses the same violations it would on a same-repo branch. Fork contributions are governed.
+- **The `sdlc-review` advisory pass self-skips.** It needs `KIRO_API_KEY`, which a fork PR
+  never receives, so the guard step turns it off and says so in the log.
+- **The review comment cannot be posted** even if a key were somehow present, because the
+  token is read-only. That path is wrapped in `try`/`catch`, emits a `core.warning`, and
+  writes the review to the job summary instead — an advisory job must never fail a build.
+  The job also carries `continue-on-error: true`, so "advisory" is structurally true rather
+  than a promise in a comment.
+- **`pull_request_target` is never used, and must never be.** It would run with a
+  write-scoped token in the base repository's context while processing an untrusted fork's
+  diff, converting every prompt-injection risk in `references/threat-model.md` into
+  repository compromise.
+
+**Honest limit:** the four properties above are asserted against the shipped template by
+`scripts/test_fork_safety.py`, so they cannot be edited away silently. **The live token
+semantics are still unverified** — reproducing them needs a pull request from a second
+GitHub account, and a user cannot fork their own repository. `fork-pr` therefore stays in
+`documented_untested`: contract tested, runtime unproven.
+
 ### Not tested — do not assume
 | Dimension | Status |
 |---|---|

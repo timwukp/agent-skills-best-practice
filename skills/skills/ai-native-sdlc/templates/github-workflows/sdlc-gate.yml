@@ -83,8 +83,16 @@ jobs:
     name: sdlc-review (advisory)
     runs-on: ubuntu-latest
     needs: sdlc-gate
+    # "Advisory" must be structurally true, not just a promise in a comment. Without this,
+    # any unexpected step failure inside this job marks the run failed -- and a maintainer
+    # who later adds this to branch protection, or who simply reads a red X, is misled about
+    # whether the change is mergeable.
+    continue-on-error: true
     permissions:
       contents: read
+      # NOTE: on a pull request from a FORK, GitHub grants the workflow a READ-ONLY token
+      # regardless of what is requested here. pull-requests: write therefore has no effect
+      # on fork PRs, and the comment step must tolerate a 403 rather than fail.
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
@@ -180,9 +188,28 @@ jobs:
               '_Findings inform the human approver; they do not approve or block._',
               '_Passes are defined in `REVIEW.md`. Powered by Kiro CLI headless mode._',
             ].join('\n');
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body,
-            });
+            // MUST NOT throw. On a pull request from a FORK, GitHub downgrades the
+            // workflow token to READ-ONLY regardless of the `permissions:` block above, so
+            // this POST returns 403. Unguarded, that fails the step -- and an "advisory"
+            // job that can fail the build is not advisory. Today the guard above also
+            // happens to skip on forks (no secret), but relying on that is accidental
+            // safety, not designed safety.
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            } catch (e) {
+              // Surfaced as a warning, never swallowed: a bare `catch {}` would hide a real
+              // permissions misconfiguration from the maintainer. Expected on fork PRs
+              // (read-only token); investigate if it happens on a same-repo branch.
+              core.warning(
+                'Could not post the review comment (expected on a fork PR: the token is ' +
+                'read-only). The review is still in the job log. Error: ' + e.message
+              );
+              core.summary.addHeading('AI-Native SDLC review (advisory)', 2);
+              core.summary.addRaw(review);
+              await core.summary.write();
+            }

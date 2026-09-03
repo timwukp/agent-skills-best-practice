@@ -65,7 +65,7 @@ jobs:
           fail=0
           for t in test_gate test_pretooluse_hook test_ci_gate test_hook_config \
                    test_hardening test_supply_chain test_support_matrix \
-                   test_scale test_polyglot; do
+                   test_scale test_polyglot test_fork_safety; do
             echo "== $t"
             if python "$t.py"; then
               echo "   PASS $t"
