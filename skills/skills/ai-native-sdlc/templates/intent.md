@@ -4,7 +4,7 @@
 - **Author:** <who wrote this>
 - **Accepted-by:** <who approved it — MUST NOT be the Author>
 - **Date:** <YYYY-MM-DD>
-- **Status:** draft | accepted | rejected
+- **Status:** draft | accepted | rejected | shipped
 
 ## Problem
 What hurts today, for whom, and how we know it hurts.

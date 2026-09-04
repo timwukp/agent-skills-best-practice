@@ -182,6 +182,42 @@ with tempfile.TemporaryDirectory() as t:
                intent_status="shipped", spec_status="shipped", plan_status="shipped")
     code, out = hook(r, str(r / "src" / "app.py"))
     check("U4 hook blocks a write under a shipped intent", code, BLOCK, out)
+    # "Does it block?" alone is NOT enough here, and this is the same trap U2 exists
+    # for: the hook blocked even before this change, because `shipped` happens not to
+    # satisfy `accepted`. It blocked while telling the author to "get it accepted" --
+    # advice that performs the defect. So assert the REASON, and assert the
+    # contradicting advice is gone.
+    want_in("U4 hook names the terminal state", "shipped", out)
+    want_not_in("U4 hook must not tell the author to accept a spent intent",
+                "get it accepted", out)
+    # Assert the LOCAL gate's own message too, not only what reaches it through the
+    # hook. Found by a surviving mutation: disabling the gate's terminal branch left
+    # this test green, because the gate's ordinary "status is 'shipped', need
+    # 'accepted'" problem line is enough for the hook to suppress its generic advice.
+    # So the hook's behaviour masked the gate's -- the assertion has to go direct.
+    p = subprocess.run(
+        [sys.executable, str(HERE / "sdlc_gate.py"), str(r / "intent" / "feat"), "build"],
+        capture_output=True, text=True,
+    )
+    gout = p.stdout + p.stderr
+    check("U4b local gate closes on a shipped intent", p.returncode, BLOCK, gout)
+    want_in("U4b local gate tells the author to open a new intent", "new intent", gout)
+    want_not_in("U4b local gate must not advise accepting the prior artifact",
+                "Produce/accept the prior artifact", gout)
+
+# All three copies of the terminal constant must agree. The hook is standalone (it
+# subprocesses the gate), so nothing but a test stops the three drifting apart.
+sys.path.insert(0, str(HERE))
+try:
+    import sdlc_ci_gate as _c
+    import sdlc_gate as _g
+    import sdlc_pretooluse_hook as _h
+except Exception as exc:  # pragma: no cover
+    fails.append(f"U4 could not import all three copies: {exc}")
+else:
+    got = {"ci gate": _c.SHIPPED, "local gate": _g.SHIPPED, "hook": _h.SHIPPED}
+    if len(set(got.values())) != 1:
+        fails.append(f"U4 SHIPPED disagrees across copies: {got}")
 
 
 print("unbound-approval:", "FAIL" if fails else "all pass")

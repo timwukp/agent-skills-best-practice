@@ -3,7 +3,7 @@
 - **Spec:** ./spec.md
 - **Author:** <who wrote this>
 - **Accepted-by:** <who accepted it — MUST NOT be the Author>
-- **Status:** draft | accepted
+- **Status:** draft | accepted | shipped
 
 ## Files changed (in order of work)
 

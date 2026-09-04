@@ -13,7 +13,7 @@ found and fixed six substantive bugs in itself, and its test suite is mutation-v
 
 ---
 
-## Part 1 — The eleven known gaps
+## Part 1 — The twelve known gaps
 
 | # | Gap | Status |
 |---|-----|--------|
@@ -48,6 +48,33 @@ attributable, where previously there was nothing to point at. It is not cryptogr
 proof of two humans. Requiring signed commits from two distinct verified identities, gated
 by an org ruleset, is what proof would look like — and that needs infrastructure this
 repository does not control.
+
+### Gap 12 — `shipped` narrows the unbound-approval hole, it does not close it
+
+A merged, signed chain used to keep authorising later changes: `.sdlc/active` is never
+reset after merge, and the coverage check asked only whether an accepted chain *named*
+the changed file — never whether that acceptance covered *this* change. A signature
+outlived the diff it signed. Observed, not theorised: a documentation fix passed under a
+chain signed for a completely different change, printing `SDLC CI GATE PASSED`.
+
+An intent whose change has merged is now `shipped`, and a `shipped` chain refuses to
+authorise work in all three copies of the gate (CI, local, hook).
+
+**What this does not do.** `shipped` is a *marker*, not a binding. Nothing stops an
+author editing the status back to `accepted` and reusing the sign-off — exactly like
+separation of duties (Gap 11), it is attested rather than proven. The refusal message
+now argues against doing so, which is persuasion, not enforcement.
+
+**What would actually close it** is recording *what* the approval covered:
+`Accepted-for: <base-sha>` in `plan.md`, compared against the real base at merge time,
+so an approval granted for one diff cannot silently cover another. Until that is
+enforced rather than merely warned, treat the ordering guarantee as **honour-based
+between honest participants** — the same class of control as Gap 11: useful against
+drift and mistakes, not against a determined author.
+
+Two further limits worth naming: the write-time hook does **not** check the binding (at
+write time there is no base to compare against), and detection is per-artifact, so a
+half-marked chain is treated as terminal deliberately — refusing is the safe direction.
 
 ### Gap 2 — the bypass is live-proven, not theoretical
 
