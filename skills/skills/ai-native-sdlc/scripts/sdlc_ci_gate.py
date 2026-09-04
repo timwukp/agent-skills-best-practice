@@ -37,6 +37,20 @@ import sys
 ACCEPTED = "accepted"
 SIGNED_OFF = "signed-off"
 
+# Terminal status -- see the same constant in sdlc_gate.py. An intent whose change
+# has merged is `shipped`, and a shipped intent may not authorise further work.
+# This closes a real defect rather than adding a nicety: because the coverage check
+# below asked only "does an accepted chain exist that NAMES this file", a merged
+# signed chain kept blessing every later edit to every file its plan.md listed, for
+# as long as .sdlc/active still pointed at it. Observed live -- a documentation fix
+# passed under a chain signed for an unrelated change.
+#
+# satisfies() is whole-token, so "shipped" already fails to satisfy "accepted" and
+# the matcher needs no change. What DID need changing is the refusal message: it
+# used to say the chain was not fully accepted, which invites the author to flip a
+# spent intent back to accepted -- i.e. to perform the defect by hand.
+SHIPPED = "shipped"
+
 # Artifact-schema version this gate understands. Bump when the artifact format
 # changes incompatibly; a repo declares its own in .sdlc/version. A gate older than
 # the repo must refuse loudly rather than misread the artifacts.
@@ -236,6 +250,11 @@ def main() -> int:
         notes.append("no intent/<slug>/ directories found — SDLC chain not in use here")
 
     plan_accepted: set[str] = set()
+    # Slugs whose chain is TERMINAL. Kept separate from plan_accepted rather than
+    # folded into it because the two drive opposite advice: an unfinished chain must
+    # be completed, a spent one must be replaced. Collapsing them is what made the
+    # old refusal tell authors to re-accept a chain they had already used.
+    plan_shipped: set[str] = set()
 
     for slug in slugs:
         d = intent_root / slug
@@ -273,6 +292,17 @@ def main() -> int:
             and satisfies(s_intent, ACCEPTED)
         ):
             plan_accepted.add(slug)
+
+        # ANY artifact in the chain reading `shipped` makes the whole chain terminal.
+        # Checking all three, not just plan.md, is deliberate: a half-marked chain
+        # (intent shipped, plan still accepted) is exactly the state a hand-edit
+        # produces, and treating it as still-live would reopen the hole. Refusing on
+        # any terminal marker is the conservative direction -- the cost is a clear
+        # message telling the author to open a new intent.
+        if satisfies(s_intent, SHIPPED) or satisfies(s_spec, SHIPPED) or satisfies(
+            s_plan, SHIPPED
+        ):
+            plan_shipped.add(slug)
 
         # Separation of duties, on each artifact that claims to be approved.
         for name, st, needed in (
@@ -415,6 +445,20 @@ def main() -> int:
                     "source files changed and this repo uses .sdlc/, but no usable active "
                     "slug is declared in .sdlc/active — the change is not attributable to "
                     "any intent"
+                )
+            elif active_slug in plan_shipped:
+                # A SPENT chain, not an unfinished one. This message must not mention
+                # completing or accepting the chain: its approval was already used, so
+                # the only correct fix is a new intent. Saying "does not have a fully
+                # accepted chain" here is what invited authors to flip the status back
+                # and reuse the signature -- the defect itself, performed by hand.
+                problems.append(
+                    f"source files changed but the active intent '{active_slug}' is "
+                    f"'{SHIPPED}' — its approval was granted for a change that has "
+                    f"already merged and cannot authorise this one. Open a new intent "
+                    f"under intent/<new-slug>/ and point .sdlc/active at it. Do NOT "
+                    f"reset '{active_slug}' to '{ACCEPTED}': that reuses one sign-off "
+                    f"for two different changes."
                 )
             elif active_slug not in plan_accepted:
                 problems.append(

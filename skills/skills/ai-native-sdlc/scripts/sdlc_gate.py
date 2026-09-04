@@ -14,6 +14,19 @@ import sys
 import pathlib
 import re
 
+ACCEPTED = "accepted"
+SIGNED_OFF = "signed-off"
+
+# Terminal status. An intent whose change has merged is `shipped`, and a shipped
+# intent may not authorise further work: the approval was granted for a diff that
+# is already in main, so reusing it silently launders a NEW change through an OLD
+# signature. Nothing here needs to special-case it in status_satisfies() -- that
+# matcher compares whole tokens, so "shipped" already fails to satisfy "accepted".
+# The constant exists so both gates name the same state instead of each spelling a
+# string literal, and so the refusal path can tell "not finished yet" apart from
+# "already spent" -- two situations with opposite correct fixes.
+SHIPPED = "shipped"
+
 REQUIRED = {
     "design": [("intent.md", "accepted")],
     "build":  [("intent.md", "accepted"), ("spec.md", "signed-off")],
@@ -72,15 +85,31 @@ def main() -> int:
         print(f"unknown stage: {stage}", file=sys.stderr)
         return 2
     problems = []
+    terminal = []
     for fname, needed in REQUIRED[stage]:
         st = status_of(intent_dir / fname)
         if not status_satisfies(st, needed):
             problems.append(f"{fname}: status is '{st}', need '{needed}'")
+            if status_satisfies(st, SHIPPED):
+                terminal.append(fname)
     if problems:
         print(f"GATE CLOSED for '{stage}':", file=sys.stderr)
         for p in problems:
             print(f"  - {p}", file=sys.stderr)
-        print("Produce/accept the prior artifact before advancing.", file=sys.stderr)
+        if terminal:
+            # A spent chain, not an unfinished one. The generic advice below would tell
+            # the author to accept an artifact that was ALREADY accepted and used, i.e.
+            # to reuse one sign-off for two changes. Must stay in step with the same
+            # branch in sdlc_ci_gate.py: if the write-time hook and the merge-time gate
+            # disagree, the developer writes happily and CI refuses later.
+            print(
+                f"This intent is '{SHIPPED}' — its approval was granted for a change "
+                f"that has already merged.\nOpen a new intent and point .sdlc/active "
+                f"at it. Do NOT reset it to '{ACCEPTED}'.",
+                file=sys.stderr,
+            )
+        else:
+            print("Produce/accept the prior artifact before advancing.", file=sys.stderr)
         return 2
     print(f"gate open: '{stage}' may proceed")
     return 0

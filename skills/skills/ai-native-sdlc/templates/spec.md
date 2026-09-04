@@ -3,7 +3,7 @@
 - **Intent:** ./intent.md
 - **Author:** <who wrote this>
 - **Accepted-by:** <who signed it off — MUST NOT be the Author>
-- **Status:** draft | signed-off
+- **Status:** draft | signed-off | shipped
 
 ## Requirements
 Functional requirements as a numbered list; each traces to a success criterion in intent.md.

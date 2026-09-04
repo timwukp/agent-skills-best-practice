@@ -55,6 +55,12 @@ ALWAYS_ALLOW_DIRS = (".sdlc", "intent", "evals", ".github")
 
 GATE = pathlib.Path(__file__).resolve().parent / "sdlc_gate.py"
 
+# Third copy of this constant, and deliberately so: the hook runs standalone (it
+# subprocesses the gate rather than importing it) and must keep working when copied
+# alone into a repo's .sdlc/scripts/. test_unbound_approval.py asserts all copies
+# agree -- drift here means the hook allows a write that CI then refuses at merge.
+SHIPPED = "shipped"
+
 
 def allow(msg: str = "") -> None:
     if msg:
@@ -200,11 +206,16 @@ def main() -> None:
         )
         if proc.returncode == 2:
             detail = (proc.stderr or "").strip()
-            block(
-                f"SDLC GATE: blocked write to '{rel}'.\n"
-                f"{detail}\n"
-                "Advance the prior stage (and get it accepted) before writing code."
+            # The gate's own text already names the correct fix. Appending the generic
+            # "get it accepted" line on top of a TERMINAL refusal would contradict it
+            # and point the author straight at the unbound-approval defect (re-accept a
+            # spent intent), so suppress it in that case.
+            advice = (
+                ""
+                if SHIPPED in detail.casefold()
+                else "\nAdvance the prior stage (and get it accepted) before writing code."
             )
+            block(f"SDLC GATE: blocked write to '{rel}'.\n{detail}{advice}")
         if proc.returncode not in (0, 2):
             allow(f"sdlc gate inconclusive (exit {proc.returncode}); allowing")
 

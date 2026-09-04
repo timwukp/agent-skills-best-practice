@@ -107,6 +107,8 @@ is worse, because nobody looks.
 | **Spoofing** | A skipped required check counted as passing | GitHub treats `skipped` as success, so a red matrix would have satisfied protection | **Fixed** — aggregation job uses `if: always()` and treats skipped as not-green |
 | **Tampering** | A test that passes because of state outside the repo | `test_hook_config` passed only where the skill happened to be installed under the real `$HOME` | **Fixed** — hermetic fixture plants its own gate |
 | **Tampering** | Verification that verifies nothing | The shipped `.sha256` recorded a `dist/` prefix, so `sha256sum -c` failed on a *valid* artifact | **Fixed** — a false alarm trains users to ignore real ones |
+| **Elevation** | An approval that outlives the change it approved | `.sdlc/active` is never reset after merge, and the coverage check asked only "does an accepted chain *name* this file". A docs fix passed under a chain signed for an unrelated change, printing `SDLC CI GATE PASSED` | **Partly fixed** — a `shipped` chain now refuses and names the right fix; the status is honour-based, so `Accepted-for:` base-SHA binding is the real control |
+| **Tampering** | A refusal whose advice performs the defect | The spent-chain refusal said "does not have a fully accepted chain", i.e. *go re-accept it* — which is precisely the reuse being prevented | **Fixed** — terminal and unfinished chains now get opposite advice, asserted including a negative check that the old wording is gone |
 
 ### The pattern worth naming
 

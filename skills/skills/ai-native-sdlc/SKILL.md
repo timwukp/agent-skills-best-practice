@@ -73,6 +73,17 @@ Nit and cap nit volume. **A human code owner still merges** — the agent that w
 must not be the thing that passes it. The agent may act up to the production gate and
 cannot pass it; everything it produces becomes a PR.
 
+**Close the intent when it merges.** Set `Status: shipped` on the merged chain's artifacts.
+This is not bookkeeping — it is the step that stops one sign-off authorising a second
+change. An accepted chain grants permission over every file its `plan.md` names, and
+`.sdlc/active` keeps pointing at it after merge, so leaving it `accepted` means the next
+unrelated edit to any of those files passes the gate with no new approval. That was a real
+defect, not a hypothetical (see Gap 12 in `references/limitations.md`). A `shipped` chain
+refuses to authorise work, and the refusal tells the author to open a new intent.
+
+Do **not** reset a `shipped` chain to `accepted` to keep working under it. Start the next
+change at Stage 1 with its own slug and point `.sdlc/active` there.
+
 ### Stage 6 — Maintain → `bands.yaml` → a new `intent.md`
 Runs headless. A **deterministic** script watches a metric and invokes the agent on a
 control-band breach — the model is never in the detection path. Tier by deviation: 1σ log,
@@ -173,7 +184,7 @@ ai-native-sdlc/
   templates/                   intent/spec/plan/REVIEW/bands + the hook config + the workflow
   references/enforcement.md    how to make it binding; runtime traps; what neither gate catches
   references/playbook-mapping.md   stage -> artifact -> enforcement mapping
-  references/limitations.md    READ FIRST: the eleven known gaps and the eight things an
+  references/limitations.md    READ FIRST: the twelve known gaps and the eight things an
                                enterprise needs that this does not have
   references/threat-model.md   STRIDE for the two surfaces this skill introduces
 ```

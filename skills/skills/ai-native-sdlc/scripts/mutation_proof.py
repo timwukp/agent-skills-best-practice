@@ -313,6 +313,40 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "receives **no secrets** and a **read-only** workflow token",
         "receives a workflow token",
     ),
+    # --- unbound approval: a merged signed chain must stop authorising work ----
+    # Anchors chosen to survive a black run. A mutation whose anchor gets reformatted
+    # goes SKIPPED -- a silently disabled test, which happened before and is worse
+    # than a surviving mutation because the count still looks healthy.
+    (
+        "ci gate: terminal chains not tracked (a shipped intent stays live)",
+        "sdlc_ci_gate.py", "test_unbound_approval.py",
+        "plan_shipped.add(slug)",
+        "pass  # tracking removed by mutation",
+    ),
+    (
+        "ci gate: spent chain gets the unfinished-chain message (invites re-accepting)",
+        "sdlc_ci_gate.py", "test_unbound_approval.py",
+        "elif active_slug in plan_shipped:",
+        "elif False:",
+    ),
+    (
+        "ci gate: SHIPPED spelled differently from the other copies",
+        "sdlc_ci_gate.py", "test_unbound_approval.py",
+        'SHIPPED = "shipped"',
+        'SHIPPED = "merged"',
+    ),
+    (
+        "local gate: terminal refusal falls back to accept-the-artifact advice",
+        "sdlc_gate.py", "test_unbound_approval.py",
+        "if terminal:",
+        "if False:",
+    ),
+    (
+        "hook: contradicting advice appended to a terminal refusal",
+        "sdlc_pretooluse_hook.py", "test_unbound_approval.py",
+        "if SHIPPED in detail.casefold()",
+        "if False",
+    ),
 ]
 
 
