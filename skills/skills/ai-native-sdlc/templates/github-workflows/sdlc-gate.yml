@@ -44,12 +44,19 @@ jobs:
             git diff --name-only HEAD~1..HEAD > changed-files.txt
           echo "--- changed files ---"
           cat changed-files.txt
+          # The base this branch was cut from. Passed to the gate so an approval
+          # recorded as `Accepted-for: <base-sha>` can be checked against the state
+          # of the tree it was actually granted for. merge-base, not the base tip:
+          # the base moves after the branch is cut, and the approval was granted
+          # against the fork point, not against whatever main looks like at merge.
+          echo "base_sha=$(git merge-base "$base" HEAD || echo)" >> "$GITHUB_ENV"
 
       - name: Validate the SDLC artifact chain
         run: |
           python3 .sdlc/scripts/sdlc_ci_gate.py \
             --repo . \
-            --changed-files-from changed-files.txt
+            --changed-files-from changed-files.txt \
+            --base-sha "${base_sha:-}"
 
       - name: Run SDLC evals
         # Every eval under evals/ must pass. This is where the "write the eval

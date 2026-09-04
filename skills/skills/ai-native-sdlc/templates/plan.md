@@ -3,7 +3,14 @@
 - **Spec:** ./spec.md
 - **Author:** <who wrote this>
 - **Accepted-by:** <who accepted it — MUST NOT be the Author>
+- **Accepted-for:** <base commit SHA this was accepted against — `git rev-parse HEAD`>
 - **Status:** draft | accepted | shipped
+
+`Accepted-for:` records *what* the approval covered. Without it an acceptance is
+open-ended: it keeps authorising later, unrelated changes to every file named below,
+because the gate can only ask whether an accepted plan names the file, not whether the
+approval was granted for the change in front of it. Fill it in at the moment the plan
+is accepted. If the base moves and the plan is re-confirmed, update it.
 
 ## Files changed (in order of work)
 

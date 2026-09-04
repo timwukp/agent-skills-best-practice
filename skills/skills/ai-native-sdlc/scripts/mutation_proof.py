@@ -347,6 +347,43 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "if SHIPPED in detail.casefold()",
         "if False",
     ),
+    # --- Accepted-for: the approval must be bound to the base it was granted for --
+    (
+        "ci gate: an approval bound to a DIFFERENT base is accepted anyway",
+        "sdlc_ci_gate.py", "test_unbound_approval.py",
+        "elif bound_to.casefold() != args.base_sha.casefold():",
+        "elif False:",
+    ),
+    (
+        "ci gate: a missing binding passes silently (no warning at all)",
+        "sdlc_ci_gate.py", "test_unbound_approval.py",
+        'bound_to = field_of(plan, "Accepted-for")',
+        'bound_to = "x" * 40  # binding lookup removed by mutation',
+    ),
+    (
+        "ci gate: binding unverifiable but the run does not say so",
+        "sdlc_ci_gate.py", "test_unbound_approval.py",
+        "elif not args.base_sha:",
+        "elif False:",
+    ),
+    (
+        "workflow: binding never verified because no base is passed",
+        "templates/github-workflows/sdlc-gate.yml", "test_unbound_approval.py",
+        "--base-sha",
+        "--no-base-sha-removed-by-mutation",
+    ),
+    (
+        "compat: Accepted-for enforcement never announced",
+        "COMPATIBILITY.md", "test_unbound_approval.py",
+        "`Accepted-for:` becomes required in `sdlc-gate-v2`",
+        "a field becomes required later",
+    ),
+    (
+        "plan template: Accepted-for field undocumented, so nobody records it",
+        "templates/plan.md", "test_unbound_approval.py",
+        "- **Accepted-for:**",
+        "- **Bound-to:**",
+    ),
 ]
 
 

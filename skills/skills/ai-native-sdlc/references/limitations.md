@@ -67,14 +67,27 @@ now argues against doing so, which is persuasion, not enforcement.
 
 **What would actually close it** is recording *what* the approval covered:
 `Accepted-for: <base-sha>` in `plan.md`, compared against the real base at merge time,
-so an approval granted for one diff cannot silently cover another. Until that is
-enforced rather than merely warned, treat the ordering guarantee as **honour-based
-between honest participants** — the same class of control as Gap 11: useful against
-drift and mistakes, not against a determined author.
+so an approval granted for one diff cannot silently cover another. **This now exists**
+and the shipped workflow template passes `--base-sha "$(git merge-base "$base" HEAD)"`,
+so a plan bound to a different base is refused.
+
+**But it is opt-in, and that is the remaining hole.** A `plan.md` with no
+`Accepted-for:` line still passes — it only earns a warning naming `sdlc-gate-v2` as
+the release that will enforce it. The deprecation window is deliberate: enforcing
+immediately would turn every existing accepted artifact red, which is the breaking
+change the duties check (Gap 11) already inflicted once. The consequence is that until
+`sdlc-gate-v2`, an author who simply omits the field gets the old open-ended behaviour.
+The gate says so on every run rather than passing quietly, which is the most an opt-in
+control can honestly claim.
 
 Two further limits worth naming: the write-time hook does **not** check the binding (at
-write time there is no base to compare against), and detection is per-artifact, so a
-half-marked chain is treated as terminal deliberately — refusing is the safe direction.
+write time there is no base to compare against, so putting it there would be inventing a
+check rather than enforcing one), and a run given no `--base-sha` cannot verify the
+binding at all — it passes and says explicitly that it did not verify, so a
+misconfigured pipeline is visible instead of silently toothless.
+
+Detection of `shipped` is per-artifact, so a half-marked chain is treated as terminal
+deliberately — refusing is the safe direction.
 
 ### Gap 2 — the bypass is live-proven, not theoretical
 

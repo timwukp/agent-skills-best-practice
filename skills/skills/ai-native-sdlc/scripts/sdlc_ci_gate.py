@@ -199,6 +199,12 @@ def main() -> int:
     ap.add_argument("--repo", default=".")
     ap.add_argument("--changed-files-from", default="")
     ap.add_argument("--require-active", action="store_true")
+    # Registered EXPLICITLY. argparse prefix-matches unknown long options onto longer
+    # registered ones, which already caused a false green here once: `--changed
+    # index.html` was silently taken as `--changed-files-from index.html`, so the
+    # file's CONTENTS were read as the changed-files list and the gate reported
+    # "no product source files changed" and PASSED. Never rely on abbreviation.
+    ap.add_argument("--base-sha", default="")
     args = ap.parse_args()
 
     root = pathlib.Path(args.repo).resolve()
@@ -510,6 +516,46 @@ def main() -> int:
                         )
                     problems.append(msg)
                 else:
+                    # --- Accepted-for: bind the approval to the base it was granted
+                    # against. `shipped` only stops a chain being reused AFTER someone
+                    # marks it; this asks the stronger question -- was this approval
+                    # granted for THIS state of the tree? Four outcomes, and the two
+                    # non-enforcing ones must SAY they did not enforce: a gate that
+                    # quietly skips a check it advertises is the weak-pass failure mode
+                    # that has already bitten this repo more than once.
+                    bound_to = field_of(plan, "Accepted-for")
+                    if not bound_to:
+                        notes.append(
+                            f"intent/{active_slug}/plan.md records no 'Accepted-for:' base "
+                            f"— the approval is not bound to any particular state of the "
+                            f"tree, so it cannot be checked that it was granted for THIS "
+                            f"change. Passes today; from {PENDING_ENFORCED_IN} a missing "
+                            f"binding will FAIL. Add '- **Accepted-for:** <base-sha>' when "
+                            f"the plan is accepted."
+                        )
+                    elif not args.base_sha:
+                        notes.append(
+                            f"intent/{active_slug}/plan.md is bound to base "
+                            f"{bound_to[:12]} but this run was given no --base-sha, so the "
+                            f"binding was NOT verified. Pass --base-sha \"$(git merge-base "
+                            f"origin/<default-branch> HEAD)\" to enforce it."
+                        )
+                    elif bound_to.casefold() != args.base_sha.casefold():
+                        problems.append(
+                            f"the approval in intent/{active_slug}/plan.md is bound to a "
+                            f"DIFFERENT base than this change is built on:\n"
+                            f"    Accepted-for: {bound_to}\n"
+                            f"    actual base:  {args.base_sha}\n"
+                            f"  The sign-off was granted against a different state of the "
+                            f"tree, so it does not cover this change. Re-confirm the plan "
+                            f"against the current base and update 'Accepted-for:', or open "
+                            f"a new intent — do not silently reuse the old approval."
+                        )
+                    else:
+                        notes.append(
+                            f"approval bound to base {bound_to[:12]}, which matches the "
+                            f"base this change is built on"
+                        )
                     notes.append(
                         f"{len(source_changed)} source file(s) changed, all named in "
                         f"intent/{active_slug}/plan.md"

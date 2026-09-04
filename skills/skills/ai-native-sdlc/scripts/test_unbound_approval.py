@@ -86,9 +86,9 @@ def hook(repo: pathlib.Path, path: str) -> tuple[int, str]:
 
 def mkrepo(root: pathlib.Path, slug: str, *, plan_files: list[str] | None = None,
            intent_status: str = "accepted", spec_status: str = "signed-off",
-           plan_status: str = "accepted",
+           plan_status: str = "accepted", accepted_for: str | None = None,
            author: str = "alice", accepted_by: str = "bob") -> pathlib.Path:
-    """Same shape as test_hardening.mkrepo, with the statuses parameterised."""
+    """Same shape as test_hardening.mkrepo, with statuses and the binding added."""
     (root / ".git").mkdir(parents=True, exist_ok=True)
     (root / "src").mkdir(parents=True, exist_ok=True)
     (root / "src" / "app.py").write_text("x = 1\n", encoding="utf-8")
@@ -96,6 +96,7 @@ def mkrepo(root: pathlib.Path, slug: str, *, plan_files: list[str] | None = None
     (root / ".sdlc" / "active").write_text(slug + "\n", encoding="utf-8")
     d = root / "intent" / slug
     d.mkdir(parents=True, exist_ok=True)
+    bind = f"- **Accepted-for:** {accepted_for}\n" if accepted_for else ""
     (d / "intent.md").write_text(
         f"# i\n\n- **Author:** {author}\n- **Accepted-by:** {accepted_by}\n"
         f"- **Status:** {intent_status}\n", encoding="utf-8")
@@ -105,7 +106,8 @@ def mkrepo(root: pathlib.Path, slug: str, *, plan_files: list[str] | None = None
     listed = "\n".join(f"1. `{f}` — reason" for f in (plan_files or ["src/app.py"]))
     (d / "plan.md").write_text(
         f"# p\n\n- **Author:** {author}\n- **Accepted-by:** {accepted_by}\n"
-        f"- **Status:** {plan_status}\n\n## Files changed (in order of work)\n{listed}\n",
+        f"{bind}- **Status:** {plan_status}\n\n"
+        f"## Files changed (in order of work)\n{listed}\n",
         encoding="utf-8")
     return root
 
@@ -218,6 +220,90 @@ else:
     got = {"ci gate": _c.SHIPPED, "local gate": _g.SHIPPED, "hook": _h.SHIPPED}
     if len(set(got.values())) != 1:
         fails.append(f"U4 SHIPPED disagrees across copies: {got}")
+
+
+# ---- Accepted-for: bind the approval to the base it was granted against -----
+# `shipped` (U1-U4) only stops a SPENT intent being reused. It does not stop an
+# author flipping a status back, so it is honour-based like separation of duties.
+# The real binding records WHAT the approval covered. Contract:
+#   * plan.md may carry `- **Accepted-for:** <base-sha>`
+#   * CI supplies the actual base via --base-sha (git merge-base origin/main HEAD)
+#   * present + mismatch  -> REFUSE, naming the mismatch
+#   * present + match     -> pass
+#   * absent              -> pass, but WARN loudly with the enforcement version
+#   * --base-sha omitted  -> pass, but SAY the binding was not verified
+# The last two matter: a gate that quietly skips a check it advertises is the
+# "weak pass" failure mode, so not-checked must be visible in the output.
+BASE = "a" * 40
+OTHER = "b" * 40
+
+with tempfile.TemporaryDirectory() as t:
+    r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"], accepted_for=BASE)
+    code, out = ci(r, "--require-active", "--base-sha", BASE,
+                   "--changed-files-from", changed(r, "src/app.py"))
+    check("U5 Accepted-for matching the real base passes", code, PASS, out)
+
+with tempfile.TemporaryDirectory() as t:
+    r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"], accepted_for=OTHER)
+    code, out = ci(r, "--require-active", "--base-sha", BASE,
+                   "--changed-files-from", changed(r, "src/app.py"))
+    check("U6 Accepted-for for a DIFFERENT base is refused", code, VIOLATION, out)
+    want_in("U6 refusal names the binding", "accepted-for", out)
+
+with tempfile.TemporaryDirectory() as t:
+    # No binding recorded: allowed during the deprecation window, but the output
+    # must say so -- silence here would make the whole feature unfalsifiable.
+    r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"])
+    code, out = ci(r, "--require-active", "--base-sha", BASE,
+                   "--changed-files-from", changed(r, "src/app.py"))
+    check("U7 a missing binding still passes for now", code, PASS, out)
+    want_in("U7 but warns that it will be enforced", "accepted-for", out)
+
+with tempfile.TemporaryDirectory() as t:
+    # Binding recorded but CI did not supply a base: must NOT look like a pass
+    # that verified something. Same class as the 'Not enforced here' weak pass.
+    r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"], accepted_for=BASE)
+    code, out = ci(r, "--require-active",
+                   "--changed-files-from", changed(r, "src/app.py"))
+    check("U8 no --base-sha still passes", code, PASS, out)
+    want_in("U8 but says the binding was not verified", "not verified", out)
+
+# ---- U9 the announcement and the wiring must both exist --------------------
+# A warn-now/enforce-later change is only legitimate if the announcement is
+# published (the repo's own compatibility policy), and the binding is only real if
+# the shipped workflow actually PASSES a base. Documented-but-unwired is the
+# "channel named in a doc but switched off" failure this project has hit before, so
+# assert reachability rather than mere presence.
+SKILL_ROOT = HERE.parent
+compat = (SKILL_ROOT / "COMPATIBILITY.md").read_text(encoding="utf-8")
+# Pin the ANNOUNCEMENT HEADING, not the mere presence of the words. A first draft
+# asserted `"Accepted-for" in compat`, which two mutations survived: the term appears
+# throughout the explanatory prose, so deleting the heading -- the part that actually
+# constitutes the announcement -- left the assertion green. Weak-eval shape again.
+heads = [ln for ln in compat.splitlines() if ln.lstrip().startswith("#")]
+if not any("Accepted-for" in h and "sdlc-gate-v2" in h for h in heads):
+    fails.append("U9 COMPATIBILITY.md has no heading announcing that Accepted-for "
+                 "becomes required in sdlc-gate-v2")
+if "ANNOUNCED DEPRECATION" not in compat:
+    fails.append("U9 the announcement is not marked as an announced deprecation")
+
+wf = (SKILL_ROOT / "templates" / "github-workflows" / "sdlc-gate.yml").read_text(
+    encoding="utf-8"
+)
+if "--base-sha" not in wf:
+    fails.append("U9 the workflow template never passes --base-sha, so the binding "
+                 "would never be verified in real use")
+if "merge-base" not in wf:
+    fails.append("U9 the workflow template must use merge-base, not the base tip: the "
+                 "base moves after the branch is cut")
+
+plan_tpl = (SKILL_ROOT / "templates" / "plan.md").read_text(encoding="utf-8")
+# The FIELD LINE, not the term anywhere in the prose -- same reason as above.
+if not any(
+    ln.lstrip().startswith("- **Accepted-for:**") for ln in plan_tpl.splitlines()
+):
+    fails.append("U9 templates/plan.md has no '- **Accepted-for:**' field line, so no "
+                 "author would know to record it")
 
 
 print("unbound-approval:", "FAIL" if fails else "all pass")
