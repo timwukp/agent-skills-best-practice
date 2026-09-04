@@ -268,6 +268,43 @@ with tempfile.TemporaryDirectory() as t:
     check("U8 no --base-sha still passes", code, PASS, out)
     want_in("U8 but says the binding was not verified", "not verified", out)
 
+# ---- U9 the announcement and the wiring must both exist --------------------
+# A warn-now/enforce-later change is only legitimate if the announcement is
+# published (the repo's own compatibility policy), and the binding is only real if
+# the shipped workflow actually PASSES a base. Documented-but-unwired is the
+# "channel named in a doc but switched off" failure this project has hit before, so
+# assert reachability rather than mere presence.
+SKILL_ROOT = HERE.parent
+compat = (SKILL_ROOT / "COMPATIBILITY.md").read_text(encoding="utf-8")
+# Pin the ANNOUNCEMENT HEADING, not the mere presence of the words. A first draft
+# asserted `"Accepted-for" in compat`, which two mutations survived: the term appears
+# throughout the explanatory prose, so deleting the heading -- the part that actually
+# constitutes the announcement -- left the assertion green. Weak-eval shape again.
+heads = [ln for ln in compat.splitlines() if ln.lstrip().startswith("#")]
+if not any("Accepted-for" in h and "sdlc-gate-v2" in h for h in heads):
+    fails.append("U9 COMPATIBILITY.md has no heading announcing that Accepted-for "
+                 "becomes required in sdlc-gate-v2")
+if "ANNOUNCED DEPRECATION" not in compat:
+    fails.append("U9 the announcement is not marked as an announced deprecation")
+
+wf = (SKILL_ROOT / "templates" / "github-workflows" / "sdlc-gate.yml").read_text(
+    encoding="utf-8"
+)
+if "--base-sha" not in wf:
+    fails.append("U9 the workflow template never passes --base-sha, so the binding "
+                 "would never be verified in real use")
+if "merge-base" not in wf:
+    fails.append("U9 the workflow template must use merge-base, not the base tip: the "
+                 "base moves after the branch is cut")
+
+plan_tpl = (SKILL_ROOT / "templates" / "plan.md").read_text(encoding="utf-8")
+# The FIELD LINE, not the term anywhere in the prose -- same reason as above.
+if not any(
+    ln.lstrip().startswith("- **Accepted-for:**") for ln in plan_tpl.splitlines()
+):
+    fails.append("U9 templates/plan.md has no '- **Accepted-for:**' field line, so no "
+                 "author would know to record it")
+
 
 print("unbound-approval:", "FAIL" if fails else "all pass")
 for f in fails:

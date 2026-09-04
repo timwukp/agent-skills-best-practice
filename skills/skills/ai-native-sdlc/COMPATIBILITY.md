@@ -190,6 +190,43 @@ red without it changing a line of its own code — a MAJOR change under the rule
 policy requires a warning release first, and this is the project honouring its own policy
 rather than repeating the separation-of-duties mistake recorded below.
 
+### ANNOUNCED DEPRECATION — `Accepted-for:` becomes required in `sdlc-gate-v2`
+
+**Second announcement under the same policy.** Read it if your repository has any accepted
+`plan.md`.
+
+An acceptance used to be open-ended. The gate could ask whether an accepted plan *named* a
+changed file, but never whether the approval had been granted *for the change in front of
+it*. Because `.sdlc/active` is not reset when a change merges, a merged, signed chain kept
+authorising every later edit to every file its `plan.md` listed. This was observed, not
+predicted: a documentation fix passed under a chain signed for an entirely different change,
+and the gate printed `SDLC CI GATE PASSED`.
+
+`plan.md` may now carry `- **Accepted-for:** <base-sha>`, the commit the approval was granted
+against. The workflow template supplies the real base with
+`--base-sha "$(git merge-base "$base" HEAD)"` — the *merge base*, not the base branch tip,
+because the base moves after a branch is cut while the approval was granted at the fork point.
+
+**What happens now (this version).** A `plan.md` bound to a **different** base than the change
+is built on **fails** the gate. A `plan.md` with **no** `Accepted-for:` line produces a
+deprecation note and still **passes**. A run given no `--base-sha` passes and states that the
+binding was **not verified**, so a misconfigured pipeline is visible rather than quietly
+toothless.
+
+**What happens in `sdlc-gate-v2`.** A missing `Accepted-for:` **fails**.
+
+**How to prepare.** Add the line when a plan is accepted (`git rev-parse HEAD` at that moment).
+If the base moves and the plan is re-confirmed, update it.
+
+**Why it is not enforced immediately.** Every existing accepted artifact predates the field, so
+enforcing now would turn green repositories red without their code changing — a MAJOR change
+under the rules above, and exactly the mistake the separation-of-duties change made once
+already. Warning release first.
+
+**What this still does not solve.** `Status: shipped` and this binding are both recorded *by
+the author*. Nothing stops an author editing either one, so both are attested rather than
+proven, in the same class as separation of duties. See Gap 12 in `references/limitations.md`.
+
 ### Fork-based pull requests: the CI gate runs, the review pass does not
 
 A pull request from a fork receives **no secrets** and a **read-only** workflow token —
