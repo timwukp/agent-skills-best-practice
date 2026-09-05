@@ -1,7 +1,7 @@
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — owner sign-off
-- **Status:** draft
+- **Accepted-by:** Tim WU
+- **Status:** signed-off
 
 ## Requirements
 
