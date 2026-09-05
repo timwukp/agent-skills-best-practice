@@ -45,6 +45,7 @@ jobs:
       attestations: write    # actions/attest-build-provenance
     env:
       SKILL_DIR: skills/skills/ai-native-sdlc
+      STAGE_DIR: ${{ runner.temp }}/ai-native-sdlc-release-stage
       TAG: ${{ github.event.inputs.tag || github.ref_name }}
 
     steps:
@@ -71,15 +72,21 @@ jobs:
         id: build
         run: |
           set -euo pipefail
-          mkdir -p dist
+          mkdir -p dist "$STAGE_DIR"
           NAME="ai-native-sdlc-gate-${TAG}.tar.gz"
+          # Suites and mutation proof run first and create scripts/__pycache__ in the
+          # checkout. Never sign that mutable test workspace. Materialise only tracked
+          # release paths from Git, at this exact commit, into a clean staging tree.
+          git archive --format=tar "HEAD:$SKILL_DIR" \
+              scripts templates SKILL.md COMPATIBILITY.md references \
+            | tar -xf - -C "$STAGE_DIR"
           # --sort=name and a fixed mtime make the tarball byte-reproducible, so two
           # builds of the same commit produce the same digest.
           tar --sort=name \
               --mtime='UTC 2020-01-01' \
               --owner=0 --group=0 --numeric-owner \
               -czf "dist/$NAME" \
-              -C "$SKILL_DIR" scripts templates SKILL.md COMPATIBILITY.md references
+              -C "$STAGE_DIR" scripts templates SKILL.md COMPATIBILITY.md references
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "path=dist/$NAME" >> "$GITHUB_OUTPUT"
           echo "digest=$(sha256sum "dist/$NAME" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
@@ -92,18 +99,31 @@ jobs:
           ( cd dist && sha256sum "$NAME" > "$NAME.sha256" )
           cat "dist/$NAME.sha256"
 
-      - name: Generate a CycloneDX SBOM
+      - name: Generate and verify a CycloneDX SBOM
         # The gate is stdlib-only, so the SBOM's value is not a dependency list — it is an
         # inventory of the FILES that carry the policy logic, each with its own hash.
+        # Inventory the staged release tree, not the larger checkout: otherwise the SBOM
+        # can name files absent from the tar and omit generated files accidentally included.
         run: |
           set -euo pipefail
           python3 "$SKILL_DIR/scripts/make_sbom.py" \
-            --root "$SKILL_DIR" \
+            --root "$STAGE_DIR" \
             --name ai-native-sdlc-gate \
             --version "${TAG}" \
             --output "dist/${{ steps.build.outputs.name }}.cdx.json"
           python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print('SBOM components:', len(d['components']))" \
             "dist/${{ steps.build.outputs.name }}.cdx.json"
+
+          # Exact set equality is a release invariant, not an informal expectation.
+          # This would have refused sdlc-gate-v2: its tar had five generated .pyc files
+          # omitted by the SBOM, while the SBOM named two eval files absent from the tar.
+          ARTIFACT_FILES="$RUNNER_TEMP/artifact-files.txt"
+          SBOM_FILES="$RUNNER_TEMP/sbom-files.txt"
+          tar -tzf "dist/${{ steps.build.outputs.name }}" | sed '/\/$/d' | sort > "$ARTIFACT_FILES"
+          jq -r '.components[].name' \
+            "dist/${{ steps.build.outputs.name }}.cdx.json" | sort > "$SBOM_FILES"
+          diff -u "$ARTIFACT_FILES" "$SBOM_FILES"
+          echo "artifact/SBOM inventory match: $(wc -l < "$ARTIFACT_FILES") files"
 
       - name: Install cosign
         uses: sigstore/cosign-installer@v3

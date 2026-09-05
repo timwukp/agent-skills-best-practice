@@ -416,6 +416,24 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "for t in test_*.py; do",
         "for t in test_gate.py test_ci_gate.py; do",
     ),
+    (
+        "release: packages the test-mutated checkout instead of tracked bytes",
+        ".github/workflows/release-attest.yml", "test_supply_chain.py",
+        "git archive --format=tar",
+        "tar --format=tar",
+    ),
+    (
+        "release: SBOM inventories the larger checkout instead of the staged artifact",
+        ".github/workflows/release-attest.yml", "test_supply_chain.py",
+        '--root "$STAGE_DIR"',
+        '--root "$SKILL_DIR"',
+    ),
+    (
+        "release: artifact/SBOM inventory mismatch is no longer fatal",
+        ".github/workflows/release-attest.yml", "test_supply_chain.py",
+        'diff -u "$ARTIFACT_FILES" "$SBOM_FILES"',
+        'true # inventory comparison removed by mutation',
+    ),
 ]
 
 
