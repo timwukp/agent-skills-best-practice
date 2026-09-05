@@ -1,7 +1,24 @@
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** Tim WU
-- **Status:** signed-off
+- **Accepted-by:** pending — owner re-sign-off after Amendment 1
+- **Status:** draft
+
+## Amendment 1 — planning corrections requiring renewed sign-off
+
+This amendment is authoritative where the original requirements below say “current 65”.
+The accepted intent correctly recorded **65/65 as the baseline before this programme
+change**. Requirement 11 adds at least five new mutations, so the resulting current count
+must be derived from the completed `MUTATIONS` list and is expected to be at least 70; it
+must not be falsely frozen at 65. The truthfulness suite will compare documentation with
+the harness's actual final count and will continue to reject the stale 27-mutation claim.
+
+Planning also found that `templates/plan.md` advises recording `git rev-parse HEAD` for
+`Accepted-for`, while the v2 CI workflow compares that field with the pull request's real
+merge base. For this programme plan, acceptance must record
+`git merge-base origin/main HEAD` (currently `c4d9f16e0877efb0bfab56aac257efec8db843ad`).
+Changing the shipped template is outside this signed programme scope and must receive its
+own follow-up intent (`fix-plan-binding-instruction`) rather than being smuggled into this
+change.
 
 ## Requirements
 
