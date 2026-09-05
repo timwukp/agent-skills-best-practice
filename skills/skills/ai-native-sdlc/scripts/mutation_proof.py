@@ -277,20 +277,24 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "if len(slug_lines) > 1:",
         "if False:",
     ),
-    # --- polyglot / deprecation window --------------------------------------
+    # --- polyglot / v2 enforcement -----------------------------------------
     (
-        "ci: pending-language files produce no deprecation warning (silent hole returns)",
+        "ci: promoted language silently drops out of the enforced suffix set",
         "sdlc_ci_gate.py", "test_polyglot.py",
-        "if pending_changed:",
-        "if False:",
+        '    ".c", ".cc", ".cpp", ".cxx",',
+        '    ".zzz1", ".zzz2", ".zzz3", ".zzz4",',
     ),
     (
-        # Promoting a suffix early is the breaking change the policy exists to prevent, so
-        # the suite must notice if the pending list stops being distinct from the enforced one.
-        "ci: pending list emptied (languages silently ungoverned again)",
+        "ci: executable claims v1 semantics under the sdlc-gate-v2 release",
+        "sdlc_ci_gate.py", "test_unbound_approval.py",
+        "GATE_VERSION = 2",
+        "GATE_VERSION = 1",
+    ),
+    (
+        "ci: a source suffix remains in a pending bucket after v2 enforcement",
         "sdlc_ci_gate.py", "test_polyglot.py",
-        'PENDING_SOURCE_SUFFIXES = (\n    ".c", ".cc", ".cpp",',
-        'PENDING_SOURCE_SUFFIXES = (\n    ".zzz1", ".zzz2", ".zzz3",',
+        "PENDING_SOURCE_SUFFIXES = ()",
+        'PENDING_SOURCE_SUFFIXES = (".cpp",)',
     ),
     # --- fork-PR safety ------------------------------------------------------
     # These target SHIPPED DATA (the workflow template) rather than a script, which is why
@@ -355,13 +359,13 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "elif False:",
     ),
     (
-        "ci gate: a missing binding passes silently (no warning at all)",
+        "ci gate: missing binding is silently substituted with the current base",
         "sdlc_ci_gate.py", "test_unbound_approval.py",
-        'bound_to = field_of(plan, "Accepted-for")',
-        'bound_to = "x" * 40  # binding lookup removed by mutation',
+        "if not bound_to:\n                        problems.append(",
+        "if not bound_to:\n                        bound_to = args.base_sha\n                    if False:\n                        problems.append(",
     ),
     (
-        "ci gate: binding unverifiable but the run does not say so",
+        "ci gate: missing --base-sha fails for the wrong reason instead of naming unverifiable binding",
         "sdlc_ci_gate.py", "test_unbound_approval.py",
         "elif not args.base_sha:",
         "elif False:",
@@ -373,10 +377,10 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "--no-base-sha-removed-by-mutation",
     ),
     (
-        "compat: Accepted-for enforcement never announced",
+        "compat: Accepted-for v2 enforcement record deleted",
         "COMPATIBILITY.md", "test_unbound_approval.py",
-        "`Accepted-for:` becomes required in `sdlc-gate-v2`",
-        "a field becomes required later",
+        "`Accepted-for:` is required",
+        "binding history removed by mutation",
     ),
     (
         "plan template: Accepted-for field undocumented, so nobody records it",
@@ -405,6 +409,12 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         ".github/workflows/sdlc-gate-tests.yml", "test_required_checks.py",
         "DO NOT add a paths filter here",
         "Note about filters removed by mutation",
+    ),
+    (
+        "release: test gate regresses to a stale hand-copied suite subset",
+        ".github/workflows/release-attest.yml", "test_supply_chain.py",
+        "for t in test_*.py; do",
+        "for t in test_gate.py test_ci_gate.py; do",
     ),
 ]
 

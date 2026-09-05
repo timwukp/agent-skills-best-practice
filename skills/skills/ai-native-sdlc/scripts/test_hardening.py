@@ -30,6 +30,7 @@ CI_GATE = HERE / "sdlc_ci_gate.py"
 HOOK = HERE / "sdlc_pretooluse_hook.py"
 PASS, VIOLATION = 0, 1
 ALLOW, BLOCK = 0, 2
+BASE = "a" * 40
 
 fails: list[str] = []
 
@@ -40,8 +41,10 @@ def check(label: str, got: int, want: int, out: str = "") -> None:
 
 
 def ci(repo: pathlib.Path, *extra: str) -> tuple[int, str]:
-    p = subprocess.run([sys.executable, str(CI_GATE), "--repo", str(repo), *extra],
-                       capture_output=True, text=True)
+    p = subprocess.run(
+        [sys.executable, str(CI_GATE), "--repo", str(repo), "--base-sha", BASE, *extra],
+        capture_output=True, text=True,
+    )
     return p.returncode, p.stdout + p.stderr
 
 
@@ -77,7 +80,8 @@ def mkrepo(root: pathlib.Path, slug: str, *, plan_files: list[str] | None = None
     listed = "\n".join(f"1. `{f}` — reason" for f in (plan_files or ["src/app.py"]))
     (d / "plan.md").write_text(
         f"# p\n\n- **Author:** {author}\n- **Accepted-by:** {accepted_by}\n"
-        f"- **Status:** accepted\n\n## Files changed (in order of work)\n{listed}\n",
+        f"- **Accepted-for:** {BASE}\n- **Status:** accepted\n\n"
+        f"## Files changed (in order of work)\n{listed}\n",
         encoding="utf-8")
     return root
 

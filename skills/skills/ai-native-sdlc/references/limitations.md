@@ -71,20 +71,22 @@ so an approval granted for one diff cannot silently cover another. **This now ex
 and the shipped workflow template passes `--base-sha "$(git merge-base "$base" HEAD)"`,
 so a plan bound to a different base is refused.
 
-**But it is opt-in, and that is the remaining hole.** A `plan.md` with no
-`Accepted-for:` line still passes — it only earns a warning naming `sdlc-gate-v2` as
-the release that will enforce it. The deprecation window is deliberate: enforcing
-immediately would turn every existing accepted artifact red, which is the breaking
-change the duties check (Gap 11) already inflicted once. The consequence is that until
-`sdlc-gate-v2`, an author who simply omits the field gets the old open-ended behaviour.
-The gate says so on every run rather than passing quietly, which is the most an opt-in
-control can honestly claim.
+**The opt-in hole is closed in v2.** `sdlc-gate-v1` deliberately allowed a missing
+`Accepted-for:` during its announced deprecation window. `sdlc-gate-v2` fails closed
+when the field is missing, when it differs from the actual base, or when the pipeline
+omits `--base-sha` and therefore cannot verify it. The shipped workflow supplies the
+merge base. This is a real control for an honest, correctly configured repository — no
+silent fallback to the old open-ended behaviour remains.
 
-Two further limits worth naming: the write-time hook does **not** check the binding (at
-write time there is no base to compare against, so putting it there would be inventing a
-check rather than enforcing one), and a run given no `--base-sha` cannot verify the
-binding at all — it passes and says explicitly that it did not verify, so a
-misconfigured pipeline is visible instead of silently toothless.
+**What still remains honour-based.** The author can edit the recorded base and approval
+status together; like separation of duties (Gap 11), the repository attests the fields
+but does not obtain an independent signature over them. `Status: shipped` is likewise a
+marker the author can reset. The control prevents drift and accidental reuse; it does not
+defeat a determined committer who can modify both policy and evidence in one change.
+
+The write-time hook does **not** check the base binding. At write time there is no PR
+merge base to compare against, so putting the comparison there would invent a check
+rather than enforce one. The merge-time CI gate is the binding backstop.
 
 Detection of `shipped` is per-artifact, so a half-marked chain is treated as terminal
 deliberately — refusing is the safe direction.

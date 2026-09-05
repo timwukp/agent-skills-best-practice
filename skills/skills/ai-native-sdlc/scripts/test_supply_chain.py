@@ -260,9 +260,48 @@ def test_prompt() -> None:
         check("truncation actually shrinks the payload", len(out3.stdout) < 20000)
 
 
+# ------------------------------------------------------- release reachability
+def test_release_runs_every_suite() -> None:
+    print("release-attest.yml")
+    skill = HERE.parent
+    repo = None
+    for parent in [skill, *skill.parents]:
+        if (parent / ".github" / "workflows").is_dir():
+            repo = parent
+            break
+    if repo is None:
+        # Standalone installation has no publishing workflow. Say so rather than
+        # treating absence as success; mutation_proof mirrors the repo workflows into
+        # its sandbox, so this path is NOT skipped when the assertion is being proven.
+        print("  skip no .github/workflows above installed skill")
+        return
+
+    release = repo / ".github" / "workflows" / "release-attest.yml"
+    check("release workflow exists", release.is_file())
+    if not release.is_file():
+        return
+    text = release.read_text(encoding="utf-8")
+    check(
+        "release runs every present test suite (no stale hand-copied allow-list)",
+        "for t in test_*.py" in text and 'python3 "$t"' in text,
+        "a release that runs only a named subset silently misses every suite added later",
+    )
+    check(
+        "release runs the mutation proof before publishing",
+        "python3 mutation_proof.py" in text,
+        "green suites are weaker evidence when no mutation proves they can go red",
+    )
+    check(
+        "release trigger accepts the declared sdlc-gate-v2 tag family",
+        "sdlc-gate-v*" in text,
+        "the tag could exist while no publishing workflow ever runs",
+    )
+
+
 def main() -> int:
     test_sbom()
     test_prompt()
+    test_release_runs_every_suite()
     print()
     if FAILURES:
         print(f"FAILED: {len(FAILURES)} -> {FAILURES}")

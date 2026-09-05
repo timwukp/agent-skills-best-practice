@@ -118,11 +118,15 @@ def changed(root: pathlib.Path, *paths: str) -> str:
     return str(f)
 
 
-# ---- U0 baseline: a live, accepted chain still passes ------------------------
+BASE = "a" * 40
+OTHER = "b" * 40
+
+# ---- U0 baseline: a live, accepted and correctly-bound chain still passes ---
 # Guards against "fix" by refusing everything.
 with tempfile.TemporaryDirectory() as t:
-    r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"])
-    code, out = ci(r, "--require-active", "--changed-files-from", changed(r, "src/app.py"))
+    r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"], accepted_for=BASE)
+    code, out = ci(r, "--require-active", "--base-sha", BASE,
+                   "--changed-files-from", changed(r, "src/app.py"))
     check("U0 an accepted, un-shipped chain still passes", code, PASS, out)
 
 
@@ -236,8 +240,6 @@ else:
 # The final row is load-bearing. v1 made an unverifiable binding visible but still
 # returned 0. That was appropriate for the announced compatibility window; keeping it
 # in v2 would make enforcement optional at the exact layer that advertises it.
-BASE = "a" * 40
-OTHER = "b" * 40
 
 with tempfile.TemporaryDirectory() as t:
     r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"], accepted_for=BASE)
@@ -301,8 +303,8 @@ heads = [ln for ln in compat.splitlines() if ln.lstrip().startswith("#")]
 if not any("Accepted-for" in h and "sdlc-gate-v2" in h for h in heads):
     fails.append("U9 COMPATIBILITY.md has no heading announcing that Accepted-for "
                  "becomes required in sdlc-gate-v2")
-if "ANNOUNCED DEPRECATION" not in compat:
-    fails.append("U9 the announcement is not marked as an announced deprecation")
+if "ENFORCED IN `sdlc-gate-v2`" not in compat:
+    fails.append("U9 the consumed deprecation is not recorded as enforced in v2")
 
 wf = (SKILL_ROOT / "templates" / "github-workflows" / "sdlc-gate.yml").read_text(
     encoding="utf-8"

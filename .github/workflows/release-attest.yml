@@ -60,9 +60,9 @@ jobs:
         run: |
           set -euo pipefail
           cd "$SKILL_DIR/scripts"
-          for t in test_gate test_pretooluse_hook test_ci_gate test_hook_config test_hardening; do
+          for t in test_*.py; do
             echo "== $t"
-            python3 "$t.py"
+            python3 "$t"
           done
           echo "== mutation proof"
           python3 mutation_proof.py

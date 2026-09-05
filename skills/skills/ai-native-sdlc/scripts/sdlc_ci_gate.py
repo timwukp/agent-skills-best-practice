@@ -51,6 +51,13 @@ SIGNED_OFF = "signed-off"
 # spent intent back to accepted -- i.e. to perform the defect by hand.
 SHIPPED = "shipped"
 
+# Release-generation identity. This is deliberately distinct from SUPPORTED_SCHEMA:
+# GATE_VERSION describes the executable's enforcement semantics; SUPPORTED_SCHEMA
+# describes the artifact format it can parse. A tag changes no bytes, so tests pin
+# this value to stop `sdlc-gate-v2` packaging the warning-only v1 implementation
+# under a new label.
+GATE_VERSION = 2
+
 # Artifact-schema version this gate understands. Bump when the artifact format
 # changes incompatibly; a repo declares its own in .sdlc/version. A gate older than
 # the repo must refuse loudly rather than misread the artifacts.
@@ -80,24 +87,21 @@ def slug_problem(slug: str) -> str | None:
 SOURCE_SUFFIXES = (
     ".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".java", ".rb",
     ".html", ".css", ".sh", ".sql",
-)
-
-# Languages a polyglot repository will really contain that the list above misses. Until they
-# were added here the gate was BLIND to them: a C++ or Kotlin change produced
-# "no product source files changed" and the gate reported PASSED, so a repo written in an
-# unlisted language got no coverage enforcement at all and no hint that this was the case.
-#
-# These are PENDING, not enforced, on purpose. Promoting a suffix is a BREAKING change under
-# COMPATIBILITY.md: a .cpp file that needed no plan coverage yesterday needs it today, so a
-# repository turns red without changing a line of its own. The policy requires such a change
-# to ship as a WARNING first, name its remediation, and only then be enforced -- so that is
-# what this does. They move into SOURCE_SUFFIXES in the version named below.
-PENDING_SOURCE_SUFFIXES = (
+    # Promoted in sdlc-gate-v2 after the v1 deprecation window. These used to be
+    # invisible to coverage: a C++ or Kotlin change printed "no product source
+    # files changed" and passed. COMPATIBILITY.md announced the exact release in
+    # advance; v2 is that release, so leaving any here pending would break the
+    # project's own compatibility promise in the direction users cannot detect.
     ".c", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".cs", ".kt", ".kts",
     ".swift", ".php", ".scala", ".m", ".mm", ".dart", ".ex", ".exs",
     ".lua", ".pl", ".vue", ".svelte", ".scss", ".sass", ".less", ".tf",
 )
-PENDING_ENFORCED_IN = "sdlc-gate-v2"
+
+# Kept as an explicit empty set rather than deleted: release tests assert there is
+# no source language still sitting in the v1 warning bucket, and future additions
+# must deliberately enter a NEW announced window instead of silently reusing the
+# already-consumed `sdlc-gate-v2` promise.
+PENDING_SOURCE_SUFFIXES = ()
 # Paths that are process/meta, not the product; they never need plan coverage.
 META_DIRS = (".sdlc", "intent", "evals", ".github", "docs")
 META_FILES = ("REVIEW.md", "bands.yaml", "CLAUDE.md", "README.md")
@@ -401,34 +405,6 @@ def main() -> int:
             # yet, so they must not fail the build -- but staying silent is what let a whole
             # language go ungoverned, so an uncovered one is reported as a warning that names
             # the enforcing version and the fix. Deliberately computed OUTSIDE the
-            # source_changed branch: a PR containing only pending-language files has an EMPTY
-            # source_changed, which is precisely the case that used to print
-            # "no product source files changed" and pass.
-            pending_changed = [
-                c for c in changed
-                if c.endswith(PENDING_SOURCE_SUFFIXES) and not is_meta(c)
-            ]
-            if pending_changed:
-                plan_for_pending = (
-                    root / "intent" / active_slug / "plan.md" if active_slug else None
-                )
-                pending_uncovered = [
-                    c for c in pending_changed
-                    if plan_for_pending is None
-                    or not plan_covers(plan_for_pending, c)
-                ]
-                if pending_uncovered:
-                    where = (
-                        f"intent/{active_slug}/plan.md" if active_slug
-                        else "the active intent's plan.md"
-                    )
-                    notes.append(
-                        "DEPRECATION — these files are in languages that will be enforced "
-                        f"in {PENDING_ENFORCED_IN}, and are NOT named in {where}:\n    "
-                        + "\n    ".join(pending_uncovered[:20])
-                        + f"\n  They pass today. From {PENDING_ENFORCED_IN} they will FAIL. "
-                        f"Add them to {where} now to avoid a surprise break."
-                    )
             if not source_changed:
                 notes.append("no product source files changed")
             elif not (root / ".sdlc").is_dir():
@@ -525,20 +501,22 @@ def main() -> int:
                     # that has already bitten this repo more than once.
                     bound_to = field_of(plan, "Accepted-for")
                     if not bound_to:
-                        notes.append(
-                            f"intent/{active_slug}/plan.md records no 'Accepted-for:' base "
-                            f"— the approval is not bound to any particular state of the "
-                            f"tree, so it cannot be checked that it was granted for THIS "
-                            f"change. Passes today; from {PENDING_ENFORCED_IN} a missing "
-                            f"binding will FAIL. Add '- **Accepted-for:** <base-sha>' when "
-                            f"the plan is accepted."
+                        problems.append(
+                            f"intent/{active_slug}/plan.md records no 'Accepted-for:' base. "
+                            f"sdlc-gate-v2 requires every accepted plan to name the base "
+                            f"commit its approval covered; without that binding one sign-off "
+                            f"can silently authorise later unrelated changes to every file "
+                            f"the plan names. Add '- **Accepted-for:** <base-sha>' and have "
+                            f"the plan re-confirmed against that base."
                         )
                     elif not args.base_sha:
-                        notes.append(
+                        problems.append(
                             f"intent/{active_slug}/plan.md is bound to base "
                             f"{bound_to[:12]} but this run was given no --base-sha, so the "
-                            f"binding was NOT verified. Pass --base-sha \"$(git merge-base "
-                            f"origin/<default-branch> HEAD)\" to enforce it."
+                            f"binding was NOT verified. sdlc-gate-v2 fails closed here: pass "
+                            f"--base-sha \"$(git merge-base "
+                            f"origin/<default-branch> HEAD)\". A pipeline that omits the "
+                            f"comparison cannot claim to enforce the binding."
                         )
                     elif bound_to.casefold() != args.base_sha.casefold():
                         problems.append(

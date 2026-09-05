@@ -31,6 +31,7 @@ import tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 GATE = HERE / "sdlc_ci_gate.py"
 COMPAT = HERE.parent / "COMPATIBILITY.md"
+BASE = "a" * 40
 
 FAILURES: list[str] = []
 
@@ -54,7 +55,8 @@ def make_repo(root: pathlib.Path, covered: list[str]) -> None:
     write(d / "intent.md", f"# i\n\n{hdr}- **Status:** accepted\n")
     write(d / "spec.md", f"# s\n\n{hdr}- **Status:** signed-off\n")
     listing = "".join(f"- `{f}`\n" for f in covered)
-    write(d / "plan.md", f"# p\n\n{hdr}- **Status:** accepted\n\n## Files\n{listing}")
+    write(d / "plan.md", f"# p\n\n{hdr}- **Accepted-for:** {BASE}\n"
+         f"- **Status:** accepted\n\n## Files\n{listing}")
     write(root / ".sdlc" / "version", "1\n")
     write(root / ".sdlc" / "active", "feat\n")
 
@@ -64,7 +66,7 @@ def run_gate(root: pathlib.Path, changed: list[str]):
     write(listing, "".join(f"{c}\n" for c in changed))
     p = subprocess.run(
         [sys.executable, str(GATE), "--repo", str(root),
-         "--changed-files-from", str(listing)],
+         "--base-sha", BASE, "--changed-files-from", str(listing)],
         capture_output=True, text=True,
     )
     return p.returncode, p.stdout + p.stderr

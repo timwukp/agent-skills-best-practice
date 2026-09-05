@@ -23,6 +23,7 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 GATE = HERE / "sdlc_ci_gate.py"
+BASE = "a" * 40
 
 FAILURES: list[str] = []
 
@@ -49,14 +50,15 @@ def make_intent(root: pathlib.Path, slug: str, files: list[str],
     write(d / "intent.md", f"# intent {slug}\n\n{hdr}- **Status:** {intent}\n")
     write(d / "spec.md", f"# spec {slug}\n\n{hdr}- **Status:** {spec}\n")
     listing = "".join(f"- `{f}`\n" for f in files)
-    write(d / "plan.md", f"# plan {slug}\n\n{hdr}- **Status:** {plan}\n\n## Files\n{listing}")
+    write(d / "plan.md", f"# plan {slug}\n\n{hdr}- **Accepted-for:** {BASE}\n"
+          f"- **Status:** {plan}\n\n## Files\n{listing}")
 
 
 def run_gate(root: pathlib.Path, changed: list[str], extra: list[str] | None = None):
     listing = root / "_changed.txt"
     write(listing, "".join(f"{c}\n" for c in changed))
     cmd = [sys.executable, str(GATE), "--repo", str(root),
-           "--changed-files-from", str(listing)]
+           "--base-sha", BASE, "--changed-files-from", str(listing)]
     if extra:
         cmd += extra
     p = subprocess.run(cmd, capture_output=True, text=True)
