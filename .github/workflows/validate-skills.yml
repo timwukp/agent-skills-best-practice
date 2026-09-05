@@ -4,7 +4,21 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    # NO `branches:` filter here, and do not add one back. `validate` is a REQUIRED
+    # status check, and a required check only ever applies to pull requests, so a
+    # trigger condition it does not match leaves the PR waiting on a status that can
+    # never arrive -- not failed, BLOCKED, permanently.
+    #
+    # This is not hypothetical. With `branches: [main]` here, PR #53 was opened onto a
+    # feature branch (a stacked PR). Merging the PR underneath auto-retargeted it to
+    # main, so main's protection began requiring `validate` -- which had never run,
+    # because the base did not match when the event fired. Retargeting does not
+    # re-trigger pull_request workflows, so there was no run to re-run either. The
+    # merge box read "Expected -- Waiting for status to be reported" indefinitely, and
+    # it took closing and reopening the PR to fire a fresh event.
+    #
+    # Filtering `push:` above is fine: a skipped push run blocks nothing.
+    # scripts/test_required_checks.py fails the build if a filter reappears here.
 
 jobs:
   validate:

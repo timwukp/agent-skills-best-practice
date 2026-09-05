@@ -384,6 +384,28 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "- **Accepted-for:**",
         "- **Bound-to:**",
     ),
+    # --- required checks must be able to REPORT ---------------------------------
+    # Both filters below caused a real permanent block. These mutations put each one
+    # back, so the guard is proven able to catch a reintroduction rather than merely
+    # asserted to.
+    (
+        "shipped template: branches filter returns, deadlocking consumers' stacked PRs",
+        "templates/github-workflows/sdlc-gate.yml", "test_required_checks.py",
+        "  pull_request:\n",
+        "  pull_request:\n    branches: [main, master]\n",
+    ),
+    (
+        "repo CI: branches filter returns on the required `validate` check",
+        ".github/workflows/validate-skills.yml", "test_required_checks.py",
+        "  pull_request:\n",
+        "  pull_request:\n    branches: [main]\n",
+    ),
+    (
+        "repo CI: the warning explaining the unfiltered trigger is deleted",
+        ".github/workflows/sdlc-gate-tests.yml", "test_required_checks.py",
+        "DO NOT add a paths filter here",
+        "Note about filters removed by mutation",
+    ),
 ]
 
 
@@ -396,8 +418,21 @@ def main() -> int:
         # scripts/. Without this the mutation would be reported BROKEN, and -- worse -- the
         # suite would fail because the file was simply absent from the work tree, which is a
         # FALSE KILL: green-to-red for the wrong reason proves nothing.
+        # Where does `impl` live? Three cases, and getting this wrong shows up as
+        # BROKEN (anchor/source not found) rather than as a wrong result:
+        #   .github/...      -> the REPOSITORY's CI config, above the skill
+        #   templates/ etc.  -> shipped data inside the skill
+        #   bare name        -> a script next to this harness
+        repo_relative = impl.startswith(".github/")
         skill_relative = impl.startswith(("templates/", "references/")) or "/" not in impl and impl.endswith(".md")
-        src_impl = (SKILL / impl) if skill_relative else (HERE / impl)
+        if repo_relative:
+            src_impl = pathlib.Path("/nonexistent")
+            for parent in [SKILL, *SKILL.parents]:
+                if (parent / impl).is_file():
+                    src_impl = parent / impl
+                    break
+        else:
+            src_impl = (SKILL / impl) if skill_relative else (HERE / impl)
         src_suite = HERE / suite
         if not src_impl.is_file() or not src_suite.is_file():
             broken.append(f"{label}: missing {impl} or {suite}")
@@ -417,8 +452,23 @@ def main() -> int:
                     shutil.copytree(SKILL / sub, root / sub, dirs_exist_ok=True)
             for doc in SKILL.glob("*.md"):
                 shutil.copy2(doc, root / doc.name)
+            # Mirror the REPOSITORY's workflows too, at the sandbox root, so a suite
+            # that cross-checks real CI config reads the mutated copy instead of
+            # self-skipping. Without this, assertions about this repo's own required
+            # checks were unprovable: the suites walk up for .github/workflows, found
+            # none in the sandbox, and reported "skip" -- so a mutation to a workflow
+            # could never be killed and the harness would have called that a pass.
+            # Guarded on existence, because the skill is also used standalone.
+            for parent in [SKILL, *SKILL.parents]:
+                if (parent / ".github" / "workflows").is_dir():
+                    shutil.copytree(
+                        parent / ".github" / "workflows",
+                        root / ".github" / "workflows",
+                        dirs_exist_ok=True,
+                    )
+                    break
 
-            target = (root / impl) if skill_relative else (work / impl)
+            target = (root / impl) if (skill_relative or repo_relative) else (work / impl)
             text = target.read_text(encoding="utf-8")
             if find not in text:
                 broken.append(f"{label}: anchor not found in {impl} (mutation is stale)")

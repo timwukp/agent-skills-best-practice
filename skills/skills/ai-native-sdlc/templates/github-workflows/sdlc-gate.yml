@@ -10,7 +10,23 @@ name: SDLC Gate
 
 on:
   pull_request:
-    branches: [main, master]
+    # Deliberately UNFILTERED, and do not add `branches:` or `paths:` back.
+    #
+    # The comment above tells you to make `sdlc-gate` a REQUIRED status check. A
+    # required check only applies to pull requests, so any trigger condition a PR does
+    # not match leaves that PR waiting for a status that can never arrive -- not
+    # failed, BLOCKED, with nothing to re-run and no way forward but closing and
+    # reopening it. `branches: [main, master]` did exactly that to a stacked PR in this
+    # skill's own repository: opened onto a feature branch, auto-retargeted to main when
+    # the branch underneath merged, then permanently blocked on a check that had never
+    # been triggered.
+    #
+    # A `paths:` filter here fails the same way for a PR that touches only excluded
+    # files. Both filters look reasonable and both are fatal once the check is required.
+    #
+    # The cost of leaving it unfiltered is real and accepted: the gate runs on every
+    # pull request, including ones that change no source. That is cheap. A permanently
+    # unmergeable pull request is not.
   workflow_dispatch:
 
 permissions:
