@@ -1,7 +1,7 @@
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — owner re-sign-off after Amendment 1
-- **Status:** draft
+- **Accepted-by:** Tim WU
+- **Status:** signed-off
 
 ## Amendment 1 — planning corrections requiring renewed sign-off
 
