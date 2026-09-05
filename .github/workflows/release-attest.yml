@@ -45,7 +45,6 @@ jobs:
       attestations: write    # actions/attest-build-provenance
     env:
       SKILL_DIR: skills/skills/ai-native-sdlc
-      STAGE_DIR: ${{ runner.temp }}/ai-native-sdlc-release-stage
       TAG: ${{ github.event.inputs.tag || github.ref_name }}
 
     steps:
@@ -72,6 +71,7 @@ jobs:
         id: build
         run: |
           set -euo pipefail
+          STAGE_DIR="$RUNNER_TEMP/ai-native-sdlc-release-stage"
           mkdir -p dist "$STAGE_DIR"
           NAME="ai-native-sdlc-gate-${TAG}.tar.gz"
           # Suites and mutation proof run first and create scripts/__pycache__ in the
@@ -106,6 +106,7 @@ jobs:
         # can name files absent from the tar and omit generated files accidentally included.
         run: |
           set -euo pipefail
+          STAGE_DIR="$RUNNER_TEMP/ai-native-sdlc-release-stage"
           python3 "$SKILL_DIR/scripts/make_sbom.py" \
             --root "$STAGE_DIR" \
             --name ai-native-sdlc-gate \
