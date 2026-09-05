@@ -100,20 +100,21 @@ is worse, because nobody looks.
 | STRIDE | Threat | Observed as | Status |
 |---|---|---|---|
 | **DoS** | A required status check whose workflow cannot run blocks every PR permanently | `paths:` filter excluded the changed file, so `gate tests green` never reported and the PR sat `BLOCKED` forever | **Fixed** — no `paths:` filter on `pull_request` |
+| **DoS** | A stacked PR becomes subject to a required check only after retargeting | #53 targeted a feature branch, so `validate` (filtered to base `main`) never ran; merging the lower PR retargeted #53 to main and protection waited forever for a status no run could report | **Fixed** — no `branches:` filter on required-check `pull_request` workflows; `test_required_checks.py` guards repo and shipped template |
 | **DoS** | A required check name that no longer exists | Anticipated, not yet observed | Mitigated by requiring one aggregation check, not 15 cell names |
 | **Tampering** | Silent misattribution: a change recorded against an intent nobody chose | `.sdlc/active` read `lines[0]` and discarded the rest without comment, then reported `PASSED` | **Fixed** — both gates refuse >1 declared intent |
 | **Tampering** | Lost update on the shared pointer | `.sdlc/active` is one mutable file; a stale branch overwrites another intent's pointer on merge | **Not fixable in the gate** — needs strict status checks; a note now flags any handover |
-| **Repudiation** | A whole language ungoverned with no signal | `.cpp`/`.kt` changes printed `no product source files changed` and passed | **Warned now**, enforced in `sdlc-gate-v2` |
+| **Repudiation** | A whole language ungoverned with no signal | `.cpp`/`.kt` changes printed `no product source files changed` and passed | **Fixed in v2** — every suffix announced during v1 is now in the enforced source set; uncovered files fail |
 | **Spoofing** | A skipped required check counted as passing | GitHub treats `skipped` as success, so a red matrix would have satisfied protection | **Fixed** — aggregation job uses `if: always()` and treats skipped as not-green |
 | **Tampering** | A test that passes because of state outside the repo | `test_hook_config` passed only where the skill happened to be installed under the real `$HOME` | **Fixed** — hermetic fixture plants its own gate |
 | **Tampering** | Verification that verifies nothing | The shipped `.sha256` recorded a `dist/` prefix, so `sha256sum -c` failed on a *valid* artifact | **Fixed** — a false alarm trains users to ignore real ones |
-| **Elevation** | An approval that outlives the change it approved | `.sdlc/active` is never reset after merge, and the coverage check asked only "does an accepted chain *name* this file". A docs fix passed under a chain signed for an unrelated change, printing `SDLC CI GATE PASSED` | **Fixed for the observed case, warned for the class** — a `shipped` chain refuses; `Accepted-for: <base-sha>` refuses an approval bound to a different base, but a plan omitting the field still passes until `sdlc-gate-v2` |
+| **Elevation** | An approval that outlives the change it approved | `.sdlc/active` is never reset after merge, and the coverage check asked only "does an accepted chain *name* this file". A docs fix passed under a chain signed for an unrelated change, printing `SDLC CI GATE PASSED` | **Fixed against drift in v2** — a `shipped` chain refuses; every accepted plan requires `Accepted-for: <base-sha>` and CI fails if the field, comparison input, or match is absent. Still attested rather than cryptographically independent: an authorised committer can edit policy and evidence together |
 | **Tampering** | A refusal whose advice performs the defect | The spent-chain refusal said "does not have a fully accepted chain", i.e. *go re-accept it* — which is precisely the reuse being prevented | **Fixed** — terminal and unfinished chains now get opposite advice, asserted including a negative check that the old wording is gone |
 
 ### The pattern worth naming
 
-Six of the eight were **silent**: the gate said `PASSED`, or a check never reported, or a
-signature "failed" on an intact file. None was discoverable by reading the code — each needed
+Most of these incidents were **silent**: the gate said `PASSED`, or a check never
+reported, or a signature "failed" on an intact file. None was discoverable by reading the code — each needed
 the mechanism to be *exercised*: the CI matrix across three platforms, an actual release
 downloaded and verified as a consumer, a mutation run, a test written for an unmodelled repo
 shape.
@@ -135,8 +136,8 @@ have never run this" as a real gap rather than a formality.
 
 Deliberately listed rather than quietly omitted:
 
-- Polyglot detection is extension-based, so a language outside both the enforced and pending
-  lists is still invisible. The lists are an allow-list and will always lag reality.
+- Polyglot detection is extension-based, so a language outside the enforced suffix list
+  is still invisible. The list is an allow-list and will always lag reality.
 - Windows path semantics in the slug validator (the regex is conservative, but the local hook
   is POSIX-only anyway — see `COMPATIBILITY.md`).
 - Submodules and symlinks inside `.sdlc/`.

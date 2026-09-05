@@ -118,11 +118,15 @@ def changed(root: pathlib.Path, *paths: str) -> str:
     return str(f)
 
 
-# ---- U0 baseline: a live, accepted chain still passes ------------------------
+BASE = "a" * 40
+OTHER = "b" * 40
+
+# ---- U0 baseline: a live, accepted and correctly-bound chain still passes ---
 # Guards against "fix" by refusing everything.
 with tempfile.TemporaryDirectory() as t:
-    r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"])
-    code, out = ci(r, "--require-active", "--changed-files-from", changed(r, "src/app.py"))
+    r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"], accepted_for=BASE)
+    code, out = ci(r, "--require-active", "--base-sha", BASE,
+                   "--changed-files-from", changed(r, "src/app.py"))
     check("U0 an accepted, un-shipped chain still passes", code, PASS, out)
 
 
@@ -225,17 +229,17 @@ else:
 # ---- Accepted-for: bind the approval to the base it was granted against -----
 # `shipped` (U1-U4) only stops a SPENT intent being reused. It does not stop an
 # author flipping a status back, so it is honour-based like separation of duties.
-# The real binding records WHAT the approval covered. Contract:
-#   * plan.md may carry `- **Accepted-for:** <base-sha>`
+# The v2 binding contract is fail-closed:
+#   * plan.md carries `- **Accepted-for:** <base-sha>`
 #   * CI supplies the actual base via --base-sha (git merge-base origin/main HEAD)
 #   * present + mismatch  -> REFUSE, naming the mismatch
 #   * present + match     -> pass
-#   * absent              -> pass, but WARN loudly with the enforcement version
-#   * --base-sha omitted  -> pass, but SAY the binding was not verified
-# The last two matter: a gate that quietly skips a check it advertises is the
-# "weak pass" failure mode, so not-checked must be visible in the output.
-BASE = "a" * 40
-OTHER = "b" * 40
+#   * absent              -> REFUSE (the v1 deprecation window is over)
+#   * --base-sha omitted  -> REFUSE (a misconfigured pipeline cannot claim binding)
+#
+# The final row is load-bearing. v1 made an unverifiable binding visible but still
+# returned 0. That was appropriate for the announced compatibility window; keeping it
+# in v2 would make enforcement optional at the exact layer that advertises it.
 
 with tempfile.TemporaryDirectory() as t:
     r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"], accepted_for=BASE)
@@ -251,27 +255,42 @@ with tempfile.TemporaryDirectory() as t:
     want_in("U6 refusal names the binding", "accepted-for", out)
 
 with tempfile.TemporaryDirectory() as t:
-    # No binding recorded: allowed during the deprecation window, but the output
-    # must say so -- silence here would make the whole feature unfalsifiable.
+    # v1 warned and passed here under its announced compatibility window. v2 is the
+    # version named in that announcement, so retaining the pass would publish a tag
+    # that claims enforcement while running the warning-only implementation.
     r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"])
     code, out = ci(r, "--require-active", "--base-sha", BASE,
                    "--changed-files-from", changed(r, "src/app.py"))
-    check("U7 a missing binding still passes for now", code, PASS, out)
-    want_in("U7 but warns that it will be enforced", "accepted-for", out)
+    check("U7 v2 refuses a plan with no Accepted-for binding", code, VIOLATION, out)
+    want_in("U7 refusal names the missing binding", "accepted-for", out)
 
 with tempfile.TemporaryDirectory() as t:
-    # Binding recorded but CI did not supply a base: must NOT look like a pass
-    # that verified something. Same class as the 'Not enforced here' weak pass.
+    # A binding that the pipeline does not compare is not a control. v1 made the
+    # omission visible while returning 0; v2 must fail closed so a workflow that
+    # forgets --base-sha cannot silently downgrade the guarantee.
     r = mkrepo(pathlib.Path(t), "feat", plan_files=["src/app.py"], accepted_for=BASE)
     code, out = ci(r, "--require-active",
                    "--changed-files-from", changed(r, "src/app.py"))
-    check("U8 no --base-sha still passes", code, PASS, out)
-    want_in("U8 but says the binding was not verified", "not verified", out)
+    check("U8 v2 refuses when --base-sha is omitted", code, VIOLATION, out)
+    want_in("U8 refusal says the binding was not verified", "not verified", out)
 
-# ---- U9 the announcement and the wiring must both exist --------------------
-# A warn-now/enforce-later change is only legitimate if the announcement is
-# published (the repo's own compatibility policy), and the binding is only real if
-# the shipped workflow actually PASSES a base. Documented-but-unwired is the
+# ---- U9 the v2 identity, release history and wiring must all agree ---------
+# A tag name does not change the bytes it points at. The executable must identify
+# its own enforcement generation, otherwise `sdlc-gate-v2` could package the exact
+# warning-only v1 implementation while the release page claims the deprecation ended.
+try:
+    import sdlc_ci_gate as _versioned_gate
+except Exception as exc:  # pragma: no cover
+    fails.append(f"U9 could not import the versioned gate: {exc}")
+else:
+    if getattr(_versioned_gate, "GATE_VERSION", None) != 2:
+        fails.append(
+            f"U9 gate identifies as version "
+            f"{getattr(_versioned_gate, 'GATE_VERSION', '<missing>')!r}, want 2"
+        )
+
+# The old announcement remains in COMPATIBILITY.md as release HISTORY, and the
+# workflow must actually pass the base. Documented-but-unwired is the
 # "channel named in a doc but switched off" failure this project has hit before, so
 # assert reachability rather than mere presence.
 SKILL_ROOT = HERE.parent
@@ -284,8 +303,8 @@ heads = [ln for ln in compat.splitlines() if ln.lstrip().startswith("#")]
 if not any("Accepted-for" in h and "sdlc-gate-v2" in h for h in heads):
     fails.append("U9 COMPATIBILITY.md has no heading announcing that Accepted-for "
                  "becomes required in sdlc-gate-v2")
-if "ANNOUNCED DEPRECATION" not in compat:
-    fails.append("U9 the announcement is not marked as an announced deprecation")
+if "ENFORCED IN `sdlc-gate-v2`" not in compat:
+    fails.append("U9 the consumed deprecation is not recorded as enforced in v2")
 
 wf = (SKILL_ROOT / "templates" / "github-workflows" / "sdlc-gate.yml").read_text(
     encoding="utf-8"

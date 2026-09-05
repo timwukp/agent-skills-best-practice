@@ -158,42 +158,39 @@ This was found by the matrix rather than by reasoning: the Windows cells raised
 `FileNotFoundError (WinError 2)` on `/bin/sh`. The hook-config suite now skips its
 execution cases on non-POSIX hosts and says so out loud.
 
-## ANNOUNCED DEPRECATION — more languages become enforced in `sdlc-gate-v2`
+## ENFORCED IN `sdlc-gate-v2` — polyglot coverage
 
-**This is the announcement required before a breaking change.** Read it if your repository
-contains any language below.
+**This is the completed deprecation record for a breaking change.** Read it if your
+repository contains any language below, or if you are upgrading from v1.
 
-Coverage enforcement is extension-based, and the enforced list originally held only 13
+Coverage enforcement was extension-based, and v1's enforced list originally held only 13
 suffixes. A repository written in an unlisted language was therefore **ungoverned without
-knowing it**: a `.cpp` or `.kt` change produced `note: no product source files changed` and the
-gate reported `PASSED`. That is a silent hole precisely where the tool claims to be strict.
+knowing it**: a `.cpp` or `.kt` change produced `note: no product source files changed` and
+the gate reported `PASSED`. That was a silent hole precisely where the tool claimed to be
+strict.
 
-These suffixes are now **detected and warned about**, and will be **enforced in
-`sdlc-gate-v2`**:
+v1 detected and warned about the following suffixes. `sdlc-gate-v2` now **enforces** all of
+them:
 
 `.c` `.cc` `.cpp` `.cxx` `.h` `.hpp` `.cs` `.kt` `.kts` `.swift` `.php` `.scala` `.m` `.mm`
 `.dart` `.ex` `.exs` `.lua` `.pl` `.vue` `.svelte` `.scss` `.sass` `.less` `.tf`
 
-**What happens now (this version).** A changed file in one of these languages that is *not*
-named in the active intent's `plan.md` produces a `DEPRECATION` note listing the files. The
-build still **passes**.
+**Current v2 behaviour.** A changed file in one of these languages is an ordinary governed
+source file. If the active intent's `plan.md` does not name it, the gate **fails**, exactly
+as it does for an uncovered `.py` file. No v1 `DEPRECATION`/"passes today" text remains.
 
-**What happens in `sdlc-gate-v2`.** The same situation **fails** the gate, exactly as an
-unlisted `.py` file does today.
+**How to upgrade.** Name those files in your active intent's `plan.md`, which is what the
+originally-enforced languages already required.
 
-**How to prepare.** Name those files in your active intent's `plan.md`, which is what the
-enforced languages already require. The warning lists every affected path, so the remediation
-is mechanical.
+**Why this waited for v2.** Promoting a suffix turns a previously-green repository red
+without it changing a line of its own code — a MAJOR change under the rules above. v1
+provided the required warning release and named the remediation; v2 consumes that promise.
+The history stays here so the break is auditable rather than silently rewritten.
 
-**Why it is not enforced immediately.** Promoting a suffix turns a previously-green repository
-red without it changing a line of its own code — a MAJOR change under the rules above. The
-policy requires a warning release first, and this is the project honouring its own policy
-rather than repeating the separation-of-duties mistake recorded below.
+### ENFORCED IN `sdlc-gate-v2` — `Accepted-for:` is required
 
-### ANNOUNCED DEPRECATION — `Accepted-for:` becomes required in `sdlc-gate-v2`
-
-**Second announcement under the same policy.** Read it if your repository has any accepted
-`plan.md`.
+**This is the completed second deprecation under the same policy.** Read it if your
+repository has any accepted `plan.md`, or if you are upgrading from v1.
 
 An acceptance used to be open-ended. The gate could ask whether an accepted plan *named* a
 changed file, but never whether the approval had been granted *for the change in front of
@@ -202,30 +199,33 @@ authorising every later edit to every file its `plan.md` listed. This was observ
 predicted: a documentation fix passed under a chain signed for an entirely different change,
 and the gate printed `SDLC CI GATE PASSED`.
 
-`plan.md` may now carry `- **Accepted-for:** <base-sha>`, the commit the approval was granted
+`plan.md` carries `- **Accepted-for:** <base-sha>`, the commit the approval was granted
 against. The workflow template supplies the real base with
 `--base-sha "$(git merge-base "$base" HEAD)"` — the *merge base*, not the base branch tip,
 because the base moves after a branch is cut while the approval was granted at the fork point.
 
-**What happens now (this version).** A `plan.md` bound to a **different** base than the change
-is built on **fails** the gate. A `plan.md` with **no** `Accepted-for:` line produces a
-deprecation note and still **passes**. A run given no `--base-sha` passes and states that the
-binding was **not verified**, so a misconfigured pipeline is visible rather than quietly
-toothless.
+**Current v2 behaviour.** All three unverifiable shapes fail closed:
 
-**What happens in `sdlc-gate-v2`.** A missing `Accepted-for:` **fails**.
+- no `Accepted-for:` field → **fails**;
+- `Accepted-for:` differs from `--base-sha` → **fails**, showing both values;
+- the pipeline omits `--base-sha` → **fails** rather than silently downgrading the control.
 
-**How to prepare.** Add the line when a plan is accepted (`git rev-parse HEAD` at that moment).
-If the base moves and the plan is re-confirmed, update it.
+A matching recorded and actual base passes.
 
-**Why it is not enforced immediately.** Every existing accepted artifact predates the field, so
-enforcing now would turn green repositories red without their code changing — a MAJOR change
-under the rules above, and exactly the mistake the separation-of-duties change made once
-already. Warning release first.
+**How to upgrade.** Add the field when a plan is accepted (`git rev-parse HEAD` at that
+moment). If the base moves and the plan is re-confirmed, update it. Use the shipped workflow
+template so CI passes the merge base to the gate.
+
+**Why this waited for v2.** Every accepted artifact predating the field needed migration;
+enforcing immediately would have turned green repositories red without their code changing —
+a MAJOR change under the rules above. v1 warned and named the enforcement release; v2
+consumes that promise. The history remains here rather than pretending the field was always
+mandatory.
 
 **What this still does not solve.** `Status: shipped` and this binding are both recorded *by
 the author*. Nothing stops an author editing either one, so both are attested rather than
-proven, in the same class as separation of duties. See Gap 12 in `references/limitations.md`.
+proven, in the same class as separation of duties. See Gap 12 in
+`references/limitations.md`.
 
 ### Fork-based pull requests: the CI gate runs, the review pass does not
 

@@ -31,6 +31,7 @@ import tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 GATE = HERE / "sdlc_ci_gate.py"
 COMPAT = HERE.parent / "COMPATIBILITY.md"
+BASE = "a" * 40
 
 FAILURES: list[str] = []
 
@@ -54,7 +55,8 @@ def make_repo(root: pathlib.Path, covered: list[str]) -> None:
     write(d / "intent.md", f"# i\n\n{hdr}- **Status:** accepted\n")
     write(d / "spec.md", f"# s\n\n{hdr}- **Status:** signed-off\n")
     listing = "".join(f"- `{f}`\n" for f in covered)
-    write(d / "plan.md", f"# p\n\n{hdr}- **Status:** accepted\n\n## Files\n{listing}")
+    write(d / "plan.md", f"# p\n\n{hdr}- **Accepted-for:** {BASE}\n"
+         f"- **Status:** accepted\n\n## Files\n{listing}")
     write(root / ".sdlc" / "version", "1\n")
     write(root / ".sdlc" / "active", "feat\n")
 
@@ -64,7 +66,7 @@ def run_gate(root: pathlib.Path, changed: list[str]):
     write(listing, "".join(f"{c}\n" for c in changed))
     p = subprocess.run(
         [sys.executable, str(GATE), "--repo", str(root),
-         "--changed-files-from", str(listing)],
+         "--base-sha", BASE, "--changed-files-from", str(listing)],
         capture_output=True, text=True,
     )
     return p.returncode, p.stdout + p.stderr
@@ -83,53 +85,53 @@ def test_enforced_languages() -> None:
             check(f"{ext} uncovered is REFUSED", rc != 0, out.strip()[-120:])
 
 
-# -------------------------------------------------------- pending (warn)
-def test_pending_languages() -> None:
-    print("pending languages must WARN, not fail (deprecation window)")
-    # Languages a polyglot repo will actually contain, absent from the enforced list.
-    pending = (".c", ".cpp", ".h", ".hpp", ".cs", ".kt", ".swift", ".php",
-               ".scala", ".tf", ".vue", ".dart")
-    for ext in pending:
+# -------------------------------------------------------- promoted in v2
+def test_promoted_languages() -> None:
+    print("v2-promoted languages must require plan coverage")
+    promoted = (".c", ".cpp", ".h", ".hpp", ".cs", ".kt", ".swift", ".php",
+                ".scala", ".tf", ".vue", ".dart")
+    for ext in promoted:
         with tempfile.TemporaryDirectory() as t:
             root = pathlib.Path(t)
             f = f"src/app{ext}"
             write(root / f, "x\n")
             make_repo(root, ["src/other.py"])
             rc, out = run_gate(root, [f])
-            # Must NOT fail -- that is the whole point of a deprecation window.
-            check(f"{ext} uncovered does not fail the build yet", rc == 0,
-                  f"exit={rc}: {out.strip()[-160:]}")
-            # But it must be visible, and must say it will be enforced.
-            check(f"{ext} produces a deprecation warning", ext in out and "will be enforced" in out,
-                  f"got: {out.strip()[-200:]}")
+            # v1 warned and passed under the announced deprecation window. v2 is
+            # the promised enforcement release: the same uncovered file must fail.
+            check(f"{ext} uncovered is REFUSED in v2", rc != 0,
+                  f"exit={rc}: {out.strip()[-200:]}")
+            check(f"{ext} refusal names the uncovered file", f in out,
+                  f"got: {out.strip()[-220:]}")
 
 
-def test_warning_quality() -> None:
-    print("the deprecation warning must be actionable")
+def test_promoted_message_quality() -> None:
+    print("the v2 coverage refusal must be actionable, not stale deprecation prose")
     with tempfile.TemporaryDirectory() as t:
         root = pathlib.Path(t)
         write(root / "src/a.cpp", "x\n")
         write(root / "src/b.kt", "y\n")
         make_repo(root, ["src/other.py"])
         rc, out = run_gate(root, ["src/a.cpp", "src/b.kt"])
-        check("passes during the window", rc == 0, out.strip()[-160:])
-        check("names the version that will enforce", "sdlc-gate-v2" in out,
-              f"got: {out.strip()[-250:]}")
+        check("fails after the window", rc != 0, out.strip()[-180:])
         check("names the remediation (add them to the plan)", "plan.md" in out)
         check("lists every affected file", "src/a.cpp" in out and "src/b.kt" in out)
-        # A covered pending file must NOT warn: the warning is about MISSING coverage,
-        # not about the extension existing.
+        check("does not claim enforcement is still in the future",
+              "pass today" not in out.casefold() and "will be enforced" not in out.casefold(),
+              f"got stale v1 prose: {out.strip()[-260:]}")
+        # A covered promoted file must pass. It is now an ordinary enforced source
+        # suffix, not a special warning category.
         make_repo(root, ["src/a.cpp", "src/b.kt"])
         rc2, out2 = run_gate(root, ["src/a.cpp", "src/b.kt"])
-        check("no warning once the plan names them", rc2 == 0 and "will be enforced" not in out2,
-              f"got: {out2.strip()[-200:]}")
+        check("covered promoted files pass", rc2 == 0,
+              f"got: {out2.strip()[-220:]}")
 
 
-def test_no_overlap_and_documented() -> None:
-    print("policy hygiene")
+def test_promoted_list_is_empty_and_documented() -> None:
+    print("v2 policy hygiene")
     src = (HERE / "sdlc_ci_gate.py").read_text(encoding="utf-8")
-    check("PENDING_SOURCE_SUFFIXES exists", "PENDING_SOURCE_SUFFIXES" in src)
-    # An extension in both lists would be enforced and warned simultaneously -- incoherent.
+    check("gate identifies as v2", "GATE_VERSION = 2" in src)
+
     import re as _re
 
     def extract(name: str) -> set[str]:
@@ -137,10 +139,9 @@ def test_no_overlap_and_documented() -> None:
         return set(_re.findall(r'"([^"]+)"', m.group(1))) if m else set()
 
     enforced, pending = extract("SOURCE_SUFFIXES"), extract("PENDING_SOURCE_SUFFIXES")
-    check("both lists parsed", bool(enforced) and bool(pending),
-          f"enforced={len(enforced)} pending={len(pending)}")
-    overlap = enforced & pending
-    check("no suffix is both enforced and pending", not overlap, f"overlap: {overlap}")
+    check("enforced list parsed", bool(enforced), f"enforced={len(enforced)}")
+    check("v2 has no still-pending source suffixes", not pending,
+          f"pending after the promised enforcement release: {sorted(pending)}")
 
     # The deprecation must be announced where adopters look, not only in code.
     compat = COMPAT.read_text(encoding="utf-8") if COMPAT.is_file() else ""
@@ -152,9 +153,9 @@ def test_no_overlap_and_documented() -> None:
 
 def main() -> int:
     test_enforced_languages()
-    test_pending_languages()
-    test_warning_quality()
-    test_no_overlap_and_documented()
+    test_promoted_languages()
+    test_promoted_message_quality()
+    test_promoted_list_is_empty_and_documented()
     print()
     if FAILURES:
         print(f"FAILED: {len(FAILURES)} -> {FAILURES}")
