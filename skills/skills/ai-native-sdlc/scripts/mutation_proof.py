@@ -423,6 +423,12 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "tar --format=tar",
     ),
     (
+        "release: runner context returns to job-level env and creates zero jobs",
+        ".github/workflows/release-attest.yml", "test_supply_chain.py",
+        "      SKILL_DIR: skills/skills/ai-native-sdlc\n",
+        "      SKILL_DIR: skills/skills/ai-native-sdlc\n      STAGE_DIR: ${{ runner.temp }}/ai-native-sdlc-release-stage\n",
+    ),
+    (
         "release: SBOM inventories the larger checkout instead of the staged artifact",
         ".github/workflows/release-attest.yml", "test_supply_chain.py",
         '--root "$STAGE_DIR"',

@@ -302,6 +302,15 @@ def test_release_runs_every_suite() -> None:
         "git archive --format=tar" in text and '"HEAD:$SKILL_DIR"' in text,
         "the live checkout contains generated __pycache__ after suites run",
     )
+    # The `runner` context does not exist while GitHub evaluates jobs.<id>.env. Putting
+    # `${{ runner.temp }}` there makes the whole workflow fail before it creates a job;
+    # ordinary YAML parsing still succeeds, so pin the context-availability contract.
+    check(
+        "release resolves runner temp inside executable steps",
+        "STAGE_DIR: ${{ runner.temp }}" not in text
+        and text.count('STAGE_DIR="$RUNNER_TEMP/ai-native-sdlc-release-stage"') >= 2,
+        "runner context in job-level env produces a zero-job Actions failure",
+    )
     check(
         "SBOM inventories the exact staged artifact tree",
         '--root "$STAGE_DIR"' in text,
