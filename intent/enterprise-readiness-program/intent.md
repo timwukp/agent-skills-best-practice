@@ -1,8 +1,8 @@
 - **Slug:** enterprise-readiness-program
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — product owner
+- **Accepted-by:** Tim WU
 - **Date:** 2026-09-05
-- **Status:** draft
+- **Status:** accepted
 
 ## Problem
 
