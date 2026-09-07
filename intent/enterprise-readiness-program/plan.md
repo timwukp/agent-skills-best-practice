@@ -4,7 +4,7 @@
 - **Author:** Kiro (AI agent)
 - **Accepted-by:** Tim WU
 - **Accepted-for:** c4d9f16e0877efb0bfab56aac257efec8db843ad
-- **Status:** accepted
+- **Status:** shipped
 
 `Accepted-for` must be the output of `git merge-base origin/main HEAD`, not the branch
 HEAD. At draft time that merge base is
