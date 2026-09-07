@@ -2,9 +2,9 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — engineer acceptance
-- **Accepted-for:** pending — set to the pull-request merge base at acceptance
-- **Status:** draft
+- **Accepted-by:** Tim WU
+- **Accepted-for:** c4d9f16e0877efb0bfab56aac257efec8db843ad
+- **Status:** accepted
 
 `Accepted-for` must be the output of `git merge-base origin/main HEAD`, not the branch
 HEAD. At draft time that merge base is
