@@ -4,7 +4,7 @@
 - **Author:** Kiro (AI agent)
 - **Accepted-by:** Tim WU
 - **Date:** 2026-09-07
-- **Status:** accepted
+- **Status:** shipped
 
 ## Problem
 
