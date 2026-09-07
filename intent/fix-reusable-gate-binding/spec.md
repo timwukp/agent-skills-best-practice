@@ -3,7 +3,7 @@
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
 - **Accepted-by:** Tim WU
-- **Status:** signed-off
+- **Status:** shipped
 
 ## Open questions from the intent, now closed
 
