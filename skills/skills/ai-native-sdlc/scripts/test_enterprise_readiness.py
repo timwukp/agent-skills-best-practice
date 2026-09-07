@@ -79,6 +79,25 @@ def line_with(text: str, needle: str) -> str | None:
     return None
 
 
+def flat(text: str) -> str:
+    """Collapse whitespace, casefolded.
+
+    Prose wraps. A required phrase like 'not provided by this skill' legitimately spans a
+    line break, and a test that fails on that is testing the line width rather than the
+    claim. Every phrase assertion runs against this form.
+    """
+    return re.sub(r"\s+", " ", text).casefold()
+
+
+def window_with(text: str, needle: str, radius: int = 240) -> str:
+    """The flattened neighbourhood around a token, for 'this word must appear NEAR that one'."""
+    flattened = flat(text)
+    idx = flattened.find(needle.casefold())
+    if idx < 0:
+        return ""
+    return flattened[max(0, idx - radius): idx + radius]
+
+
 def mutation_total() -> int | None:
     """Count MUTATIONS entries by parsing the harness — never by trusting a written number."""
     src = read(HARNESS)
@@ -205,11 +224,11 @@ def main() -> int:
     print("score and ceiling")
     for token in ("36/80", "45%", "48%"):
         check(f"SKILL.md states {token}", token in skill)
-    ceiling_line = line_with(skill, "48%")
+    ceiling = window_with(skill, "48%")
     check(
         "48% is identified as the standalone ceiling",
-        ceiling_line is not None
-        and any(w in ceiling_line.casefold() for w in ("ceiling", "self-contained", "standalone")),
+        bool(ceiling)
+        and any(w in ceiling for w in ("ceiling", "self-contained", "standalone", "alone")),
     )
     # Any OTHER denominator-80 score is a silent promotion.
     others = {m for m in re.findall(r"\b(\d{1,2})/80\b", skill + limits) if m != "36"}
@@ -235,7 +254,7 @@ def main() -> int:
         check(f"control section present: {control}", match is not None)
         if match is None:
             continue
-        low = match.casefold()
+        low = flat(match)
         for sub in CONTROL_SUBSECTIONS:
             check(f"{control}: has '{sub}'", sub.casefold() in low)
         for token in CONTROL_COMMON + tokens:
@@ -243,11 +262,11 @@ def main() -> int:
 
     check(
         "adoption doc keeps examples vendor-neutral",
-        "equivalent controls" in adoption.casefold(),
+        "equivalent controls" in flat(adoption),
     )
     check(
         "adoption doc denies that copying an example proves compliance",
-        "does not prove" in adoption.casefold() or "is not proof" in adoption.casefold(),
+        "does not prove" in flat(adoption) or "is not proof" in flat(adoption),
     )
 
     print("roadmap (enterprise-roadmap.md)")
@@ -263,11 +282,11 @@ def main() -> int:
     for body in ws_bodies:
         title = body.splitlines()[0].strip("# ").strip()
         for field in WORKSTREAM_FIELDS:
-            check(f"{title[:46]}: has '{field}'", field.casefold() in body.casefold())
+            check(f"{title[:46]}: has '{field}'", field.casefold() in flat(body))
 
     for phase in ("Phase 0", "Phase 1", "Phase 2", "Phase 3"):
         check(f"roadmap defines {phase}", phase in roadmap)
-    low_roadmap = roadmap.casefold()
+    low_roadmap = flat(roadmap)
     check("roadmap is not an SLA", "not an sla" in low_roadmap)
     check("roadmap claims no funding", "no funded" in low_roadmap or "unfunded" in low_roadmap)
     check(
@@ -281,7 +300,7 @@ def main() -> int:
             longitudinal = body
     check("longitudinal workstream section found", longitudinal is not None)
     if longitudinal is not None:
-        low = longitudinal.casefold()
+        low = flat(longitudinal)
         check("longitudinal evidence needs elapsed real time", "elapsed" in low)
         check(
             "longitudinal evidence cannot be closed synthetically",
@@ -321,7 +340,7 @@ def main() -> int:
     )
 
     print("no promotion of synthetic or self-authored evidence")
-    low_limits = limits.casefold()
+    low_limits = flat(limits)
     check(
         "limitations.md still separates synthetic CI evidence from production adoption",
         "synthetic" in low_limits,
@@ -342,7 +361,7 @@ def main() -> int:
             ("enterprise-roadmap.md", roadmap),
             ("limitations.md", limits),
         ):
-            check(f"{doc} avoids overclaim '{phrase}'", phrase.casefold() not in text.casefold())
+            check(f"{doc} avoids overclaim '{phrase}'", phrase.casefold() not in flat(text))
 
     print()
     if FAILURES:

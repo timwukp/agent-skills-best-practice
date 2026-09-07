@@ -257,8 +257,8 @@ GitHub account, and a user cannot fork their own repository. `fork-pr` therefore
 ### Not tested — do not assume
 | Dimension | Status |
 |---|---|
-| Polyglot repos | **Untested.** Source-file detection is extension-based. |
-| Fork-based contributions | **Untested.** |
+| Polyglot repos | **Tested synthetically.** `scripts/test_polyglot.py` covers extension-based detection across languages, on fixtures this project wrote. No real polyglot repository has been governed. |
+| Fork-based contributions | **Contract tested, runtime unproven.** See above. |
 | GitLab / Bitbucket | **Unsupported.** The gate logic is portable; the workflow is not. |
 | Kiro Web surface | **Unsupported** — `PreToolUse` does not exist there; CI is the only control. |
 | Scale | Largest exercise is a few dozen files. No evidence at thousands. |
