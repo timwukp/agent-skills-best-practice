@@ -4,7 +4,7 @@
 - **Author:** Kiro (AI agent)
 - **Accepted-by:** Tim WU
 - **Accepted-for:** 3a343d5d55b8af60d17e033568f1a7908722cb3d
-- **Status:** accepted
+- **Status:** shipped
 
 `Accepted-for` must be `git merge-base origin/main HEAD`, which at draft time is
 `3a343d5d55b8af60d17e033568f1a7908722cb3d`.
