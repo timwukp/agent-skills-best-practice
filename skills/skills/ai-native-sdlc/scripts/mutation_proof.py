@@ -440,6 +440,41 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         'diff -u "$ARTIFACT_FILES" "$SBOM_FILES"',
         'true # inventory comparison removed by mutation',
     ),
+    # --- enterprise positioning: the failure mode here is a DOCUMENT, not a crash -----
+    # These five protect claims whose regression is silent: a reader adopts the skill as a
+    # compliance control on the strength of prose and nothing goes red. Each one promotes a
+    # single claim beyond the evidence, which is exactly how the stale 27-mutation and
+    # "polyglot untested" statements survived for months.
+    (
+        "positioning: enterprise-wide control is promoted from not-achieved to achieved",
+        "SKILL.md", "test_enterprise_readiness.py",
+        "| Enterprise-wide mandatory control | **Not achieved** |",
+        "| Enterprise-wide mandatory control | **Achieved** |",
+    ),
+    (
+        "positioning: the readiness score is inflated above the accepted rubric result",
+        "SKILL.md", "test_enterprise_readiness.py",
+        "**36/80 (45%)**",
+        "**58/80 (72%)**",
+    ),
+    (
+        "positioning: stale mutation evidence count returns to the documented claim",
+        "SKILL.md", "test_enterprise_readiness.py",
+        "70 mutations, all",
+        "27 mutations, all",
+    ),
+    (
+        "adoption: the audit sink loses its 'not provided by this skill' boundary",
+        "references/enterprise-adoption.md", "test_enterprise_readiness.py",
+        "chain is an input to an audit trail, not an audit trail. This control is **not provided by\nthis skill**.",
+        "chain is an input to an audit trail, not an audit trail.",
+    ),
+    (
+        "roadmap: the longitudinal workstream slug drifts from the agreed follow-up intent",
+        "references/enterprise-roadmap.md", "test_enterprise_readiness.py",
+        "- **Follow-up intent slug:** `longitudinal-operational-evidence`",
+        "- **Follow-up intent slug:** `longitudinal-evidence`",
+    ),
 ]
 
 

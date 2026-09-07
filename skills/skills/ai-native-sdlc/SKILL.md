@@ -120,6 +120,31 @@ protection, a red check can still be merged. See `references/enforcement.md` for
 runtime differences that silently disable a hook — the event-name casing, the exit-code
 contract, and why an infrastructure failure must exit 0 rather than block every write.
 
+### Where this is usable today
+
+Enforcement strength is not the same question as organisational readiness. Scored against
+an enterprise control rubric this skill stands at **36/80 (45%)**, and roughly **48%** is
+the ceiling a standalone repository can reach on its own — the remaining points require
+authority it cannot hold. So the honest positioning is four distinct positions, not one:
+
+| Adoption position | Status | What it requires |
+|---|---|---|
+| Individual or small team, production use | **Usable now** | Nothing beyond this repository. |
+| Controlled enterprise pilot | **Conditional** | The enterprise supplies central policy, external evidence custody and identity governance for the pilot scope. |
+| Enterprise-wide mandatory control | **Not achieved** | Fleet-wide policy, ownership, telemetry and drift visibility. |
+| Regulated or auditable compliance control | **Not achieved** | All of the above, plus retention, longitudinal evidence and independent assurance. |
+
+Three controls are **enterprise-owned and cannot be delivered from inside this repository**:
+an organisation policy plane above the repository wall, a tamper-evident audit sink outside
+the governed party's control, and independent assurance.
+`references/enterprise-adoption.md` states each one's acceptance contract, evidence and
+verification. What this project could still do for itself is ordered in
+`references/enterprise-roadmap.md`.
+
+Documentation and self-authored tests **do not raise** that score. Writing a contract is
+not deploying a control, and a passing suite written by the implementer is not independent
+review.
+
 ## Guidelines
 
 - **A stage may not advance until its gate passes and its artifact is committed.** If the
@@ -141,7 +166,7 @@ contract, and why an infrastructure failure must exit 0 rather than block every 
   demands. An eval checking "the identifier exists" when the requirement is "the element is
   reachable" passes while the work is wrong.
 - **Prove a test can fail.** Mutate the implementation and confirm the suite goes red
-  (`scripts/mutation_proof.py` does this for this skill's own gates — 27 mutations, all
+  (`scripts/mutation_proof.py` does this for this skill's own gates — 70 mutations, all
   killed). A surviving mutation is an untested behaviour, not a pass. Beware the subtler
   case: a test that blocks for the *wrong reason* still looks green.
 - **Do not self-approve.** Never set `accepted` or `signed-off` on an artifact you wrote.
@@ -186,6 +211,9 @@ ai-native-sdlc/
   references/playbook-mapping.md   stage -> artifact -> enforcement mapping
   references/limitations.md    READ FIRST: the twelve known gaps and the eight things an
                                enterprise needs that this does not have
+  references/enterprise-adoption.md  the three enterprise-owned controls this skill cannot
+                               provide: acceptance contracts, evidence, verification
+  references/enterprise-roadmap.md   the six self-addressable workstreams, proposed only
   references/threat-model.md   STRIDE for the two surfaces this skill introduces
 ```
 

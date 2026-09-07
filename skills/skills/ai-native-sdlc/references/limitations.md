@@ -9,7 +9,24 @@ here.
 
 What is defensible: the gate really runs, it has been proven live on a real repository, it
 found and fixed six substantive bugs in itself, and its test suite is mutation-verified
-(27 mutations, 27 killed). Judged as a personal/small-team tool, the quality holds up.
+(70 mutations, 70 killed). Judged as a personal/small-team tool, the quality holds up.
+
+Scored against an enterprise control rubric it stands at **36/80 (45%)**. About **48%** is
+the ceiling this repository can reach alone: three of the remaining controls are
+**enterprise-owned** and cannot be delivered from inside the repository being governed.
+Four adoption positions follow from that, and only the first two are available at all —
+individual/small-team production use is **usable now**; a controlled enterprise pilot is
+**conditional** on the enterprise supplying policy, evidence custody and identity
+governance; enterprise-wide mandatory control and regulated/auditable compliance control
+are **not achieved**.
+
+- `references/enterprise-adoption.md` — the three enterprise-owned controls, each with an
+  acceptance contract, evidence package, verification and negative controls.
+- `references/enterprise-roadmap.md` — the six workstreams this project could address
+  itself. Proposed only: no owner, no funding, no date.
+
+Neither file changes what is deployed. Writing a contract is not satisfying it, and a suite
+written by the implementer is not independent review.
 
 ---
 
@@ -115,28 +132,37 @@ Stated plainly because the gap is a category difference, not a to-do list.
    tampering with it defeats the control. But GitHub's own attestations reach **SLSA Build
    Level 2** by default; Level 3 requires the build to run in a vetted reusable workflow and
    consumers to verify with `--signer-workflow`. Nobody has audited this pipeline.
-2. **Tamper-evident audit** — *not addressed.* The audit trail is git history in the repo
-   being governed, and the governed party can rewrite it. An auditor needs an append-only
-   record held **outside** the audited party's control (GitHub audit-log streaming to WORM
-   storage such as S3 Object Lock). Self-audit is not audit.
+2. **Tamper-evident audit** — *not addressed, and enterprise-owned.* The audit trail is git
+   history in the repository being governed, and the governed party can rewrite it. An
+   auditor needs an append-only record held **outside** the audited party's control (GitHub
+   audit-log streaming to WORM storage such as S3 Object Lock). Self-audit is not audit.
+   Acceptance contract: `references/enterprise-adoption.md`, Control 2.
 3. **Formal threat model and penetration test** — *threat model now written, pen test
    absent.* `references/threat-model.md` covers the two surfaces this skill introduces. No
    independent security testing has been performed.
-4. **Centralised policy governance** — *not addressed.* Enterprises need one policy change
-   to take effect fleet-wide, un-disableable by engineers. Anyone with write access can
-   delete `.sdlc/` and the local control is gone.
+4. **Centralised policy governance** — *not addressed, and enterprise-owned.* Enterprises
+   need one policy change to take effect fleet-wide, un-disableable by engineers. Anyone
+   with write access can delete `.sdlc/` and the local control is gone. Acceptance
+   contract: `references/enterprise-adoption.md`, Control 1.
 5. **Compatibility guarantees** — *now addressed going forward.* See `COMPATIBILITY.md`.
    Note the precedent honestly: the duties check **was itself an unannounced breaking
    change** that turns previously-green repositories red.
 6. **Independent verification** — *not addressed, and not self-addressable.* Every test here
    was written by the same author as the implementation. Third-party review is required by
-   definition, and no badge substitutes for it.
+   definition, and no badge substitutes for it. Acceptance contract:
+   `references/enterprise-adoption.md`, Control 3.
 7. **Operational commitments** — *partly addressed.* `SECURITY.md` adds a disclosure
-   channel and a CVE path. There is no SLA and no funded maintenance commitment.
-8. **Scale and environment evidence** — *not addressed.* Validated on one single-file static
-   site and one feature. No monorepo, no polyglot repo, no concurrent PRs, no fork-based
-   contributions, no Windows. See the support matrix in `COMPATIBILITY.md` for what is
-   actually tested versus merely expected to work.
+   channel and a CVE path. There is no SLA and no funded maintenance commitment. Proposed
+   work: `references/enterprise-roadmap.md`, `operational-ownership`.
+8. **Scale and environment evidence** — *synthetically covered, not representative.* CI now
+   exercises monorepo, concurrency and polyglot fixtures and runs every suite on
+   Linux/macOS/Windows across five Python versions. That coverage is **synthetic**: the
+   fixtures were built by this project to exercise its own code paths. The largest real
+   exercise remains one single-file static site and a handful of features; live fork-token
+   semantics are contract-tested but runtime unproven; and there is no representative
+   external production adoption and no longitudinal operational record. See the support
+   matrix in `COMPATIBILITY.md`, and `references/enterprise-roadmap.md` for what would
+   close it.
 
 ---
 
