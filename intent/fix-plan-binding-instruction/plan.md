@@ -4,7 +4,7 @@
 - **Author:** Kiro (AI agent)
 - **Accepted-by:** Tim WU
 - **Accepted-for:** 1d66929236cb3b506a6796ea7392863648f3b0d8
-- **Status:** accepted
+- **Status:** shipped
 
 `Accepted-for` must be `git merge-base origin/main HEAD`, which at draft time is
 `1d66929236cb3b506a6796ea7392863648f3b0d8`. This is the value the v2 CI gate compares
