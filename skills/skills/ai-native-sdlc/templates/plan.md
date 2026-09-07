@@ -3,7 +3,7 @@
 - **Spec:** ./spec.md
 - **Author:** <who wrote this>
 - **Accepted-by:** <who accepted it — MUST NOT be the Author>
-- **Accepted-for:** <base commit SHA this was accepted against — `git rev-parse HEAD`>
+- **Accepted-for:** <base commit SHA this was accepted against — the merge base of this branch against the default branch, which is what the gate verifies (e.g. `git merge-base origin/main HEAD`; substitute your default branch for `main`). Not the branch tip: the base moves after the branch is cut, and the approval was granted at the fork point.>
 - **Status:** draft | accepted | shipped
 
 `Accepted-for:` records *what* the approval covered. Without it an acceptance is

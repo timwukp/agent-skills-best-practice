@@ -221,8 +221,8 @@ because the base moves after a branch is cut while the approval was granted at t
 
 A matching recorded and actual base passes.
 
-**How to upgrade.** Add the field when a plan is accepted (`git rev-parse HEAD` at that
-moment). If the base moves and the plan is re-confirmed, update it. Use the shipped workflow
+**How to upgrade.** Add the field when a plan is accepted (`git merge-base origin/<default-branch> HEAD` at that
+moment — the fork point the approval was granted against, which is what the gate verifies; not the branch tip). If the base moves and the plan is re-confirmed, update it. Use the shipped workflow
 template so CI passes the merge base to the gate.
 
 **Why this waited for v2.** Every accepted artifact predating the field needed migration;
