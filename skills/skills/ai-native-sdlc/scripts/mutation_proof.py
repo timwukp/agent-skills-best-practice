@@ -460,7 +460,7 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
     (
         "positioning: stale mutation evidence count returns to the documented claim",
         "SKILL.md", "test_enterprise_readiness.py",
-        "70 mutations, all",
+        "72 mutations, all",
         "27 mutations, all",
     ),
     (
@@ -474,6 +474,22 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "references/enterprise-roadmap.md", "test_enterprise_readiness.py",
         "- **Follow-up intent slug:** `longitudinal-operational-evidence`",
         "- **Follow-up intent slug:** `longitudinal-evidence`",
+    ),
+    # --- reusable workflow: it must VERIFY the binding, not merely be told about it ----
+    # v2 hardened the vendored template but missed the reusable workflow, the path
+    # COMPATIBILITY.md tells consumers to pin. These two put each half of the defect back
+    # and prove test_unbound_approval catches a reintroduction rather than only asserting it.
+    (
+        "reusable workflow: the gate is invoked without --base-sha, so binding is never verified",
+        ".github/workflows/sdlc-gate-reusable.yml", "test_unbound_approval.py",
+        '--changed-files-from changed-files.txt --base-sha "${base_sha:-}")',
+        '--changed-files-from changed-files.txt)',
+    ),
+    (
+        "reusable workflow: base is the moving tip instead of the merge-base fork point",
+        ".github/workflows/sdlc-gate-reusable.yml", "test_unbound_approval.py",
+        'base_sha=$(git merge-base "$base" HEAD || echo)',
+        'base_sha=$(git rev-parse "$base" || echo)',
     ),
 ]
 

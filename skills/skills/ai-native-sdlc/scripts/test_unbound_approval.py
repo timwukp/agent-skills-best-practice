@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -347,12 +348,15 @@ else:
         encoding="utf-8"
     )
     # Isolate the step that invokes the gate, so the assertions bind to executed shell and
-    # not to a comment or an unrelated step. The gate is called as `sdlc_ci_gate.py`.
-    gate_call_idx = reusable.find("sdlc_ci_gate.py")
-    # A window around the invocation: enough to include the argument continuation lines.
-    window = reusable[max(0, gate_call_idx - 400): gate_call_idx + 400] if gate_call_idx >= 0 else ""
+    # not to a comment or an unrelated step. The gate is RUN as `python3 ... sdlc_ci_gate.py`;
+    # match that, not the first textual mention (a header comment and a sha256 line name the
+    # script too). The ARGS array is assembled just above the run line, so scan back far
+    # enough to include it.
+    m = re.search(r"python3[^\n]*sdlc_ci_gate\.py", reusable)
+    gate_call_idx = m.start() if m else -1
+    window = reusable[max(0, gate_call_idx - 600): gate_call_idx + 200] if gate_call_idx >= 0 else ""
     if gate_call_idx < 0:
-        fails.append("U10 the reusable workflow never invokes sdlc_ci_gate.py")
+        fails.append("U10 the reusable workflow never runs sdlc_ci_gate.py")
     elif "--base-sha" not in window:
         fails.append("U10 the reusable workflow invokes the gate WITHOUT --base-sha, so the "
                      "Accepted-for binding is never verified and v2 fails closed on every "
