@@ -2,13 +2,26 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** Tim WU
-- **Accepted-for:** c5ce8a203c0ad9719c7e833d1a323bf7fd9f8010
-- **Status:** accepted
+- **Accepted-by:** pending — re-acceptance after Amendment 1
+- **Accepted-for:** pending — set to the pull-request merge base at acceptance
+- **Status:** draft
 
 `Accepted-for` must be `git merge-base origin/main HEAD`, which at draft time is
 `c5ce8a203c0ad9719c7e833d1a323bf7fd9f8010`. This is what the v2 CI gate compares against;
 do not bind to branch HEAD.
+
+## Amendment 1 — add the two evidence-count documents (requires re-acceptance)
+
+Implementation surfaced a coverage gap in the original file list. Adding two mutations takes
+the harness from 70 to 72, and `test_enterprise_readiness.py` derives that count from the
+harness and requires `SKILL.md` and `references/limitations.md` to state it. Those two files
+therefore MUST change, but the original plan did not name them, so the CI coverage gate would
+refuse the diff. The gap is genuine — a mutation-count change necessarily touches the
+truthfulness documents — so the plan is corrected and returned to draft for re-acceptance
+rather than the two files being edited under an approval that never covered them.
+
+Files 6 and 7 below are the addition. Nothing else changes.
+
 
 ## Files changed (in order of work)
 
@@ -26,6 +39,9 @@ do not bind to branch HEAD.
    template but not the reusable workflow (spec R8).
 5. `skills/skills/ai-native-sdlc/scripts/mutation_proof.py` — add two mutations on the
    reusable workflow: remove `--base-sha`, and replace `git merge-base` with the base tip.
+6. `skills/skills/ai-native-sdlc/SKILL.md` — update the mutation evidence count from 70 to
+   the harness's new total (72), which `test_enterprise_readiness.py` requires.
+7. `skills/skills/ai-native-sdlc/references/limitations.md` — same evidence-count update.
 
 `scripts/sdlc_ci_gate.py`, the hook, the schema, `GATE_VERSION`, and
 `templates/github-workflows/sdlc-gate.yml` are **not** touched.
@@ -89,11 +105,11 @@ python3 sdlc_ci_gate.py --repo . --changed-files-from changed-files.txt --base-s
 ```sh
 cd skills/skills/ai-native-sdlc/scripts
 count=0; for t in test_*.py; do count=$((count+1)); python3 "$t"; done; test "$count" -ge 13
-python3 mutation_proof.py    # expect >=72, 0 survived, 0 broken
+python3 mutation_proof.py    # expect 72, 0 survived, 0 broken
 ```
 
-Pass condition: 13 suites all exit 0; mutation total at least 72 (70 existing + 2 new), both
-new mutations killed, `0 survived`, `0 broken`.
+Pass condition: 13 suites all exit 0; mutation total 72 (70 existing + 2 new), both new
+mutations killed, `0 survived`, `0 broken`. `SKILL.md` and `limitations.md` state 72.
 
 ### Workflow and invariant checks
 
@@ -102,7 +118,7 @@ ruby -e 'require "yaml"; YAML.parse_file(ARGV.fetch(0))' .github/workflows/sdlc-
 git diff --name-only c5ce8a203c0ad9719c7e833d1a323bf7fd9f8010...HEAD
 ```
 
-Pass condition: YAML parses; only the five files above plus the dogfood artifacts differ.
+Pass condition: YAML parses; only the seven files above plus the dogfood artifacts differ.
 Verify `sdlc_ci_gate.py` is byte-identical to `c5ce8a2` (`git diff c5ce8a2 -- …sdlc_ci_gate.py`
 empty), `GATE_VERSION = 2`, `SUPPORTED_SCHEMA = 1`.
 
