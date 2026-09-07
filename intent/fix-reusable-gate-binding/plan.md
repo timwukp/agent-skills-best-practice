@@ -2,9 +2,9 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — re-acceptance after Amendment 1
-- **Accepted-for:** pending — set to the pull-request merge base at acceptance
-- **Status:** draft
+- **Accepted-by:** Tim WU
+- **Accepted-for:** c5ce8a203c0ad9719c7e833d1a323bf7fd9f8010
+- **Status:** accepted
 
 `Accepted-for` must be `git merge-base origin/main HEAD`, which at draft time is
 `c5ce8a203c0ad9719c7e833d1a323bf7fd9f8010`. This is what the v2 CI gate compares against;
