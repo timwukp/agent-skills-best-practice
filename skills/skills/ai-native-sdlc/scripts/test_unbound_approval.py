@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -323,6 +324,56 @@ if not any(
 ):
     fails.append("U9 templates/plan.md has no '- **Accepted-for:**' field line, so no "
                  "author would know to record it")
+
+# --- U10: the REUSABLE workflow must verify the binding, not just the template -------
+# The template (checked above) was updated for v2; the reusable workflow -- the path
+# COMPATIBILITY.md tells consumers to pin -- was not. A gate that demands a binding it is
+# never handed fails closed on every compliant consumer. These assertions read the shipped
+# workflow and target the STEP THAT RUNS THE GATE, so a comment mentioning --base-sha cannot
+# satisfy them. Found by running the reusable arg set against an accepted tree: exit 1,
+# "binding was NOT verified".
+REPO_ROOT = None
+for _p in [SKILL_ROOT, *SKILL_ROOT.parents]:
+    if (_p / ".github" / "workflows" / "sdlc-gate-reusable.yml").is_file():
+        REPO_ROOT = _p
+        break
+
+if REPO_ROOT is None:
+    # Standalone install: the repo workflow is legitimately absent. Do not fail; the
+    # source-repo run (where this matters) will find it. Mirrors test_support_matrix's
+    # skip discipline.
+    print("  U10 SKIP — no .github/workflows/sdlc-gate-reusable.yml above the skill")
+else:
+    reusable = (REPO_ROOT / ".github" / "workflows" / "sdlc-gate-reusable.yml").read_text(
+        encoding="utf-8"
+    )
+    # Isolate the step that invokes the gate, so the assertions bind to executed shell and
+    # not to a comment or an unrelated step. The gate is RUN as `python3 ... sdlc_ci_gate.py`;
+    # match that, not the first textual mention (a header comment and a sha256 line name the
+    # script too). The ARGS array is assembled just above the run line, so scan back far
+    # enough to include it.
+    m = re.search(r"python3[^\n]*sdlc_ci_gate\.py", reusable)
+    gate_call_idx = m.start() if m else -1
+    window = reusable[max(0, gate_call_idx - 600): gate_call_idx + 200] if gate_call_idx >= 0 else ""
+    if gate_call_idx < 0:
+        fails.append("U10 the reusable workflow never runs sdlc_ci_gate.py")
+    elif "--base-sha" not in window:
+        fails.append("U10 the reusable workflow invokes the gate WITHOUT --base-sha, so the "
+                     "Accepted-for binding is never verified and v2 fails closed on every "
+                     "compliant consumer (this is the shipped defect)")
+    if "merge-base" not in reusable:
+        fails.append("U10 the reusable workflow must derive the base from git merge-base, "
+                     "not the base tip: the base moves after the branch is cut")
+    if "github.base_ref" not in reusable:
+        fails.append("U10 the reusable workflow must resolve the base against "
+                     "github.base_ref")
+    # Guard the base-TIP substitution: a merge-base line whose argument is the ref itself
+    # rather than a merge-base of it is the wrong fix. Require merge-base to be applied to
+    # HEAD, matching the template.
+    if "merge-base" in reusable and "merge-base \"$base\" HEAD" not in reusable \
+            and "merge-base \"${base}\" HEAD" not in reusable:
+        fails.append("U10 the reusable workflow computes merge-base but not against HEAD, "
+                     "so it is not the fork point the approval was granted for")
 
 
 print("unbound-approval:", "FAIL" if fails else "all pass")

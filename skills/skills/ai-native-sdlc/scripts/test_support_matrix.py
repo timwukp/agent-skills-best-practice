@@ -183,6 +183,32 @@ def main() -> int:
                 f"CI pythons are {sorted(pythons)} — the doc claims more than CI covers",
             )
 
+    # --- Pin guidance must reference a tag that actually exists ---------------------
+    # COMPATIBILITY.md recommends pinning the reusable workflow. It recommended @v1, a ref
+    # that does not exist among the sdlc-gate-vN tags, and its table claimed a bare `vN`
+    # moving tag. A consumer following the recommendation cannot even resolve the workflow.
+    # Assert the real convention (sdlc-gate-vN) in the pin examples that name the reusable
+    # workflow, and that no bare-vN moving tag is claimed.
+    pin_lines = [
+        ln for ln in text.splitlines()
+        if "sdlc-gate-reusable.yml@" in ln
+    ]
+    check("COMPATIBILITY.md has reusable-workflow pin examples", bool(pin_lines))
+    for ln in pin_lines:
+        ref = ln.split("sdlc-gate-reusable.yml@", 1)[1].strip()
+        # A full-SHA example and a placeholder <full-sha> are both fine; a tag example must
+        # use the real prefix rather than a bare vN that has no matching ref.
+        bare_vn = re.fullmatch(r"v\d+", ref) is not None
+        check(
+            f"pin example uses a real ref, not a nonexistent bare vN ({ref})",
+            not bare_vn,
+            f"-> {ln.strip()}",
+        )
+    check(
+        "versioning table does not claim a bare `vN` moving tag",
+        "`vN` moving tag" not in text,
+    )
+
     print()
     if FAILURES:
         print(f"FAILED: {len(FAILURES)} -> {FAILURES}")

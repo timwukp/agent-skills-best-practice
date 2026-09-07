@@ -11,7 +11,7 @@ Two things are versioned separately.
 | Thing | Version | Where |
 |---|---|---|
 | **Artifact schema** — the files and fields the gate reads | integer, no minor | `.sdlc/version` in the consuming repo |
-| **Gate implementation** — script and reusable workflow | SemVer `MAJOR.MINOR.PATCH` | git tags, `vN` moving tag |
+| **Gate implementation** — script and reusable workflow | SemVer `MAJOR.MINOR.PATCH` | git tags, `sdlc-gate-vMAJOR.MINOR.PATCH` |
 
 They are separate on purpose: the gate can gain features without forcing every repository
 to migrate its artifacts.
@@ -45,8 +45,9 @@ A MAJOR release must:
 ### How consumers pin
 
 ```yaml
-# Recommended — automatic patches and features, never a breaking change:
-uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@v1
+# Recommended — pin a released tag so upstream patches and features arrive on a version you
+# chose. Tags are named `sdlc-gate-vMAJOR.MINOR.PATCH`; the latest is sdlc-gate-v2.0.2:
+uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@sdlc-gate-v2.0.2
 
 # Strictest — nothing changes until you change it. Required if the gate is a
 # compliance control, because a moving tag means upstream can alter your merge criteria:
@@ -63,6 +64,14 @@ breaking change: repositories with accepted artifacts lacking `Author` / `Accept
 went red with no warning release, no deprecation window and no migration script. That was
 wrong, it is the reason this document exists, and it is stated here rather than quietly
 fixed so the failure is on the record. Subsequent breaking changes follow the rules above.
+
+**The `sdlc-gate-v2` `Accepted-for` enforcement reached only one of two shipped paths.**
+The vendored template (`templates/github-workflows/sdlc-gate.yml`) was updated to compute a
+merge base and pass `--base-sha`; the reusable workflow — the path this file *recommends* —
+was not, so it invoked a gate that fails closed with no base and refused every consumer who
+complied with v2. It went unnoticed because no test asserted the reusable path verified
+anything. Fixed once caught; recorded here because the recommended integration path being
+the broken one is exactly the kind of thing this document exists to surface.
 
 ## Support matrix
 

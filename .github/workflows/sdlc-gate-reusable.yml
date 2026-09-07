@@ -98,11 +98,18 @@ jobs:
             || git diff --name-only HEAD~1..HEAD > changed-files.txt
           echo "--- changed files ---"
           cat changed-files.txt
+          # The fork point this branch was cut from, passed to the gate so an approval
+          # recorded as `Accepted-for: <base-sha>` can be verified against the tree it was
+          # granted for. merge-base against HEAD, not the base tip: the base moves after the
+          # branch is cut, and the approval was granted at the fork point. Empty on failure
+          # so the gate's fail-closed "binding was NOT verified" refusal fires rather than a
+          # wrong value being substituted. This mirrors templates/github-workflows/sdlc-gate.yml.
+          echo "base_sha=$(git merge-base "$base" HEAD || echo)" >> "$GITHUB_ENV"
 
       - name: Validate the SDLC artifact chain
         run: |
           set -euo pipefail
-          ARGS=(--repo . --changed-files-from changed-files.txt)
+          ARGS=(--repo . --changed-files-from changed-files.txt --base-sha "${base_sha:-}")
           if [ "${{ inputs.require-active }}" = "true" ]; then
             ARGS+=(--require-active)
           fi
