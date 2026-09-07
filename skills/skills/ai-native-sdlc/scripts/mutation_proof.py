@@ -458,10 +458,21 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "**58/80 (72%)**",
     ),
     (
+        # The anchor deliberately contains NO count. An earlier version anchored on
+        # "73 mutations, all", so every change to the mutation set made this entry BROKEN --
+        # the coupling this mutation existed to protect against, reproduced in the guard itself.
+        # Anchoring on digit-free prose and INSERTING a stale claim kills the same assertion and
+        # cannot go stale.
         "positioning: stale mutation evidence count returns to the documented claim",
-        "SKILL.md", "test_enterprise_readiness.py",
-        "73 mutations, all",
-        "27 mutations, all",
+        "references/limitations.md", "test_enterprise_readiness.py",
+        "). Judged as a personal/small-team tool",
+        "; 27 mutations, 27 killed). Judged as a personal/small-team tool",
+    ),
+    (
+        "sync command: --check stops reporting a stale documented count",
+        "sync_mutation_count.py", "test_sync_mutation_count.py",
+        'stale = [m for m in matches if int(m.group("n")) != count]',
+        "stale = []  # staleness detection removed by mutation",
     ),
     (
         "adoption: the audit sink loses its 'not provided by this skill' boundary",
