@@ -166,9 +166,12 @@ review.
   demands. An eval checking "the identifier exists" when the requirement is "the element is
   reachable" passes while the work is wrong.
 - **Prove a test can fail.** Mutate the implementation and confirm the suite goes red
-  (`scripts/mutation_proof.py` does this for this skill's own gates — 73 mutations, all
+  (`scripts/mutation_proof.py` does this for this skill's own gates — 74 mutations, all
   killed). A surviving mutation is an untested behaviour, not a pass. Beware the subtler
-  case: a test that blocks for the *wrong reason* still looks green.
+  case: a test that blocks for the *wrong reason* still looks green. After changing the
+  mutation set, run `scripts/sync_mutation_count.py` rather than editing that number by hand;
+  `--check` reports staleness without writing, and a test fails if the documents disagree with
+  the harness.
 - **Do not self-approve.** Never set `accepted` or `signed-off` on an artifact you wrote.
 - **Brownfield:** name one source of truth per artifact, then start the loop at the *first*
   change. Do not retrofit artifacts for past work.
