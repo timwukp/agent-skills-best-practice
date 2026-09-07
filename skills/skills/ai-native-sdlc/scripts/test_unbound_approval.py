@@ -325,6 +325,28 @@ if not any(
     fails.append("U9 templates/plan.md has no '- **Accepted-for:**' field line, so no "
                  "author would know to record it")
 
+# --- U11: the guidance must name the base the GATE checks, not the branch tip --------
+# The field line existing (U9) does not mean it tells the author the right value. The
+# template said `git rev-parse HEAD` -- the branch tip -- while both shipped workflows verify
+# the binding against `git merge-base`. An author following it verbatim on any branch past
+# the acceptance commit bound to the wrong commit and the gate refused the PR. Assert the
+# guidance's SEMANTIC content: merge-base present, rev-parse HEAD absent. Read the guidance
+# region (the field line and the paragraph explaining it), not the whole file, so an unrelated
+# mention elsewhere cannot mask a regression.
+_accepted_for_region = ""
+_lines = plan_tpl.splitlines()
+for _i, _ln in enumerate(_lines):
+    if _ln.lstrip().startswith("- **Accepted-for:**"):
+        _accepted_for_region = "\n".join(_lines[_i:_i + 12])
+        break
+if "merge-base" not in _accepted_for_region:
+    fails.append("U11 templates/plan.md Accepted-for guidance must name `git merge-base` "
+                 "(the base the gate verifies), not the branch tip")
+if "rev-parse HEAD" in _accepted_for_region:
+    fails.append("U11 templates/plan.md Accepted-for guidance still says `rev-parse HEAD`, "
+                 "which is the branch tip; the gate checks the merge base, so an author who "
+                 "follows this binds to the wrong commit and the PR is refused")
+
 # --- U10: the REUSABLE workflow must verify the binding, not just the template -------
 # The template (checked above) was updated for v2; the reusable workflow -- the path
 # COMPATIBILITY.md tells consumers to pin -- was not. A gate that demands a binding it is
