@@ -460,7 +460,7 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
     (
         "positioning: stale mutation evidence count returns to the documented claim",
         "SKILL.md", "test_enterprise_readiness.py",
-        "72 mutations, all",
+        "73 mutations, all",
         "27 mutations, all",
     ),
     (
@@ -490,6 +490,16 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         ".github/workflows/sdlc-gate-reusable.yml", "test_unbound_approval.py",
         'base_sha=$(git merge-base "$base" HEAD || echo)',
         'base_sha=$(git rev-parse "$base" || echo)',
+    ),
+    # --- plan template guidance: it must name the base the gate CHECKS ----------------
+    # The template told authors `git rev-parse HEAD` (the branch tip) while the gate verifies
+    # the merge base. This mutation puts the wrong guidance back and proves test_unbound_approval
+    # U11 catches a regression rather than only asserting the fix once.
+    (
+        "plan template: Accepted-for guidance reverts to the branch tip (rev-parse HEAD)",
+        "templates/plan.md", "test_unbound_approval.py",
+        "the merge base of this branch against the default branch, which is what the gate verifies (e.g. `git merge-base origin/main HEAD`; substitute your default branch for `main`). Not the branch tip: the base moves after the branch is cut, and the approval was granted at the fork point.",
+        "`git rev-parse HEAD`",
     ),
 ]
 
