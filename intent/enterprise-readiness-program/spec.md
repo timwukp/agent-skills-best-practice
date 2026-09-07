@@ -1,7 +1,7 @@
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
 - **Accepted-by:** Tim WU
-- **Status:** signed-off
+- **Status:** shipped
 
 ## Amendment 1 — planning corrections requiring renewed sign-off
 
