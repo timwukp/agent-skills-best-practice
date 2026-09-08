@@ -2,9 +2,9 @@
 
 - **Slug:** release-the-binding-fix
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — product owner acceptance
+- **Accepted-by:** Tim WU
 - **Date:** 2026-09-08
-- **Status:** draft
+- **Status:** accepted
 
 ## Problem
 
