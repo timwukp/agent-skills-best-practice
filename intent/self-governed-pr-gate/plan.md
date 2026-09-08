@@ -2,9 +2,9 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — engineer acceptance
-- **Accepted-for:** pending — set to the pull-request merge base at acceptance
-- **Status:** draft
+- **Accepted-by:** Tim WU
+- **Accepted-for:** 52d365365aedd150fbdd7aa980394379c030c8ef
+- **Status:** accepted
 
 `Accepted-for` must be `git merge-base origin/main HEAD`, which at draft time is
 `52d365365aedd150fbdd7aa980394379c030c8ef`.
