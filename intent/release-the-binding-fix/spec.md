@@ -2,8 +2,8 @@
 
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
-- **Signed-off-by:** pending — owner sign-off
-- **Status:** draft
+- **Signed-off-by:** Tim WU
+- **Status:** signed-off
 
 ## The defect, restated as the property that was missing
 
