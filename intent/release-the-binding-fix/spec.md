@@ -2,8 +2,8 @@
 
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
-- **Signed-off-by:** pending — owner re-sign-off (Amendment 1 invalidated the prior sign-off by Tim WU)
-- **Status:** draft
+- **Signed-off-by:** Tim WU
+- **Status:** signed-off
 
 ## Amendment 1 — an unconditional skip lets a typo through
 

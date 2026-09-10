@@ -2,9 +2,9 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — engineer re-acceptance (Amendment 2)
-- **Accepted-for:** pending — set to the pull-request merge base at re-acceptance
-- **Status:** draft
+- **Accepted-by:** Tim WU
+- **Accepted-for:** f7cc3d5a3e3a8d1ec13d9ff7ed80abec6c567008
+- **Status:** accepted
 
 ## Amendment 2 — implement requirement 3′
 
