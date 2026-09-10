@@ -202,6 +202,78 @@ if tests_wf is not None and tests_wf.is_file():
         "reintroduction of a permanent block.",
     )
 
+# ---- 4. the example consumers COPY is an interface, not a comment -----------
+# sdlc-gate-reusable.yml opens with a caller example for consumers to copy. It showed
+#
+#     on:
+#       pull_request:
+#         branches: [main]
+#     uses: ...sdlc-gate-reusable.yml@main
+#
+# Both lines are wrong, and each is wrong in a way this repository has already paid for.
+# `branches:` on `pull_request` is what left PR #53 permanently blocked: a stacked PR was
+# auto-retargeted to main when the branch under it merged, so main's protection began
+# requiring a check that had never been triggered, and retargeting does not re-fire
+# pull_request workflows. The shipped template carries a long comment forbidding exactly
+# this, so the reusable workflow's own example contradicted the template it accompanies.
+# `@main` is contradicted by the next sentence of that same comment, which says to pin.
+#
+# An example is copied verbatim by people who have none of this context, so it is part of
+# the interface and belongs under test. Sections 1 and 2 check the real triggers; this one
+# checks the one consumers actually paste into their own repository.
+reusable = None if root is None else root / ".github" / "workflows" / "sdlc-gate-reusable.yml"
+if reusable is None:
+    SKIPS.append("no repo root — reusable-workflow example not checked")
+elif not reusable.is_file():
+    SKIPS.append("no sdlc-gate-reusable.yml — example not checked")
+else:
+    lines = reusable.read_text(encoding="utf-8").splitlines()
+    # The example lives in the leading comment block: everything before the first line
+    # that is neither blank nor a comment.
+    header: list[str] = []
+    for ln in lines:
+        if ln.strip() and not ln.lstrip().startswith("#"):
+            break
+        header.append(re.sub(r"^\s*#\s?", "", ln))
+    example = "\n".join(header)
+
+    check(
+        "reusable workflow's header shows a caller example",
+        "sdlc-gate-reusable.yml@" in example,
+        "— consumers are told to call this workflow; without an example they invent one.",
+    )
+
+    check(
+        "header example has a pull_request trigger",
+        re.search(r"^\s*pull_request:\s*$", example, re.M) is not None,
+        "— an example whose gate never runs on pull requests teaches a gate that governs "
+        "nothing.",
+    )
+
+    # Any of these keys in the example is fatal: the example's only trigger is
+    # pull_request, and the docs tell adopters to make this check REQUIRED.
+    filt = re.search(
+        rf"^\s*({'|'.join(FATAL_ON_REQUIRED)}):", example, re.M
+    )
+    check(
+        "header example's pull_request trigger is unconditional",
+        filt is None,
+        f"— found `{filt.group(1) if filt else ''}:` in the example. A consumer who copies "
+        f"it gets the PR #53 deadlock in their own repository, where they have none of the "
+        f"context needed to diagnose it, and the shipped template's comment forbids exactly "
+        f"this filter.",
+    )
+
+    ex_ref = re.search(r"sdlc-gate-reusable\.yml@(\S+)", example)
+    ref_val = ex_ref.group(1) if ex_ref else ""
+    check(
+        "header example pins the workflow rather than tracking a branch",
+        bool(ref_val) and ref_val not in ("main", "master", "HEAD"),
+        f"— the example pins @{ref_val or '(none)'}, which the very next sentence of the "
+        f"same comment warns against: a moving ref lets an upstream change alter a "
+        f"consumer's merge criteria with no commit and no review in their repository.",
+    )
+
 for s in SKIPS:
     print(f"  skip {s}")
 print("required-checks:", "FAIL" if FAILURES else "all pass")
