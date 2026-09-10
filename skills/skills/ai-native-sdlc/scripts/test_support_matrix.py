@@ -273,6 +273,21 @@ def main() -> int:
     if git_root is None:
         print("  skip pin-content check — no git repository above the skill")
     else:
+        # Requirement 3': an unresolvable ref is a FAILURE when this repository demonstrably
+        # should be able to resolve it, and a SKIP otherwise. An unconditional skip let a
+        # mistyped or deleted tag pass BOTH checks -- the name check only rejects a bare vN --
+        # so a recommendation naming a ref that cannot exist shipped green, which is the same
+        # class of defect this assertion exists to close, one level out.
+        #
+        # The three cases are NOT interchangeable. Failing on a missing SHA would break every
+        # legitimately shallow or partial clone, because those lack old objects by design. Only
+        # a TAG absent from a TAGGED repository is safely diagnosable as an error.
+        have_tags, tag_out = _git(git_root, "tag", "-l", "sdlc-gate-*")
+        gate_tags = [t for t in tag_out.split() if t] if have_tags else []
+        _, shallow_out = _git(git_root, "rev-parse", "--is-shallow-repository")
+        shallow = shallow_out.strip() == "true"
+        depth_note = " (shallow clone)" if shallow else ""
+
         for ln in pin_lines:
             ref = ln.split("sdlc-gate-reusable.yml@", 1)[1].strip()
             if "<" in ref or ">" in ref:
@@ -280,7 +295,25 @@ def main() -> int:
                 continue
             resolved, _ = _git(git_root, "rev-parse", "-q", "--verify", f"{ref}^{{commit}}")
             if not resolved:
-                print(f"  skip pin-content check — ref not resolvable here ({ref})")
+                looks_like_gate_tag = ref.startswith("sdlc-gate-v")
+                if looks_like_gate_tag and gate_tags:
+                    check(
+                        f"recommended tag {ref} exists",
+                        False,
+                        f"— this repository has gate tags {sorted(gate_tags)} but not {ref}, so "
+                        f"the recommendation names a tag that was mistyped or deleted. A "
+                        f"consumer copying it cannot resolve the workflow at all.",
+                    )
+                elif looks_like_gate_tag:
+                    print(
+                        f"  skip pin-content check — no sdlc-gate-* tags in this repository"
+                        f"{depth_note}, cannot judge {ref}"
+                    )
+                else:
+                    print(
+                        f"  skip pin-content check — {ref} is not an object in this clone"
+                        f"{depth_note}; a shallow or partial clone legitimately lacks it"
+                    )
                 continue
             got, wf = _git(git_root, "show", f"{ref}:.github/workflows/sdlc-gate-reusable.yml")
             if not got:

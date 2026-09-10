@@ -538,6 +538,18 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "#   on:\n#     pull_request:",
         "#   on:\n#     pull_request:\n#       branches: [main]",
     ),
+    # An unresolvable ref used to be an unconditional SKIP, so a MISTYPED OR DELETED tag passed
+    # both the name check (which only rejects a bare vN) and the content check (which skipped),
+    # and shipped green. Requirement 3' makes that case a failure while keeping the skip for the
+    # cases it was written for: a repository with no gate tags at all, and a SHA missing from a
+    # shallow clone. Same ref-free anchor as the mutation above it.
+    (
+        "COMPATIBILITY.md: a pin example names a gate tag that does not exist",
+        "COMPATIBILITY.md", "test_support_matrix.py",
+        "### How consumers pin",
+        "### How consumers pin\n\n```yaml\nuses: timwukp/agent-skills-best-practice/"
+        ".github/workflows/sdlc-gate-reusable.yml@sdlc-gate-v9.9.9\n```",
+    ),
 ]
 
 
