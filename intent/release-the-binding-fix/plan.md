@@ -2,9 +2,47 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** Tim WU
-- **Accepted-for:** f7cc3d5a3e3a8d1ec13d9ff7ed80abec6c567008
-- **Status:** accepted
+- **Accepted-by:** pending — engineer re-acceptance (Amendment 1 invalidated the prior acceptance by Tim WU)
+- **Accepted-for:** pending — set to the pull-request merge base at re-acceptance
+- **Status:** draft
+
+## Amendment 1 — the mutation sandbox cannot resolve refs
+
+**Raised during implementation. The prior acceptance is invalidated and re-acceptance is required.**
+
+The plan assumed M-A would be killed once the pin-content assertion existed. It was not: the mutation
+**survived**, and the harness correctly reported the guard as absent.
+
+Cause, measured: `mutation_proof.py` runs each suite in a bare temporary tree. It mirrors `templates/`,
+`references/`, the skill's `*.md` and the repository's `.github/workflows/`, but there is **no `.git`**
+in the sandbox. The new assertion walks up for a repository, finds none, and takes its skip path — so
+the mutated document was never actually checked, and the mutation lived.
+
+This is the same trap the harness already documents one layer up. Its own comment records that
+assertions about this repository's required checks "were unprovable: the suites walk up for
+`.github/workflows`, found none in the sandbox, and reported skip — so a mutation to a workflow could
+never be killed and the harness would have called that a pass." The identical failure recurs with git
+objects instead of workflow files.
+
+**Mechanism added:** the harness exports `SDLC_GIT_REPO`, the real repository root, into the sandbox
+environment, and `test_support_matrix.py` uses it **as a fallback for git reads only**.
+
+Why this is not a leak of the unmutated tree: the suite reads the **mutated** `COMPATIBILITY.md` from
+the sandbox to learn *which* ref is recommended, and uses `SDLC_GIT_REPO` solely to read that ref's
+**committed** content — which no mutation can alter, because it is history. The two inputs are
+correctly sourced: the claim from the mutated document, the fact from immutable history.
+
+Verified after the change:
+
+- `76 killed, 0 survived, 0 broken`.
+- With `SDLC_GIT_REPO` unset in the real repository, the ancestor walk still finds `.git` and the
+  assertion runs — the hint is a fallback, not a dependency.
+- In a standalone copy with no `.git` and no hint, the suite skips cleanly and exits 0, so spec
+  requirement 3 still holds.
+
+No new file is introduced; the files affected are items 1 and 6 below. What is new is the
+environment-variable contract between harness and suite, which is a design decision a reviewer should
+see named rather than discover.
 
 `Accepted-for` must be `git merge-base origin/main HEAD`, which at draft time is
 `f7cc3d5a3e3a8d1ec13d9ff7ed80abec6c567008`.
