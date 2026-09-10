@@ -49,6 +49,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history AND tags. test_support_matrix.py reads the reusable workflow at
+          # whatever ref COMPATIBILITY.md recommends, which needs that ref's objects
+          # present. The default shallow checkout has no tags at all, so the assertion
+          # would SKIP -- and it would skip in precisely the place releases are made,
+          # which is the one place it has to hold. Measured on this repository: full
+          # 4.2M against shallow 3.6M, with no reliable wall-clock difference, so the
+          # cost here is noise. Do not "optimise" this back to a shallow clone without
+          # first checking whether that assertion still runs.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:

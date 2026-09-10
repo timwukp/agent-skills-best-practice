@@ -9,15 +9,22 @@
 #   name: SDLC Gate
 #   on:
 #     pull_request:
-#       branches: [main]
+#     # Deliberately UNFILTERED. Do NOT add `branches:` or `paths:` here. The docs tell you
+#     # to make `sdlc-gate` a REQUIRED status check, and a required check only applies to
+#     # pull requests -- so any PR the filter excludes waits forever for a status that can
+#     # never arrive. Not failed: BLOCKED, with no run to re-run. `branches: [main]` did
+#     # exactly that to a stacked PR in this repository, which was auto-retargeted to main
+#     # when the branch under it merged, onto a check that had never been triggered.
 #   jobs:
 #     sdlc-gate:
-#       uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@main
+#       uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@582c818fbb6699ed8813df2d5a722a2c4da32f5c
 #       with:
 #         require-active: true
 #
 # Pin to a tag or SHA rather than @main for anything you actually rely on: @main means an
-# upstream change silently changes YOUR merge criteria.
+# upstream change silently changes YOUR merge criteria. Note that no released tag yet passes
+# --base-sha, so no tag can enforce `Accepted-for` -- see COMPATIBILITY.md, "No released tag
+# can enforce Accepted-for yet".
 #
 # The job NAME the caller sees is the caller's job id ("sdlc-gate" above), and that is what
 # goes in branch protection as the required check — not the name of the job in this file.

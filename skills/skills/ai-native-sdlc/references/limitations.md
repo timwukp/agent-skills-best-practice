@@ -9,7 +9,7 @@ here.
 
 What is defensible: the gate really runs, it has been proven live on a real repository, it
 found and fixed six substantive bugs in itself, and its test suite is mutation-verified
-(74 mutations, 74 killed). Judged as a personal/small-team tool, the quality holds up.
+(76 mutations, 76 killed). Judged as a personal/small-team tool, the quality holds up.
 
 Scored against an enterprise control rubric it stands at **36/80 (45%)**. About **48%** is
 the ceiling this repository can reach alone: three of the remaining controls are

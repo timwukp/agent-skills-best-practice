@@ -15,6 +15,7 @@ tree. Exit 0 = every mutation was killed.
 
 from __future__ import annotations
 
+import os
 import pathlib
 import shutil
 import subprocess
@@ -512,6 +513,31 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "the merge base of this branch against the default branch, which is what the gate verifies (e.g. `git merge-base origin/main HEAD`; substitute your default branch for `main`). Not the branch tip: the base moves after the branch is cut, and the approval was granted at the fork point.",
         "`git rev-parse HEAD`",
     ),
+    # --- the ref we RECOMMEND, and the example consumers COPY --------------------------
+    # PR #60 fixed the reusable workflow on main and shipped no release, so every published
+    # tag still passes no --base-sha while COMPATIBILITY.md recommended one of them. Three
+    # assertions stayed green throughout, because each inspected the working tree or the
+    # ref's NAME rather than the CONTENT at the recommended ref.
+    #
+    # Both mutations below INSERT a broken form under prose that contains no version number
+    # and no SHA. They deliberately do NOT rewrite the recommended ref: anchoring on the ref
+    # would mean that changing the pin -- the very thing these guards make safe to do, and
+    # what happens the moment a fixed release is cut -- marks the mutation `broken` instead
+    # of failing loudly. That is the count-coupling defect this harness already paid for
+    # once, and re-earning it here would be a regression in the guard rather than in the code.
+    (
+        "COMPATIBILITY.md: a pin example is added whose workflow cannot verify the binding",
+        "COMPATIBILITY.md", "test_support_matrix.py",
+        "### How consumers pin",
+        "### How consumers pin\n\n```yaml\nuses: timwukp/agent-skills-best-practice/"
+        ".github/workflows/sdlc-gate-reusable.yml@sdlc-gate-v2.0.2\n```",
+    ),
+    (
+        "reusable workflow: the copied caller example regains the filter that blocks a stacked PR",
+        ".github/workflows/sdlc-gate-reusable.yml", "test_required_checks.py",
+        "#   on:\n#     pull_request:",
+        "#   on:\n#     pull_request:\n#       branches: [main]",
+    ),
 ]
 
 
@@ -581,9 +607,26 @@ def main() -> int:
                 continue
             target.write_text(text.replace(find, repl, 1), encoding="utf-8")
 
+            # A suite may need to read IMMUTABLE git history — for example, the content of
+            # the reusable workflow at the ref COMPATIBILITY.md recommends. The sandbox is a
+            # bare temp tree with no .git, so such a suite would walk up, find no repository,
+            # and SKIP: the mutation then survives and the harness would report the guard as
+            # absent. This is the same trap as the mirrored workflows above, one layer down.
+            #
+            # So pass the REAL repository root as a hint. This is not a leak of the
+            # unmutated tree: the suite reads the MUTATED document from the sandbox to learn
+            # WHICH ref is recommended, and uses this only to read that ref's committed
+            # content, which no mutation can change. Absent (standalone install), the suite
+            # still skips cleanly.
+            env = dict(os.environ)
+            for parent in [SKILL, *SKILL.parents]:
+                if (parent / ".git").exists():
+                    env["SDLC_GIT_REPO"] = str(parent)
+                    break
+
             r = subprocess.run(
                 [sys.executable, str(work / suite)],
-                capture_output=True, text=True, cwd=str(work),
+                capture_output=True, text=True, cwd=str(work), env=env,
             )
             if r.returncode != 0:
                 killed += 1

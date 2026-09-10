@@ -45,9 +45,9 @@ A MAJOR release must:
 ### How consumers pin
 
 ```yaml
-# Recommended — pin a released tag so upstream patches and features arrive on a version you
-# chose. Tags are named `sdlc-gate-vMAJOR.MINOR.PATCH`; the latest is sdlc-gate-v2.0.2:
-uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@sdlc-gate-v2.0.2
+# Recommended — a full SHA that verifies the approval binding. See the note below on why
+# this is a SHA rather than a released tag:
+uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@582c818fbb6699ed8813df2d5a722a2c4da32f5c
 
 # Strictest — nothing changes until you change it. Required if the gate is a
 # compliance control, because a moving tag means upstream can alter your merge criteria:
@@ -56,6 +56,23 @@ uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.ym
 
 `@main` is for experimenting only. Pinning a compliance control to a moving branch means
 someone else's commit silently changes what your organisation permits.
+
+### No released tag can enforce `Accepted-for` yet
+
+Gate v2 makes `Accepted-for` mandatory and **fails closed** when it cannot verify the
+binding, which requires the workflow to pass `--base-sha`. Every tag published so far —
+`sdlc-gate-v1`, `sdlc-gate-v2`, `sdlc-gate-v2.0.1`, `sdlc-gate-v2.0.2` — predates that fix
+and passes no `--base-sha`, so pinning any of them refuses every pull request whose
+`plan.md` records an `Accepted-for`. Measured, not assumed: the reusable workflow at each of
+those refs contains zero occurrences of `--base-sha`.
+
+**If you are pinned to one of those tags,** move to the SHA above. Nothing else is needed;
+the gate logic is identical, and only the workflow that invokes it differs.
+
+The recommendation returns to a tag once a release contains the fix. That switch is guarded
+rather than trusted: `scripts/test_support_matrix.py` reads the reusable workflow **at
+whatever ref this document recommends** and fails if it does not pass `--base-sha`, so a tag
+cannot be recommended here until it genuinely enforces the binding.
 
 ## Precedent, recorded honestly
 

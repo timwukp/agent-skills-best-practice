@@ -19,6 +19,7 @@ Claiming LESS than CI covers is fine (under-promising). Claiming MORE is a failu
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -258,6 +259,16 @@ def main() -> int:
         if (parent / ".git").exists():
             git_root = parent
             break
+    # Under mutation this suite runs in a bare sandbox with no .git, so the walk above finds
+    # nothing and this check would SKIP — letting the mutation survive and reporting the guard
+    # as absent. The harness therefore passes the real repository root. Only GIT reads use it:
+    # `text` still comes from the sandbox, so the suite learns WHICH ref is recommended from
+    # the mutated document and reads only that ref's committed content, which no mutation can
+    # alter. Absent, the skip below still applies.
+    if git_root is None:
+        hinted = os.environ.get("SDLC_GIT_REPO", "")
+        if hinted and (pathlib.Path(hinted) / ".git").exists():
+            git_root = pathlib.Path(hinted)
 
     if git_root is None:
         print("  skip pin-content check — no git repository above the skill")
