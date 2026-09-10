@@ -2,8 +2,50 @@
 
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
-- **Signed-off-by:** Tim WU
-- **Status:** signed-off
+- **Signed-off-by:** pending — owner re-sign-off (Amendment 1 invalidated the prior sign-off by Tim WU)
+- **Status:** draft
+
+## Amendment 1 — an unconditional skip lets a typo through
+
+**Raised after implementation, from a hole found by exercising the skip path. The prior sign-off is
+invalidated.**
+
+Requirement 3 as written says an unresolvable ref is *always* a skip. Combined with the pre-existing
+name check — which only rejects a bare `vN` — that leaves a real gap: a **typo'd or deleted tag passes
+both checks**. Demonstrated while verifying the skip path, where the recommendation was pointed at
+`sdlc-gate-v9.9.9-does-not-exist` and the suite reported:
+
+```
+ok   pin example uses a real ref, not a nonexistent bare vN (sdlc-gate-v9.9.9-does-not-exist)
+skip pin-content check — ref not resolvable here (sdlc-gate-v9.9.9-does-not-exist)
+```
+
+Exit 0. So a recommendation naming a ref that cannot exist would ship green — the same *class* of defect
+this change exists to close, one level out: the document would again recommend something unusable, and
+nothing would object.
+
+**Requirement 3 is replaced by requirement 3′:**
+
+> An unresolvable ref is a **failure** when the repository demonstrably *should* be able to resolve it,
+> and a **skip** otherwise. Concretely:
+>
+> - the ref names a `sdlc-gate-v…` tag **and** at least one other `sdlc-gate-*` tag is present ⇒
+>   **FAIL**, because that combination means the tag was mistyped or deleted, not that tags are absent;
+> - no `sdlc-gate-*` tag is present at all ⇒ **SKIP** (a standalone install, which requirement 3
+>   existed to protect);
+> - the ref is a SHA that is not in this clone ⇒ **SKIP**, since a shallow or partial clone legitimately
+>   lacks old objects.
+>
+> Every skip must name the ref **and** the reason, and must report whether the clone is shallow
+> (`git rev-parse --is-shallow-repository`), so a skip in CI is diagnosable rather than mysterious.
+
+This keeps the property requirement 3 was protecting — the skill is installed standalone into
+repositories that have never heard of `sdlc-gate-vN`, and a suite that fails there is worse than the
+defect — while removing the case where the skip was doing the *opposite* of its purpose.
+
+The distinction between the second and third clauses matters: a SHA pin cannot be validated by tag
+presence, so failing on a missing SHA would break every legitimately shallow clone. Only a *tag* in a
+*tagged* repository is safely diagnosable as an error.
 
 ## The defect, restated as the property that was missing
 

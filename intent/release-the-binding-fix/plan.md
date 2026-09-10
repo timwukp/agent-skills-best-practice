@@ -2,9 +2,50 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** Tim WU
-- **Accepted-for:** f7cc3d5a3e3a8d1ec13d9ff7ed80abec6c567008
-- **Status:** accepted
+- **Accepted-by:** pending — engineer re-acceptance (Amendment 2)
+- **Accepted-for:** pending — set to the pull-request merge base at re-acceptance
+- **Status:** draft
+
+## Amendment 2 — implement requirement 3′
+
+**The spec's Amendment 1 replaced requirement 3 with 3′, so this plan needs one more step. The work
+already committed stands; this is additive.**
+
+Committed so far and unaffected: `38292f5` (red targets), `f158439` (the fix, 76 mutations, 14 suites
+green). Requirement 3′ changes only the *skip-versus-fail* decision inside the assertion added to
+`test_support_matrix.py`.
+
+**Step 14 — implement the three-way decision.** In `test_support_matrix.py`, replace the unconditional
+skip with:
+
+- ref matches `sdlc-gate-v…` **and** `git tag -l 'sdlc-gate-*'` is non-empty but this ref is absent ⇒
+  `check(...)` **fails**, naming the ref and saying the tag was mistyped or deleted;
+- no `sdlc-gate-*` tag present ⇒ skip, naming the ref and stating that the repository has no gate tags;
+- ref is a SHA absent from this clone ⇒ skip, naming the ref and stating that a shallow or partial clone
+  legitimately lacks it.
+
+Every skip additionally reports `git rev-parse --is-shallow-repository`, so a CI skip is diagnosable.
+
+**Step 15 — a third mutation, ref-free as before.** Insert a pin example naming a `sdlc-gate-v…` tag that
+does not exist, anchored on the same digit-free `### How consumers pin` prose. It must be **killed** by
+the new fail branch — which is the whole point, since that mutation *survives* under the current code.
+Count rises 76 → 77 and is propagated by `sync_mutation_count.py`.
+
+**Step 16 — prove all three branches**, not just the new one:
+
+```sh
+# fail branch: a tag that cannot exist, in a repository that has tags
+# skip branch A: no sdlc-gate-* tags at all (standalone copy)
+# skip branch B: a SHA absent from a shallow clone
+```
+
+Each must be exercised and its output recorded. Branch B needs a genuinely shallow clone, so it is
+verified against `git clone --depth 1` rather than simulated.
+
+**Risk this adds:** the fail branch could fire in a legitimate environment I have not thought of — a
+mirror that filters tags, for instance. Mitigation is the narrowness of the condition: it requires *other*
+gate tags to be present, so a tagless or tag-filtered clone still skips. If it does misfire, the symptom
+is a red suite with a message naming the exact ref, which is diagnosable rather than silent.
 
 ## Amendment 1 — the mutation sandbox cannot resolve refs
 
