@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import pathlib
 import re
+import subprocess
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -29,6 +30,23 @@ COMPAT = SKILL / "COMPATIBILITY.md"
 
 FAILURES: list[str] = []
 SKIPS: list[str] = []
+
+
+def _git(root: pathlib.Path, *args: str) -> tuple[bool, str]:
+    """Run a read-only git command in `root`. Returns (ok, stdout).
+
+    Deliberately local-only: a test that reaches the network is flaky by construction and
+    would fail in an offline install. CI supplies the objects instead, which is why the
+    suite job checks out with fetch-depth: 0 — without it the runner has no tags and this
+    check would skip in exactly the place releases are made.
+    """
+    try:
+        p = subprocess.run(
+            ["git", *args], cwd=str(root), capture_output=True, text=True, timeout=30
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False, ""
+    return p.returncode == 0, p.stdout
 
 
 def check(name: str, cond: bool, detail: str = "") -> None:
@@ -208,6 +226,71 @@ def main() -> int:
         "versioning table does not claim a bare `vN` moving tag",
         "`vN` moving tag" not in text,
     )
+
+    # --- Pin guidance must reference a ref that WORKS, not merely one that resolves ---
+    # The check above asserts the pin NAMES a real ref. That is not the property a
+    # consumer needs, and the gap was not theoretical: every released tag
+    # (sdlc-gate-v1, v2, v2.0.1, v2.0.2) ships a reusable workflow that passes NO
+    # --base-sha, while gate v2 makes `Accepted-for` mandatory and fails closed when it
+    # cannot verify the binding. So the documented pin refused every compliant
+    # consumer's pull request while three separate assertions stayed green:
+    #
+    #   * U9  (test_unbound_approval) asserts the shipped TEMPLATE passes --base-sha
+    #   * U10 (test_unbound_approval) asserts the WORKING TREE's reusable workflow does
+    #   * the check above asserts the recommended pin NAMES an existing tag
+    #
+    # All three inspect the working tree or the ref's NAME. None inspects the CONTENT at
+    # the ref we tell consumers to use, which is the only thing that determines whether
+    # following our documentation produces a working gate.
+    #
+    # This assertion is what makes the recommendation self-checking: a pin cannot be
+    # recommended unless the workflow at that ref actually verifies the binding. It also
+    # polices the eventual switch from a SHA pin to a release tag — a tag whose content
+    # omits --base-sha is refused, so that move cannot be made incorrectly.
+    #
+    # It targets the step that RUNS the gate, so a comment mentioning --base-sha cannot
+    # satisfy it. Placeholder examples (<full-sha>) instruct rather than recommend and are
+    # skipped. An unresolvable ref is a SKIP, not a failure: the skill is installed
+    # standalone into repositories that have never heard of sdlc-gate-vN, and a suite that
+    # fails there would be worse than the defect it guards.
+    git_root = None
+    for parent in [SKILL, *SKILL.parents]:
+        if (parent / ".git").exists():
+            git_root = parent
+            break
+
+    if git_root is None:
+        print("  skip pin-content check — no git repository above the skill")
+    else:
+        for ln in pin_lines:
+            ref = ln.split("sdlc-gate-reusable.yml@", 1)[1].strip()
+            if "<" in ref or ">" in ref:
+                print(f"  skip pin-content check — placeholder, not a recommendation ({ref})")
+                continue
+            resolved, _ = _git(git_root, "rev-parse", "-q", "--verify", f"{ref}^{{commit}}")
+            if not resolved:
+                print(f"  skip pin-content check — ref not resolvable here ({ref})")
+                continue
+            got, wf = _git(git_root, "show", f"{ref}:.github/workflows/sdlc-gate-reusable.yml")
+            if not got:
+                check(
+                    f"recommended ref {ref} provides the reusable workflow",
+                    False,
+                    "— the pin resolves but the workflow is absent at that ref, so a "
+                    "consumer following this recommendation cannot run the gate at all.",
+                )
+                continue
+            m = re.search(r"python3[^\n]*sdlc_ci_gate\.py", wf)
+            idx = m.start() if m else -1
+            window = wf[max(0, idx - 800): idx + 400] if idx >= 0 else ""
+            check(
+                f"recommended pin {ref} passes --base-sha to the gate",
+                idx >= 0 and "--base-sha" in window,
+                f"— the workflow at {ref} runs the gate without --base-sha, so gate v2 "
+                f"fails closed on every pull request whose plan records `Accepted-for`. "
+                f"The fix exists on main; this ref predates it. Recommend a ref whose "
+                f"content verifies the binding.",
+            )
 
     print()
     if FAILURES:
