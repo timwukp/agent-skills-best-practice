@@ -2,8 +2,78 @@
 
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** Tim WU
-- **Status:** signed-off
+- **Accepted-by:** pending — owner re-sign-off (Amendment 1 invalidated the prior sign-off by Tim WU)
+- **Status:** draft
+
+## Amendment 1 — the pin this spec chose cannot enforce the binding
+
+**Raised before implementation. The prior sign-off is invalidated and re-sign-off is required.**
+
+Q3 below chose `sdlc-gate-v2.0.2` on the reasoning that it was the current published release. That
+reasoning was sound and the answer was still wrong: **no released tag can enforce `Accepted-for`.**
+Measured across every tag in the repository, the reusable workflow at each ref contains **zero**
+occurrences of `--base-sha`:
+
+| Ref | `--base-sha` occurrences |
+|---|---|
+| `sdlc-gate-v1` | 0 |
+| `sdlc-gate-v2` | 0 |
+| `sdlc-gate-v2.0.1` | 0 |
+| `sdlc-gate-v2.0.2` | 0 |
+| `582c818fbb6699ed8813df2d5a722a2c4da32f5c` | 2 |
+
+Gate v2 makes `Accepted-for` mandatory and **fails closed** when it cannot verify the binding. So
+installing the caller with the pin this spec chose would have made **every pull request in this
+repository fail closed — including the pull request that installs the gate.** The change would have
+blocked itself, and the first symptom would have been a red required check with no obvious cause.
+
+This was found by [PR #66](https://github.com/timwukp/agent-skills-best-practice/pull/66), which
+fixed the same class of defect for consumers: PR #60 repaired the reusable workflow on `main` and
+shipped no release, so the documented pin stayed broken while this repository's CI — which reads the
+working tree — stayed green.
+
+**Q3 is replaced by Q3′:** the pin is
+**`582c818fbb6699ed8813df2d5a722a2c4da32f5c`**, verified rather than assumed — the merge commit of
+PR #60, reachable from `origin/main`, 2 occurrences of `--base-sha`, and `sdlc_ci_gate.py` at that ref
+byte-identical to the base this change is built on. It is the *minimal* ref carrying the property, so
+a reader can consult one pull request to see why this commit is the one.
+
+The requirement that the pin be **immutable** is unchanged, and so is the test that asserts only
+*that* it is pinned rather than which version — that assertion needs no edit, which is why it was
+written that way. When the owner cuts a release containing the fix, moving this pin to that tag is a
+one-line change, and `test_support_matrix.py` (added by PR #66) refuses any recommended ref whose
+workflow omits `--base-sha`, so the move cannot be made incorrectly.
+
+`intent.md` line 106 still records `sdlc-gate-v2.0.2` as the pin *proposed* at Stage 1. That line is
+deliberately left alone: it is the historical record of what was proposed, superseded here by Q3′.
+Editing it would rewrite what was actually suggested at the time.
+
+## Amendment 2 — a red suite makes its own mutations unfalsifiable
+
+The evidence section asks the mutation harness to report `0 survived`. On this branch that reading is
+**not yet meaningful**, and the implementation must not treat it as a pass.
+
+Measured on the rebased branch: `test_required_checks.py` exits **1 with no mutation applied**,
+because its section 5 correctly reports that no caller exists — that is the red-first state this spec
+asked for. The harness decides "killed" by observing the suite fail after applying a mutation, so
+while the suite is already failing, **every mutation it owns is reported killed whether or not the
+mutation is applied.** Four mutations are attributed to `test_required_checks.py`, so four of the
+harness's kills are currently false.
+
+Added to the acceptance evidence: the harness result counts only when
+`test_required_checks.py` passes unmutated. The implementation must therefore re-run the harness
+**after** the caller exists and the suite is green, and record that run — not the red-state run — as
+the evidence. A run taken while the suite is red proves nothing about the four mutations it owns.
+
+## Amendment 3 — the approval binding moved with the rebase
+
+This branch was rebased from `52d3653` onto `2e80605` to take PR #66, because both changes edit
+`skills/skills/ai-native-sdlc/scripts/test_required_checks.py`. The conflict was resolved by keeping
+**both** sections: PR #66's section 4 (the caller example consumers copy) and this change's caller
+assertions, renumbered section 5.
+
+The plan's `Accepted-for` therefore no longer matches the merge base and is corrected in the plan's
+own amendment. Nothing in the spec's requirements changes as a result.
 
 ## Open questions from the intent, now closed — by measurement, not by reasoning
 
@@ -26,11 +96,19 @@ have invalidated this change, and it is retired.
 `--require-active` as well as without, so the stronger setting costs nothing here. A repository
 that teaches the control should run it at full strength.
 
-**Q3 — what pin?** **`sdlc-gate-v2.0.2`**, the current published release. It states which released
-version governs this repository, and `COMPATIBILITY.md` already forbids pinning a compliance
-control to a moving ref — pinning this repository to its own `main` would be that exact mistake.
-Cost accepted: the pin must be bumped deliberately when a new gate release lands, which is the
-point rather than a drawback.
+**Q3 — what pin?** **Superseded by Q3′ in Amendment 1**, which sets the pin to
+`582c818fbb6699ed8813df2d5a722a2c4da32f5c`. The original answer is kept below for the record, and its
+reasoning still holds — only its choice of ref was wrong, because no released tag can enforce the
+binding.
+
+> `sdlc-gate-v2.0.2`, the then-current published release. It states which released version governs
+> this repository, and `COMPATIBILITY.md` already forbids pinning a compliance control to a moving
+> ref — pinning this repository to its own `main` would be that exact mistake. Cost accepted: the pin
+> must be bumped deliberately when a new gate release lands, which is the point rather than a
+> drawback.
+
+That last sentence survives Q3′ intact: a SHA is simply a stricter form of the same discipline, and
+the deliberate bump is still the property being bought.
 
 **Q2 — install the write-time hook here too?** **Yes.** It fails open and is removable, so it adds
 little enforcement; it adds fidelity, because a repository that ships a hook and does not run it is
@@ -56,7 +134,7 @@ this from a one-off demonstration into retained evidence.
 
 1. **A caller workflow (Intent SC1, SC2).**
    Add `.github/workflows/sdlc-gate.yml` calling
-   `timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@sdlc-gate-v2.0.2`
+   `timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@582c818fbb6699ed8813df2d5a722a2c4da32f5c`
    with `require-active: true`, triggered on `pull_request` with **no `branches` and no `paths`
    filter**. The job id must be stable, because the job id is the check name branch protection
    requires.
@@ -129,7 +207,7 @@ on:
     # forever waiting for a check that can never arrive.
 jobs:
   sdlc-gate:
-    uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@sdlc-gate-v2.0.2
+    uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@582c818fbb6699ed8813df2d5a722a2c4da32f5c
     with:
       require-active: true
 ```

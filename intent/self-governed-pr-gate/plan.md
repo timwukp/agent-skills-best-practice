@@ -2,12 +2,68 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** Tim WU
-- **Accepted-for:** 52d365365aedd150fbdd7aa980394379c030c8ef
-- **Status:** accepted
+- **Accepted-by:** pending — engineer re-acceptance (Amendment 1 invalidated the prior acceptance by Tim WU)
+- **Accepted-for:** pending — set to the pull-request merge base at re-acceptance
+- **Status:** draft
 
-`Accepted-for` must be `git merge-base origin/main HEAD`, which at draft time is
-`52d365365aedd150fbdd7aa980394379c030c8ef`.
+## Amendment 1 — new pin, new base, and one piece of evidence that was unreadable
+
+**Raised before implementation. The prior acceptance is invalidated; re-acceptance is required.**
+
+Three corrections, each traced to something measured rather than reconsidered.
+
+### 1. The pin is `582c818fbb6699ed8813df2d5a722a2c4da32f5c`, not `sdlc-gate-v2.0.2`
+
+Step 3 below said to pin the caller to `@sdlc-gate-v2.0.2`. **No released tag can enforce
+`Accepted-for`**: the reusable workflow at `sdlc-gate-v1`, `v2`, `v2.0.1` and `v2.0.2` contains zero
+occurrences of `--base-sha`, while gate v2 makes the binding mandatory and fails closed without it.
+Installing the caller with that pin would have made **every pull request here fail closed, including
+the one installing the gate** — the change would have blocked itself.
+
+Corrected in step 3. The spec's Amendment 1 carries the per-tag measurements and the reasoning.
+
+The red assertions committed in the previous step need **no change**, because they assert only *that*
+the ref is pinned and never which version. That was a deliberate choice when they were written, and it
+is the reason this correction costs one line instead of a rewrite.
+
+### 2. `Accepted-for` moves from `52d3653` to the new merge base
+
+This branch has been **rebased from `52d3653` onto `2e80605`** to take
+[PR #66](https://github.com/timwukp/agent-skills-best-practice/pull/66), because both changes edit
+`skills/skills/ai-native-sdlc/scripts/test_required_checks.py`. The old binding no longer matches the
+merge base, so an approval recorded against it would be unverifiable — exactly the failure this
+repository's own gate exists to catch.
+
+The conflict was resolved by keeping **both** sections rather than choosing one: PR #66's section 4
+(the caller example consumers copy) keeps its number, and this change's caller assertions become
+section 5. One shared closing parenthesis was misattributed by the merge and left section 4's final
+`check(` unclosed; that is fixed, the file parses, and both groups of assertions run.
+
+Rebase was safe without a force-push: the branch had never been pushed and had no pull request.
+
+### 3. The mutation evidence in step 9 was unreadable as written
+
+The evidence section asks for `0 survived`. **On a red branch that number means nothing for the suite
+that is red.** Measured: `test_required_checks.py` exits 1 with **no mutation applied**, because
+section 5 correctly reports that no caller exists yet. The harness infers "killed" from the suite
+failing after a mutation is applied, so while the suite already fails, every mutation it owns is
+reported killed either way. **Four** mutations are attributed to `test_required_checks.py`, so four of
+the harness's current kills are false.
+
+Step 9 is therefore split:
+
+- **9a** — after the caller exists, confirm `test_required_checks.py` passes **unmutated**. Until that
+  holds, the harness's verdict on its four mutations is not evidence and must not be quoted as such.
+- **9b** — only then run the full harness and record that run. The expected total is **77** unless a
+  mutation is added; if one is, the count is propagated by `scripts/sync_mutation_count.py` and never
+  typed.
+
+This is a reporting-soundness gap in the harness, not a defect introduced here: any red suite has the
+same effect on its own mutations. Whether the harness should refuse to score a suite that fails
+unmutated is a separate question, recorded as a follow-up rather than fixed inside this change.
+
+`Accepted-for` must be `git merge-base origin/main HEAD`, which after the rebase in Amendment 1 is
+`2e8060593bdb08885a5a81e60968ee317d341acb`.
 
 ## Spec requirement 3, settled before planning
 
@@ -48,11 +104,11 @@ deliberately, not incidentally.
 
 ## Work order
 
-1. **Reconfirm.** Merge base `52d3653`, build gate open on a committed signed-off spec, tree clean.
+1. **Reconfirm.** Merge base `2e80605`, build gate open on a committed signed-off spec, tree clean.
 2. **Red first.** Add the caller assertions to `test_required_checks.py`. Run it; it must fail
    because `.github/workflows/sdlc-gate.yml` does not exist — reported as findings, not a
    traceback. Commit this red target alone.
-3. **Add the caller**, pinned to `@sdlc-gate-v2.0.2`, `require-active: true`, `pull_request` with
+3. **Add the caller**, pinned to `@582c818fbb6699ed8813df2d5a722a2c4da32f5c` (see Amendment 1), `require-active: true`, `pull_request` with
    no filter, and the warning comment explaining why a filter must never be added.
 4. **Green the suite.** Run `test_required_checks.py`.
 5. **Install the write-time layer** — copy the hook config and vendor the two scripts. Verify the
@@ -64,7 +120,12 @@ deliberately, not incidentally.
 8. **Write the documentation** — `COMPATIBILITY.md` and `limitations.md`, keeping the
    administrator-bypass limit and updating the closing "irony" section to say which item this
    closes and which stay open.
-9. **Full validation** (below). Fix anything red before committing.
+9. **Full validation** (below), in two parts, because the order is what makes the mutation result
+   mean anything (Amendment 1, item 3):
+   - **9a.** Confirm `test_required_checks.py` passes **unmutated**. Until it does, the harness's
+     verdict on the four mutations it owns is not evidence and must not be quoted as one.
+   - **9b.** Only then run the full harness and record **that** run. Fix anything red before
+     committing.
 10. **Commit the implementation.** No artifact approval field set by the agent.
 11. **Hand off.** Owner pushes; agent opens the PR whose description contains the exact branch
     protection instruction and states plainly that until that setting changes the check is
@@ -109,8 +170,8 @@ likewise refuse an unauthorised edit and permit an authorised one, each shown by
 
 ```sh
 python3 -c "import yaml;yaml.safe_load(open('.github/workflows/sdlc-gate.yml'))"
-git diff 52d365365aedd150fbdd7aa980394379c030c8ef...HEAD --name-only
-git diff 52d3653 -- skills/skills/ai-native-sdlc/scripts/sdlc_ci_gate.py   # empty
+git diff 2e8060593bdb08885a5a81e60968ee317d341acb...HEAD --name-only
+git diff 2e80605 -- skills/skills/ai-native-sdlc/scripts/sdlc_ci_gate.py   # empty
 ```
 
 Pass condition: the caller's YAML parses; only the nine files above plus the dogfood artifacts
