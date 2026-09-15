@@ -2,9 +2,9 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — engineer re-acceptance (Amendment 2)
-- **Accepted-for:** pending — set to the pull-request merge base at re-acceptance
-- **Status:** draft
+- **Accepted-by:** Tim WU
+- **Accepted-for:** 2e8060593bdb08885a5a81e60968ee317d341acb
+- **Status:** accepted
 
 ## Amendment 2 — step 5 described a check the hook does not perform
 
