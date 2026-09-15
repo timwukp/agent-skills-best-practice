@@ -274,6 +274,79 @@ else:
         f"consumer's merge criteria with no commit and no review in their repository.",
     )
 
+# ---- 5. this repository is governed by the gate it ships -------------------
+# The skill told adopters to make `sdlc-gate` a required check while this repository
+# had no caller at all: `sdlc-gate-reusable.yml` declares `workflow_call`, and a
+# `workflow_call` with no caller never runs. Every merge here was authorised by
+# `gate tests green` and `validate`, neither of which asks whether the change was
+# authorised in the first place.
+#
+# These assertions are about the CALLER, not the reusable workflow. They were written
+# before the caller existed and failed for that reason -- the point being that a
+# missing caller is reported as a finding rather than as a passing suite.
+caller = None if root is None else root / ".github" / "workflows" / "sdlc-gate.yml"
+if root is None:
+    SKIPS.append("no repo root — self-governance caller not checked")
+elif not caller.is_file():
+    FAILURES.append(
+        "this repository has no .github/workflows/sdlc-gate.yml — the gate it ships "
+        "governs consumers but not itself, so nothing asks whether a merge here was "
+        "authorised"
+    )
+else:
+    ctext = caller.read_text(encoding="utf-8")
+
+    check(
+        "caller invokes the reusable gate workflow",
+        re.search(r"uses:\s*\S*sdlc-gate-reusable\.yml@\S+", ctext) is not None,
+        "— a caller that does not reference the reusable workflow governs nothing.",
+    )
+
+    # A moving ref means an upstream edit changes this repository's merge criteria
+    # with no commit here and no review here. Pin to an immutable ref instead.
+    m = re.search(r"uses:\s*\S*sdlc-gate-reusable\.yml@(\S+)", ctext)
+    ref = m.group(1) if m else ""
+    check(
+        "caller pins the reusable workflow to an immutable ref",
+        bool(ref) and ref not in ("main", "master", "HEAD"),
+        f"— found @{ref or '(none)'}. A moving ref lets an upstream change alter this "
+        f"repository's merge criteria with no commit and no review here. Assert only "
+        f"THAT it is pinned, never which version, so a deliberate bump needs no test edit.",
+    )
+
+    # The gate's whole purpose is refusing work that no accepted plan authorises.
+    # With require-active off it still checks artifacts but stops asking that question.
+    check(
+        "caller sets require-active so an unauthorised change is refused",
+        re.search(r"require-active:\s*true", ctext) is not None,
+        "— without it the gate no longer requires an active intent, which is the only "
+        "thing tying a diff to an accepted plan.",
+    )
+
+    # Same deadlock as sections 1 and 2, now on the check that matters most: this one
+    # is intended to become required, so a filter would block every PR it excludes.
+    keys = pull_request_filters(ctext)
+    check(
+        "caller has a pull_request trigger",
+        keys is not None,
+        "— a gate that never runs on pull requests cannot govern them.",
+    )
+    if keys is not None:
+        bad = [k for k in keys if k in FATAL_ON_REQUIRED]
+        check(
+            "caller's pull_request trigger is unconditional",
+            not bad,
+            f"— found {bad}. This check is meant to be REQUIRED, so any PR the filter "
+            f"excludes waits forever for a status that never reports.",
+        )
+
+    check(
+        "caller records why its trigger must stay unfiltered",
+        "DO NOT add a paths filter here" in ctext,
+        "— PR #48 was permanently blocked by exactly this filter; the comment is what "
+        "stops it being reintroduced by someone trying to save CI minutes.",
+    )
+
 for s in SKIPS:
     print(f"  skip {s}")
 print("required-checks:", "FAIL" if FAILURES else "all pass")

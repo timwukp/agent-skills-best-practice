@@ -550,6 +550,30 @@ MUTATIONS: list[tuple[str, str, str, str, str]] = [
         "### How consumers pin\n\n```yaml\nuses: timwukp/agent-skills-best-practice/"
         ".github/workflows/sdlc-gate-reusable.yml@sdlc-gate-v9.9.9\n```",
     ),
+    # --- this repository's OWN caller ---------------------------------------------------
+    # Until the caller existed, the skill told adopters to make `sdlc-gate` a required check
+    # while this repository had none: a `workflow_call` with no caller never runs, so every
+    # merge here was authorised by checks that ask whether a change WORKS, never whether it
+    # was AUTHORISED. These two mutations put back the two ways the caller can be silently
+    # de-fanged.
+    #
+    # Anchored on the job id and the trigger key -- both digit-free and carrying no ref -- and
+    # both INSERT rather than rewrite the pinned line. Anchoring on the SHA would mean that
+    # bumping the pin, which happens the moment a fixed release is cut, marks the mutation
+    # `broken` instead of failing loudly. Same reasoning as the two entries above it.
+    (
+        "repo caller: the gate is repinned to @main, so upstream can change our merge criteria",
+        ".github/workflows/sdlc-gate.yml", "test_required_checks.py",
+        "  sdlc-gate:\n",
+        "  sdlc-gate:\n    uses: timwukp/agent-skills-best-practice/.github/workflows/"
+        "sdlc-gate-reusable.yml@main\n",
+    ),
+    (
+        "repo caller: a paths filter returns, so the required check never reports on some PRs",
+        ".github/workflows/sdlc-gate.yml", "test_required_checks.py",
+        "  pull_request:\n",
+        "  pull_request:\n    paths:\n      - 'skills/**'\n",
+    ),
 ]
 
 

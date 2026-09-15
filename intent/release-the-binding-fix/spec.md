@@ -2,7 +2,7 @@
 
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
-- **Signed-off-by:** Tim WU
+- **Accepted-by:** Tim WU
 - **Status:** signed-off
 
 ## Amendment 1 — an unconditional skip lets a typo through
