@@ -1,0 +1,59 @@
+name: SDLC Gate
+
+# This repository is governed by the gate it ships.
+#
+# Until this file existed, the skill told adopters to make `sdlc-gate` a required check while this
+# repository had no caller at all: sdlc-gate-reusable.yml declares `workflow_call`, and a
+# `workflow_call` with no caller never runs. Every merge here was authorised by `gate tests green`
+# and `validate`, neither of which asks whether the change was AUTHORISED -- only whether it works.
+#
+# MAKING IT BINDING IS A REPOSITORY SETTING, NOT A FILE. Until the owner adds this check under
+# Settings -> Branches -> branch protection -> "Require status checks to pass", it is ADVISORY: a red
+# result can still be merged. A merged pull request cannot grant itself blocking power, so nothing in
+# this file should be read as enforcement on its own.
+#
+# And even once required: `enforce_admins` is false here and this is a personal repository, so an
+# administrator can merge past a red gate. Only an organisation- or enterprise-level ruleset whose
+# bypass list excludes repository admins is genuinely unbypassable. This is not "unbypassable"; it is
+# "deterministic, and bypassable only deliberately by the owner".
+
+on:
+  pull_request:
+    # DO NOT add a paths filter here, and do not add `branches:` either.
+    #
+    # This check is meant to be REQUIRED, and a required check only applies to pull requests. Any
+    # pull request a trigger condition excludes therefore waits forever for a status that can never
+    # arrive -- not failed, BLOCKED, with no run to re-run and no way forward but closing and
+    # reopening it. Both filters have done this here already: a `paths:` filter permanently blocked
+    # PR #48, and `branches: [main]` blocked PR #53 after it was auto-retargeted to main when the
+    # branch beneath it merged, onto a check that had never been triggered.
+    #
+    # The cost of leaving it unfiltered is real and accepted: the gate runs on every pull request,
+    # including ones that change no source. That is cheap. A permanently unmergeable pull request is
+    # not.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # The job id is what branch protection sees, so it must stay `sdlc-gate`: renaming it silently
+  # detaches the requirement, and a required context nothing produces blocks every pull request
+  # forever. test_required_checks.py asserts the contexts this repository actually requires.
+  sdlc-gate:
+    # Pinned to an immutable ref on purpose. A moving ref would let an upstream change alter this
+    # repository's merge criteria with no commit and no review HERE.
+    #
+    # This is a SHA rather than a release tag because no released tag can enforce the binding: the
+    # reusable workflow at sdlc-gate-v1, v2, v2.0.1 and v2.0.2 passes no --base-sha, while gate v2
+    # makes `Accepted-for` mandatory and fails closed without it. Pinning any of those tags would
+    # fail every pull request here, including the one that installed this file. 582c818 is the merge
+    # commit of PR #60, which is the change that made the binding verifiable. See COMPATIBILITY.md,
+    # "No released tag can enforce Accepted-for yet". When a release contains that fix, this line
+    # becomes a tag and test_support_matrix.py refuses any ref whose workflow omits --base-sha.
+    uses: timwukp/agent-skills-best-practice/.github/workflows/sdlc-gate-reusable.yml@582c818fbb6699ed8813df2d5a722a2c4da32f5c
+    with:
+      # The gate's whole purpose is refusing work no accepted plan authorises. With this off it still
+      # checks the artifact chain but stops asking that question, which is the only thing tying a
+      # diff to an approval.
+      require-active: true

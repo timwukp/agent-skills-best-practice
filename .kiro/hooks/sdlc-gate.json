@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "SDLC stage gate",
+      "description": "Blocks writes to source files until the AI-Native SDLC artifact chain (intent.md -> spec.md -> plan.md) is accepted for the slug named in .sdlc/active. Artifacts, evals, .github and .sdlc stay writable so a change can be started. Inert in a repo with no .sdlc/ directory. The command self-disables (exit 0) when python3 or the gate script cannot be found: under Kiro's contract ANY non-zero exit blocks the tool, so an infrastructure problem must never brick every write.",
+      "trigger": "PreToolUse",
+      "matcher": "write",
+      "action": {
+        "type": "command",
+        "command": "sh -c 'for g in \".sdlc/scripts/sdlc_pretooluse_hook.py\" \"$HOME/.claude/skills/ai-native-sdlc/scripts/sdlc_pretooluse_hook.py\" \"$HOME/.kiro/skills/ai-native-sdlc/scripts/sdlc_pretooluse_hook.py\" \"$HOME/.kiro/crew/skills/ai-native-sdlc/scripts/sdlc_pretooluse_hook.py\"; do [ -f \"$g\" ] && break; g=\"\"; done; [ -n \"$g\" ] || exit 0; command -v python3 >/dev/null 2>&1 || exit 0; exec python3 \"$g\"'"
+      },
+      "timeout": 15,
+      "enabled": true
+    }
+  ]
+}
