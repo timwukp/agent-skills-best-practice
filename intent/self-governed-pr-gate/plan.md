@@ -2,9 +2,9 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — engineer re-acceptance (Amendment 1 invalidated the prior acceptance by Tim WU)
-- **Accepted-for:** pending — set to the pull-request merge base at re-acceptance
-- **Status:** draft
+- **Accepted-by:** Tim WU
+- **Accepted-for:** 2e8060593bdb08885a5a81e60968ee317d341acb
+- **Status:** accepted
 
 ## Amendment 1 — new pin, new base, and one piece of evidence that was unreadable
 

@@ -2,8 +2,8 @@
 
 - **Intent:** ./intent.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** pending — owner re-sign-off (Amendment 1 invalidated the prior sign-off by Tim WU)
-- **Status:** draft
+- **Accepted-by:** Tim WU
+- **Status:** signed-off
 
 ## Amendment 1 — the pin this spec chose cannot enforce the binding
 
