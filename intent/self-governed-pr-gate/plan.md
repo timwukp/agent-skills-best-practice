@@ -2,9 +2,36 @@
 
 - **Spec:** ./spec.md
 - **Author:** Kiro (AI agent)
-- **Accepted-by:** Tim WU
-- **Accepted-for:** 2e8060593bdb08885a5a81e60968ee317d341acb
-- **Status:** accepted
+- **Accepted-by:** pending — engineer re-acceptance (Amendment 2)
+- **Accepted-for:** pending — set to the pull-request merge base at re-acceptance
+- **Status:** draft
+
+## Amendment 2 — step 5 described a check the hook does not perform
+
+**Raised after implementation. It changes no work: everything the plan asked for is done and committed
+at `77dc930`. It corrects what step 5 *claims was verified*, which matters because the wrong reading
+would be quoted later as evidence the hook does something it does not.**
+
+Step 5 said to verify the hook "refuses a source edit while no plan authorises it". That reads as a
+**per-file** check, and the hook does not do per-file checks. Measured: it delegates to
+`sdlc_gate.py <intent_dir> build`, a **stage** gate, so its refusals are about the chain, not the file:
+
+| Probe | Result |
+|---|---|
+| `.sdlc/active` names a slug with no `intent/<slug>/` | **exit 2**, naming the slug |
+| `.sdlc/active` declares two intents | **exit 2**, naming both |
+| chain advanced (this slug), any source file | exit 0 |
+| exempt path (`intent/`) | exit 0 |
+
+Per-file coverage is enforced by `sdlc_ci_gate.py` at **merge** time, verified separately: it refused
+`skills/skills/ai-native-sdlc/scripts/make_sbom.py` by name. The hook's own JSON description already
+said exactly this — the plan's wording, not the hook, was wrong.
+
+The first probe run against the wrong expectation appeared to show the hook failing to refuse; it was
+the expectation that was wrong, and the two layers are now stated separately so that confusion cannot
+recur.
+
+Step 5 below is corrected in place. No other step, file or acceptance criterion changes.
 
 ## Amendment 1 — new pin, new base, and one piece of evidence that was unreadable
 
@@ -112,8 +139,15 @@ deliberately, not incidentally.
    no filter, and the warning comment explaining why a filter must never be added.
 4. **Green the suite.** Run `test_required_checks.py`.
 5. **Install the write-time layer** — copy the hook config and vendor the two scripts. Verify the
-   hook refuses a source edit while no plan authorises it, and permits one that is authorised, by
-   invoking it directly rather than by reasoning about it.
+   hook by invoking it directly rather than by reasoning about it.
+   **Clarified after measuring it (Amendment 2):** the hook is a **stage** gate, not a per-file
+   coverage check. It delegates to `sdlc_gate.py <intent_dir> build`, so it refuses when the chain is
+   not advanced for the slug in `.sdlc/active` — an absent `intent/<slug>/`, or two declared intents —
+   and permits any source write once the chain *is* advanced. Whether a specific file is named in the
+   plan is decided by `sdlc_ci_gate.py` at **merge** time only. The original wording here ("refuses a
+   source edit while no plan authorises it") reads as per-file and would have set a test that the hook
+   was never built to pass. Verify both layers: the hook's refusal paths above, and separately the
+   merge gate refusing a source file no plan names.
 6. **Add the two mutations**, anchored on the caller's `uses:` line and its trigger block.
 7. **Propagate the count** with `python3 scripts/sync_mutation_count.py`, then confirm
    `--check` exits 0. The count must be written by the command, not typed.
