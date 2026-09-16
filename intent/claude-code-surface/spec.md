@@ -2,7 +2,9 @@
 
 - **Intent:** ./intent.md
 - **Author:** Claude (AI agent)
-- **Status:** draft
+- **Signed-off-by:** Tim WU
+- **Accepted-by:** Tim WU
+- **Status:** signed-off
 
 ## Requirements
 
