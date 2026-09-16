@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Write|Edit|MultiEdit|NotebookEdit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'for g in \".sdlc/scripts/sdlc_pretooluse_hook.py\" \"$HOME/.claude/skills/ai-native-sdlc/scripts/sdlc_pretooluse_hook.py\" \"$HOME/.kiro/skills/ai-native-sdlc/scripts/sdlc_pretooluse_hook.py\" \"$HOME/.kiro/crew/skills/ai-native-sdlc/scripts/sdlc_pretooluse_hook.py\"; do [ -f \"$g\" ] && break; g=\"\"; done; [ -n \"$g\" ] || exit 0; command -v python3 >/dev/null 2>&1 || exit 0; exec python3 \"$g\"'",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
