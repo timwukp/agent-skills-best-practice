@@ -109,7 +109,7 @@ recurring.
     "repo_shapes": ["monorepo-single-intent", "multi-intent-pr-refused", "concurrent-pr-independent"]
   },
   "posix_only": [
-    "the local PreToolUse hook command in templates/kiro-hooks/sdlc-gate.json"
+    "the local PreToolUse hook command in templates/kiro-hooks/sdlc-gate.json and templates/claude-code-hooks/settings.json"
   ],
   "known_hazards": [
     "concurrent-pr lost update: .sdlc/active is a single shared value; needs strict status checks"
@@ -119,7 +119,7 @@ recurring.
     "python": [],
     "repo_shapes": ["polyglot", "fork-pr"],
     "forges": ["gitlab", "bitbucket"],
-    "surfaces": ["kiro-web"]
+    "surfaces": ["kiro-web", "claude-code-live-runtime"]
   }
 }
 ```
@@ -133,7 +133,7 @@ recurring.
 | Repo shape | Single-package repo; static single-page site; **monorepo** with a single active intent; a **multi-intent PR is refused** with a diagnostic naming the intent that owns each file |
 | Concurrency | Concurrent PRs each declaring their own intent validate **independently** — but see the hazard below |
 | Forge | GitHub — Actions and branch protection |
-| Surfaces | Kiro IDE and CLI (`PreToolUse`); official Kiro and KiroCrew hook runtimes |
+| Surfaces | Kiro IDE and CLI (`PreToolUse`); official Kiro and KiroCrew hook runtimes; Claude Code (`PreToolUse` via `templates/claude-code-hooks/settings.json` — command contract tested by `scripts/test_claude_hook_config.py`, live IDE runtime not exercised in CI, same epistemic status as the Kiro rows) |
 
 ### Monorepo: one intent per change, by design
 
@@ -175,7 +175,8 @@ Stated separately because "Windows verified" on its own would be misleading.
 
 The gate **scripts** are pure stdlib Python and are exercised on Windows by the test
 matrix, so the **CI gate is verified there**. But **the local PreToolUse hook command in
-`templates/kiro-hooks/sdlc-gate.json` is POSIX-only**: it is an `sh -c '...'` string using
+`templates/kiro-hooks/sdlc-gate.json` and `templates/claude-code-hooks/settings.json` is
+POSIX-only** (one identical command string, shipped twice): it is an `sh -c '...'` string using
 `[ -f ]`, `command -v` and `exec`, and Windows has no `/bin/sh`. On Windows the hook
 command simply will not run, so a Windows developer gets the merge-time control and **not**
 the write-time one.
@@ -287,6 +288,7 @@ GitHub account, and a user cannot fork their own repository. `fork-pr` therefore
 | Fork-based contributions | **Contract tested, runtime unproven.** See above. |
 | GitLab / Bitbucket | **Unsupported.** The gate logic is portable; the workflow is not. |
 | Kiro Web surface | **Unsupported** — `PreToolUse` does not exist there; CI is the only control. |
+| Claude Code live runtime | **Contract tested, runtime unproven.** `scripts/test_claude_hook_config.py` drives the shipped command with Claude Code-shaped events and Claude Code's exit contract (a refusal must exit exactly 2 — any other non-zero is a warning there, not a block). No CI job drives the live IDE or CLI. |
 | Scale | Largest exercise is a few dozen files. No evidence at thousands. |
 
 ## Deprecation process

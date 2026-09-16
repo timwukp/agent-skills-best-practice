@@ -99,21 +99,28 @@ forces nothing. Anything that must always hold needs one of the stronger layers.
 | Strength | Mechanism | Bypassable |
 |---|---|---|
 | Advisory | this skill | yes, by not consulting it |
-| Deterministic | `templates/kiro-hooks/sdlc-gate.json` (write time, fails **open**) | yes, by removing it |
+| Deterministic | `templates/kiro-hooks/sdlc-gate.json` or `templates/claude-code-hooks/settings.json` (write time, fails **open**) | yes, by removing it |
 | Merge gate | `templates/github-workflows/sdlc-gate.yml` (fails **closed**) | only by an admin unsetting the required check |
 
 Install both into a repo:
 
 ```bash
 SKILL=<this skill's directory>
-mkdir -p .kiro/hooks .sdlc/scripts .github/workflows
-cp "$SKILL"/templates/kiro-hooks/sdlc-gate.json        .kiro/hooks/
+mkdir -p .kiro/hooks .claude .sdlc/scripts .github/workflows
+cp "$SKILL"/templates/kiro-hooks/sdlc-gate.json        .kiro/hooks/          # Kiro surface
+cp "$SKILL"/templates/claude-code-hooks/settings.json  .claude/settings.json # Claude Code surface
 cp "$SKILL"/scripts/sdlc_pretooluse_hook.py            .sdlc/scripts/
 cp "$SKILL"/scripts/sdlc_gate.py                       .sdlc/scripts/
 cp "$SKILL"/scripts/sdlc_ci_gate.py                    .sdlc/scripts/
 cp "$SKILL"/templates/github-workflows/sdlc-gate.yml   .github/workflows/
 echo "<slug>" > .sdlc/active
 ```
+
+Install the hook config for the surface the repo actually uses; installing both is harmless
+(same script, same decision). If `.claude/settings.json` already exists, merge the
+`hooks.PreToolUse` entry into it rather than copying over it. The two templates carry the
+IDENTICAL command string — `scripts/test_claude_hook_config.py` fails the build if they
+drift apart.
 
 **A green-or-red check is not a gate.** Until `sdlc-gate` is marked *required* in branch
 protection, a red check can still be merged. See `references/enforcement.md` for the
@@ -209,7 +216,7 @@ ai-native-sdlc/
   evals/                       task evals + trigger evals
   scripts/                     sdlc_gate.py, the hook, the CI gate, their tests, mutation_proof.py
                                make_sbom.py, build_review_prompt.py, verify_gate_integrity.sh
-  templates/                   intent/spec/plan/REVIEW/bands + the hook config + the workflow
+  templates/                   intent/spec/plan/REVIEW/bands + the hook configs (Kiro and Claude Code) + the workflow
   references/enforcement.md    how to make it binding; runtime traps; what neither gate catches
   references/playbook-mapping.md   stage -> artifact -> enforcement mapping
   references/limitations.md    READ FIRST: the twelve known gaps and the eight things an

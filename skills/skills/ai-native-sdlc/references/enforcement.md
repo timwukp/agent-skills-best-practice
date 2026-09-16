@@ -17,18 +17,28 @@ disabled, or the change came from somewhere else entirely. **CI is the real gate
 
 ---
 
-## 1. Local hook (`.kiro/hooks/`)
+## 1. Local hook (`.kiro/hooks/` or `.claude/settings.json`)
 
-Per-repo, and it travels with the repo — the official Kiro hook format is read by
-the IDE, the CLI, and KiroCrew.
+Per-repo, and it travels with the repo. One hook script, two shipped configs: the
+official Kiro hook format is read by the IDE, the CLI, and KiroCrew; Claude Code
+reads `hooks.PreToolUse` from `.claude/settings.json`. Both templates carry the
+IDENTICAL command string, and `test_claude_hook_config.py` fails the build if they
+drift apart.
 
 ```bash
 # SKILL = wherever this skill is installed, e.g.
 #   ~/.claude/skills/ai-native-sdlc  |  ~/.kiro/skills/ai-native-sdlc
 SKILL=~/.claude/skills/ai-native-sdlc
 
+# Kiro surface
 mkdir -p .kiro/hooks .sdlc
 cp "$SKILL"/templates/kiro-hooks/sdlc-gate.json .kiro/hooks/
+
+# Claude Code surface — if .claude/settings.json already exists, merge the
+# hooks.PreToolUse entry into it instead of copying over it
+mkdir -p .claude .sdlc
+cp "$SKILL"/templates/claude-code-hooks/settings.json .claude/settings.json
+
 echo "my-feature-slug" > .sdlc/active
 ```
 
@@ -45,9 +55,14 @@ stderr, which the agent reads back.
   there `"write"` matches only a tool literally named `write` — use `*write*` or an
   empty matcher on that path.
 - Exit-code contract differs between runtimes, which is why the hook exits **2**:
-  official Kiro blocks on *any* non-zero, while KiroCrew's ScriptHook blocks only
-  on exactly 2 and treats other non-zero codes as a warning that still allows.
-  `2` is the intersection that blocks on both.
+  official Kiro blocks on *any* non-zero, while KiroCrew's ScriptHook and Claude
+  Code block only on exactly 2 and treat other non-zero codes as a warning that
+  still allows. `2` is the intersection that blocks on all three.
+- On the Claude Code surface the `matcher` **is** a regex over tool names — the
+  shipped template uses `^(Write|Edit|MultiEdit|NotebookEdit)$`, anchored so it
+  cannot accidentally match a read tool. This is the opposite convention from
+  official Kiro's built-in category matcher; do not copy one template's matcher
+  into the other's config.
 - The STDIN payload's `hook_event_name` is **camelCase** (`preToolUse`) in official
   Kiro but PascalCase (`PreToolUse`) on KiroCrew's own path. The hook accepts both,
   casefolded. Getting this wrong does not error — it silently allows everything.
