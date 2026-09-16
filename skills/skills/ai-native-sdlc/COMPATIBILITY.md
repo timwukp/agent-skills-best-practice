@@ -90,6 +90,28 @@ complied with v2. It went unnoticed because no test asserted the reusable path v
 anything. Fixed once caught; recorded here because the recommended integration path being
 the broken one is exactly the kind of thing this document exists to surface.
 
+**This repository told adopters to require a check it did not itself call.** The docs said to
+make `sdlc-gate` a required status check, while `sdlc-gate-reusable.yml` had no caller in this
+repository at all — and a `workflow_call` with no caller never runs. So every merge here was
+authorised by `gate tests green` and `validate`, neither of which asks whether the change was
+*authorised*, only whether it *works*. A caller now exists at
+`.github/workflows/sdlc-gate.yml`, pinned to an immutable ref with `require-active: true` and
+no trigger filter, plus the write-time hook, both mutation-covered.
+
+Two limits, stated rather than implied. The check is **not required** in branch protection:
+that is a repository setting only the owner can change, and a merged pull request cannot grant
+itself blocking power, so the gate is advisory here until that happens. And once required,
+`enforce_admins` is false in this personal repository, so an administrator can still merge
+past a red gate — see `references/limitations.md`. This repository runs its own gate; it does
+not yet obey it.
+
+**The first pin chosen for that caller could not have worked.** It was `sdlc-gate-v2.0.2`,
+picked because it was the current release — and no released tag passes `--base-sha`, so the
+caller would have failed closed on every pull request here, including the one installing it.
+Caught before implementation by the assertion added for consumers; the caller pins a SHA
+instead. A recommendation is only as good as the ref it names, which is why that assertion
+reads the workflow at the ref rather than trusting the ref's name.
+
 ## Support matrix
 
 Only the first block is *tested*. The rest is expectation, and expectation is not evidence.

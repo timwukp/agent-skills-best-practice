@@ -9,7 +9,7 @@ here.
 
 What is defensible: the gate really runs, it has been proven live on a real repository, it
 found and fixed six substantive bugs in itself, and its test suite is mutation-verified
-(77 mutations, 77 killed). Judged as a personal/small-team tool, the quality holds up.
+(79 mutations, 79 killed). Judged as a personal/small-team tool, the quality holds up.
 
 Scored against an enterprise control rubric it stands at **36/80 (45%)**. About **48%** is
 the ceiling this repository can reach alone: three of the remaining controls are
@@ -173,3 +173,23 @@ adopters to version their artifacts, separate duties, keep an audit trail and mo
 threats — while doing few of those things itself. Items 2, 4, 6 and 8 above remain open, so
 the criticism still partly applies. Anyone citing this skill as evidence of process rigour
 should read this file first.
+
+One item of it is now closed and one is closed only halfway.
+
+**Closed:** this repository has a caller (`.github/workflows/sdlc-gate.yml`) invoking the
+reusable gate it ships, pinned to an immutable ref with `require-active: true` and no trigger
+filter. Before it existed, the skill told adopters to make `sdlc-gate` a required check while
+this repository had **no caller at all** — a `workflow_call` with no caller never runs, so
+every merge here was authorised by checks that ask whether a change *works*, never whether it
+was *authorised*. The write-time hook is installed too, and both are mutation-covered.
+
+**Not closed:** the check is not required. Adding it to branch protection is a repository
+setting only the owner can change, and a merged pull request cannot grant itself blocking
+power. Until that setting changes, the gate is **advisory here**: a red result can still be
+merged. And once required, the limit recorded in item 2 above still applies unchanged —
+`enforce_admins` is false and this is a personal repository, so an administrator merges past
+a red gate. Nothing here is unbypassable; it is deterministic, and bypassable deliberately by
+the owner.
+
+So the honest summary is that this repository now runs its own gate and does not yet obey
+it.

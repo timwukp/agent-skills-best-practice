@@ -3,11 +3,14 @@
 - **Spec:** ./spec.md
 - **Author:** Claude (AI agent)
 - **Accepted-by:** Tim WU
-- **Accepted-for:** 2e8060593bdb08885a5a81e60968ee317d341acb
+- **Accepted-for:** eaf46e3318c393e40959189bda4daa2e51ad353a
 - **Status:** accepted
 
-`Accepted-for` must be `git merge-base origin/main HEAD`, which at draft time is
-`2e80605` (full sha recorded above).
+`Accepted-for` must be `git merge-base origin/main HEAD`, which at acceptance is
+`eaf46e3` (full sha recorded above). First drafted against `2e80605`; rebound after
+PR #67 (self-governed-pr-gate) merged under this change, which also means this pull
+request is the first one the repository's own gate examines that was not the gate's
+own installation.
 
 ## Approach
 
@@ -50,4 +53,5 @@ because no gate logic changes.
 
 - `python3 scripts/test_claude_hook_config.py` red before step 3, green after.
 - Full local run of every suite in the CI list, plus `sdlc_ci_gate.py --require-active
-  --base-sha 2e8060593bdb08885a5a81e60968ee317d341acb` against this tree.
+  --base-sha eaf46e3318c393e40959189bda4daa2e51ad353a` against this tree (re-run after
+  the rebind onto post-#67 main).
