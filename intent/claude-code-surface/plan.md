@@ -2,8 +2,9 @@
 
 - **Spec:** ./spec.md
 - **Author:** Claude (AI agent)
+- **Accepted-by:** Tim WU
 - **Accepted-for:** 2e8060593bdb08885a5a81e60968ee317d341acb
-- **Status:** draft
+- **Status:** accepted
 
 `Accepted-for` must be `git merge-base origin/main HEAD`, which at draft time is
 `2e80605` (full sha recorded above).
